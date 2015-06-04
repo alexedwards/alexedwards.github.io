@@ -1,0 +1,214 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Publishing and Versioning a Rubygem</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header> <h1>Publishing and Versioning a Rubygem</h1> <span>20th June 2013</span> </header>
+
+<p>In the last two tutorials we&#39;ve <a href="/blog/how-to-make-a-rubygem">built a gem</a> and <a href="/blog/how-to-make-a-rubygem-part-two">added tests and documentation</a>. We&#39;re going carry on working with the same gem, first publishing it on Rubygems.org and Github, and then finishing it off by adding an executable.</p>
+
+<h2>Publishing on Rubygems.org</h2>
+
+<p>If you&#39;ve been following along, you should already have a <code>listless-0.0.1.gem</code> package sitting on your computer and ready for upload to <a href="https://rubygems.org">rubygems.org</a>.</p>
+
+<p>You&#39;ll need to <a href="https://rubygems.org/users/new">sign up</a> for an account if you don&#39;t already have one, keeping a note of your username and password.</p>
+
+<p>You&#39;ll also need to download and store your personal API key from the site before you can upload. Run the following command, remembering to add your own username and entering the password you signed up with.</p>
+
+<figure class="shell"><code><pre>
+$ curl -u username https://rubygems.org/api/v1/api_key.yaml &gt; ~/.gem/credentials
+<samp>Enter host password for user 'alexedwards':</samp>
+</pre></code></figure>
+
+<p>Once that&#39;s done, actually publishing the gem is surprisingly simple &ndash; just run <code>gem push</code> on the package.</p>
+
+<figure class="shell"><code><pre>
+$ gem push listless-0.1.0.gem
+<samp>Pushing gem to https://rubygems.org...
+Successfully registered gem: listless (0.0.1)</samp>
+</pre></code></figure>
+
+<h2>Publishing on Github</h2>
+
+<p>If you&#39;re a Github user, it can also be a nice idea to publish the gem source code (not the <code>.gem</code> file this time) on there. That makes it possible for people to use the gem straight from the git repository like so:</p>
+
+<figure class="file"><figcaption>File: Gemfile</figcaption><code><pre class="highlight ruby"><span class="n">gem</span> <span class="s1">'listless'</span><span class="p">,</span> <span class="ss">:git</span> <span class="o">=&gt;</span> <span class="s1">'git://github.com/alexedwards/listless.git'</span>
+</pre></code></figure>
+
+<h2>Adding an Executable</h2>
+
+<p>Next we&#39;re going to create a simple executable, so that the functionality in our Gem can be used directly from a terminal.</p>
+
+<p>In this instance we&#39;re going to a make a <code>listless</code> executable, which takes a comma-separated values string as an argument and turns it into a HTML list. Sure, it&#39;s a trivial and not-very-useful example, but hopefully it illustrates the important steps nicely enough : )</p>
+
+<p>Go to the root of the Gem directory and create a <code>bin/listless</code> file, then set the permissions so that it&#39;s executable.</p>
+
+<figure class="shell"><code><pre>
+$ mkdir bin
+$ touch bin/listless
+$ chmod 755 bin/listless
+</pre></code></figure>
+
+<p>The complete structure of our Gem should now look like this.</p>
+
+<figure class="shell"><code><pre>
+$ tree
+<samp>.
+├── bin
+│   └── listless
+├── Gemfile
+├── lib
+│   ├── listless
+│   │   └── version.rb
+│   └── listless.rb
+├── LICENSE.txt
+├── listless-0.1.0.gem
+├── listless.gemspec
+├── Rakefile
+├── README.md
+└── spec
+    └── listless_spec.rb</samp>
+</pre></code></figure>
+
+<p>Open the <code>bin/listless</code> file and add the following code.</p>
+
+<figure class="file"><figcaption>File: bin/listless</figcaption><code><pre class="highlight ruby"><span class="c1">#!/usr/bin/env ruby</span>
+<span class="nb">require</span> <span class="s1">'listless'</span>
+
+<span class="n">array</span> <span class="o">=</span> <span class="no">ARGV</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="nf">.split</span><span class="p">(</span><span class="s1">','</span><span class="p">)</span>
+<span class="nb">puts</span> <span class="no">Listless</span><span class="nf">.ul</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+</pre></code></figure>
+
+<p>The first line of the file (called a hashbang line) tells the shell what program to execute the file with (in this case, Ruby). The rest of the file is plain Ruby code.</p>
+
+<p>We&#39;ll install the executable properly in a moment, but for now let&#39;s quickly check it works with the following command:</p>
+
+
+<figure class="shell"><code><pre>
+$ ruby -Ilib ./bin/listless &quot;foo,bar,baz&quot;
+<samp>&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;li&gt;baz&lt;/li&gt;&lt;/ul&gt;</samp>
+</pre></code></figure>
+
+<p>As an aside, if you take a look at the <code>listless.gemspec</code> file you&#39;ll notice a <code>gem.executables</code> line, piggybacking on our Git repository again. If this wasn&#39;t already there, then we&#39;d have needed to add the path to the executable manually.</p>
+
+<figure class="shell"><code><pre>
+$ git add .
+$ git commit -m 'add: executable for converting CSV strings'
+</pre></code></figure>
+
+<h2>Increment version</h2>
+
+<p>Now is a good time to increment the version number. I recommend following the <a href="http://semver.org/">semantic versioning</a> guidelines, which are generally used by the Ruby community when it comes to updating gems.</p>
+
+<p>Let&#39;s bump our version from <code>0.0.1</code> to <code>0.1.0</code> by editing the <code>lib/listless/version</code> file.</p>
+
+<figure class="file"><figcaption>File: lib/listless/version.rb</figcaption><code><pre class="highlight ruby"><span class="k">module</span> <span class="nn">Listless</span>
+  <span class="no">VERSION</span> <span class="o">=</span> <span class="s2">&quot;0.1.0&quot;</span>
+<span class="k">end</span>
+</pre></code></figure>
+
+<p>Again, remember to commit the change.</p>
+
+<figure class="shell"><code><pre>
+$ git commit -a -m 'bump version'
+</pre></code></figure>
+
+<h2>Install the executable</h2>
+
+<p>Lastly rebuild and reinstall the gem on your local machine.</p>
+
+<figure class="shell"><code><pre>
+$ gem build listless.gemspec
+<samp>Successfully built RubyGem
+Name: listless
+Version: 0.1.0
+File: listless-0.1.0.gem</samp>
+$ sudo gem install --local listless-0.1.0.gem
+</pre></code></figure>
+
+<p>In the process of installing the new version of our gem, the executable should have been stored on your system path and the <code>listless</code> command should now be available. Let&#39;s give it a try.</p>
+
+<figure class="shell"><code><pre>
+$ listless &quot;foo,bar,baz&quot;
+<samp>&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;li&gt;baz&lt;/li&gt;&lt;/ul&gt;</samp>
+</pre></code></figure>
+
+<h2>Wrapup and Source Code</h2>
+
+<p>You can find the full source code for this gem on <a href="https://github.com/alexedwards/listless">Github</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/ruby">ruby</a>, <a href="/blog/category/tutorial">tutorial</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

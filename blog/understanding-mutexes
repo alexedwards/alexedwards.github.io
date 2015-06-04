@@ -1,0 +1,254 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Understanding Mutexes</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Understanding Mutexes</h1> <span>4th October 2013</span></header>
+
+<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own Goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
+
+<p>In case you're new to concurrent programming, I'll quickly explain the problem.</p>
+
+<p>Race conditions occur when two or more Goroutines try to use a piece of shared data at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
+
+<p>As an illustration, here's an example where two Goroutines try to add money to a shared bank balance at the same time:</p>
+
+<table style="width: 100%; text-align: center">
+<tr><th>Instruction</th><th>Goroutine 1</th><th>Goroutine 2</th><th>Bank Balance</th></tr>
+<tr><td>1</td><td>Read balance &lArr; &pound;50</td><td></td><td>&pound;50</td></tr>
+<tr><td>2</td><td></td><td>Read balance &lArr; &pound;50</td><td>&pound;50</td></tr>
+<tr><td>3</td><td>Add &pound;100 to balance</td><td></td><td>&pound;50</td></tr>
+<tr><td>4</td><td></td><td>Add &pound;50 to balance</td><td>&pound;50</td></tr>
+<tr><td>5</td><td>Write balance &rArr; &pound;150</td><td></td><td>&pound;150</td></tr>
+<tr><td>6</td><td></td><td>Write balance &rArr; &pound;100</td><td>&pound;100</td></tr>
+</table>
+
+<p>Despite making two separate deposits, only the second one is reflected in the final balance because the two Goroutines were <em>racing</em> each other to make the change.</p>
+
+<p>The Go blog describes the downsides:</p>
+
+<blockquote>Race conditions are among the most insidious and elusive programming errors. They typically cause erratic and mysterious failures, often long after the code has been deployed to production. While Go's concurrency mechanisms make it easy to write clean concurrent code, they don't prevent race conditions. Care, diligence, and testing are required.</blockquote>
+
+<p>Go provides a number of tools to help us avoid data races. These include <a href="http://golangtutorials.blogspot.co.uk/2011/06/channels-in-go.html">Channels</a> for communicating data between Goroutines, a <a href="http://www.goinggo.net/2013/09/detecting-race-conditions-with-go.html">Race Detector</a> for monitoring unsynchronized access to memory at runtime, and a variety of 'locking' features in the <a href="http://golang.org/pkg/sync/atomic/">Atomic</a> and <a href="http://golang.org/pkg/sync/">Sync</a> packages. One of these features are Mutual Exclusion locks, or <em>mutexes</em>, which we'll be looking at in the rest of this post.</p>
+
+<h2>Creating a Basic Mutex</h2>
+
+<p>Let's create some toy code to mimic the bank balance example:
+
+<figure class="plain"><code><pre>
+import "strconv"
+
+var Balance = &amp;currency{50.00, "GBP"}
+
+type currency struct {
+  amount float64
+  code   string
+}
+
+func (c *currency) Add(i float64) {
+  // This is racy
+  c.amount += i
+}
+
+func (c *currency) Display() string {
+  // This is racy
+  return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+}
+</pre></code></figure>
+
+<p>We know that if there are multiple Goroutines using this code and calling <code>Balance.Add()</code> and <code>Balance.Display()</code>, then at some point a race condition is likely to occur.</p>
+
+<p>One way we could prevent a data race is to ensure that if one Goroutine is using the <code>Balance</code> variable, then all other Goroutines are prevented (or <em>mutually excluded</em>) from using it at the same time.</p>
+
+<p>We can do this by creating a <a href="http://golang.org/pkg/sync/#Mutex">Mutex</a> and setting a <em>lock</em> around particular lines of code with it. While one Goroutine holds the lock, all other Goroutines are prevented from executing any lines of code protected by the same mutex, and are forced to wait until the lock is yielded before they can proceed.</p>
+
+<p>In practice, it's more simple than it sounds:</p>
+
+<figure class="plain"><code><pre>
+import (
+  "strconv"
+  "sync"
+)
+
+var mu = &sync.Mutex{}
+var Balance = &currency{50.00, "GBP"}
+
+type currency struct {
+  amount float64
+  code   string
+}
+
+func (c *currency) Add(i float64) {
+  mu.Lock()
+  c.amount += i
+  mu.Unlock()
+}
+
+func (c *currency) Display() string {
+  mu.Lock()
+  amt := c.amount
+  cur := c.code
+  mu.Unlock()
+  return strconv.FormatFloat(amt, 'f', 2, 64) + " " + cur
+}
+</pre></code></figure>
+
+<p>Here we've created a new mutex and assigned it to <code>mu</code>. We then use <code>mu.Lock()</code> to create a lock immediately before both racy parts of the code, and <code>mu.Unlock()</code> to yield the lock immediately after.</p>
+
+<p>There's a couple of things to note:</p>
+
+<ul>
+  <li>The same mutex variable can be used in multiple places throughout your code. So long as it's the same mutex (in our case <code>mu</code>) then <em>none</em> of the chunks of code protected by it can be executed at the same time.</li>
+  <li>Holding a mutex lock doesn't 'protect' a memory location from being read or updated. A non-mutex-locked line of code could still access it at any time and create a race condition. Therefore you need to be careful to make sure all points in your code which are potentially racy are protected.</li>
+</ul>
+
+<p>Let's tidy up the example a bit:</p>
+
+<figure class="plain"><code><pre>
+import (
+  "strconv"
+  "sync"
+)
+
+var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+
+type currency struct {
+  sync.Mutex
+  amount float64
+  code   string
+}
+
+func (c *currency) Add(i float64) {
+  c.Lock()
+  c.amount += i
+  c.Unlock()
+}
+
+func (c *currency) Display() string {
+  c.Lock()
+  defer c.Unlock()
+  return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+}
+</pre></code></figure>
+
+<p>So what's changed here?</p>
+
+<p>Because our mutex is only being used in the context of a <code>currency</code> object, it makes sense to anonymously embed it in the <code>currency</code> struct (an idea borrowed from Andrew Gerrard's excellent <a href="http://nf.wh3rd.net/10things/#1">
+10 things you (probably) don't know about Go</a> slideshow). If you look at a larger codebase with lots of mutexes, like Go's <a href="http://golang.org/src/pkg/net/http/server.go">HTTP Server</a>, you can see how this approach helps to keep locking rules nice and clear.</p>
+
+
+
+<p>We've also made use of the <a href="http://golang.org/doc/effective_go.html#defer">defer</a> statement, which ensures that the mutex gets unlocked immediately before the function executing it returns. This is common practice for functions that contain multiple return statements, or where the return statement itself is racy like in our example.</p>
+
+<h2>Read Write Mutexes</h2>
+
+<p>In our bank balance example, having a full mutex lock on the <code>Display()</code> function isn't strictly necessary. It would be OK for us to have multiple reads of <code>Balance</code> happening at the same time, so long as nothing is being written.</p>
+
+<p>We can achieve this using <a href="http://golang.org/pkg/sync/#RWMutex">RWMutex</a>, a reader/writer mutual exclusion lock which allows any number of readers to hold the lock <strong>or</strong> one writer. Depending on the nature of your application and ratio of reads to writes, this may be more efficient than using a full mutex.</p>
+
+<p>Reader locks can be opened and closed with <code>RLock()</code> and <code>RUnlock()</code> like so:</p>
+
+<figure class="plain"><code><pre>
+import (
+  "strconv"
+  "sync"
+)
+
+var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+
+type currency struct {
+  sync.RWMutex
+  amount float64
+  code   string
+}
+
+func (c *currency) Add(i float64) {
+  c.Lock()
+  c.amount += i
+  c.Unlock()
+}
+
+func (c *currency) Display() string {
+  c.RLock()
+  defer c.RUnlock()
+  return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+}
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a> <br> Last updated: 16th July 2014 (for Go version 1.3)</p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

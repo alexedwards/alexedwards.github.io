@@ -1,0 +1,173 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Golang Automatic Reloads</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Golang Automatic Reloads</h1> <span>20th September 2013</span></header>
+
+<p>I wrote a short Bash script to automatically reload Go programs.</p>
+
+<p>The script acts as a light wrapper around <code>go run</code>, stopping and restarting it whenever a <code>.go</code> file in your current directory or <code>$GOPATH/src</code> folder is saved. I've been using it mainly when developing web applications, in the same way that I use Shotgun or Guard when working with Ruby.</p>
+
+<p>You can grab this from the <a href="https://github.com/alexedwards/go-reload">Github repository</a>.</p>
+
+<figure class="file"><figcaption>File: go-reload</figcaption><code><pre>
+#!/bin/bash
+
+# Watch all *.go files in the specified directory
+# Call the restart function when they are saved
+function monitor() {
+  inotifywait -q -m -r -e close_write -e moved_to --exclude '[^g][^o]$' $1 |
+  while read line; do
+    restart
+  done
+}
+
+# Terminate and rerun the main Go program
+function restart {
+  if [ "$(pidof $PROCESS_NAME)" ]; then
+    killall -q -w -9 $PROCESS_NAME
+  fi
+  echo ">> Reloading..."
+  go run $FILE_PATH $ARGS &
+}
+
+# Make sure all background processes get terminated
+function close {
+  killall -q -w -9 inotifywait
+  exit 0
+}
+
+trap close INT
+echo "== Go-reload"
+echo ">> Watching directories, CTRL+C to stop"
+
+FILE_PATH=$1
+FILE_NAME=$(basename $FILE_PATH)
+PROCESS_NAME=${FILE_NAME%%.*}
+
+shift
+ARGS=$@
+
+# Start the main Go program
+go run $FILE_PATH $ARGS &
+
+# Monitor all /src directories on the GOPATH
+OIFS="$IFS"
+IFS=':'
+for path in $GOPATH
+do
+  monitor $path/src &
+done
+IFS="$OIFS"
+
+# If the current working directory isn't on the GOPATH, monitor it too
+if [[ $PWD != "$GOPATH/"* ]]
+then
+  monitor $PWD
+fi
+
+wait
+</pre></code></figure>
+
+<h2>Usage</h2>
+
+<p>The only dependency for this script is <a href="https://github.com/rvoicilas/inotify-tools/wiki">inotify-tools</a>, which is used to monitor the filesystem for changes.<p>
+
+<figure class="shell"><code><pre>
+$ sudo apt-get install inotify-tools
+</pre></code></figure>
+
+<p>Once you've <a href="https://raw.github.com/alexedwards/go-reload/master/go-reload">downloaded</a> (or copy-pasted) the script, you'll need to make it executable and move it to <code>/usr/local/bin</code> or another directory on your system path:</p>
+
+<figure class="shell"><code><pre>
+$ wget https://raw.github.com/alexedwards/go-reload/master/go-reload
+$ chmod +x go-reload
+$ sudo mv go-reload /usr/local/bin/
+</pre></code></figure>
+
+<p>You should then be able to use the <code>go-reload</code> command in place of <code>go run</code>:</p>
+
+<figure class="shell"><code><pre>
+$ go-reload main.go
+<samp>== Go-reload
+>> Watching directories, CTRL+C to stop</samp>
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

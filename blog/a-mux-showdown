@@ -1,0 +1,291 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Gorilla vs Pat vs Routes: A Mux Showdown</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Gorilla vs Pat vs Routes: <br> A Mux Showdown</h1> <span>2nd September 2013</span></header>
+
+<p>One of the first things I missed when learning Go was being able to route HTTP requests to handlers based on the <em>pattern</em> of a URL path, like you can with web frameworks like Sinatra and Django.</p>
+
+<p>Although Go's <a href="http://golang.org/pkg/net/http/#NewServeMux">ServeMux</a> does a great job at routing incoming requests, it only works for fixed URL paths. To support pretty URLs with variable parameters we either need to roll a custom router (or <em>HTTP request multiplexer</em> in Go terminology), or look to a third-party package.</p>
+
+<p>In this post we'll compare and contrast three popular packages for the job: <a href="https://github.com/bmizerany/pat">Pat</a>, <a href="https://github.com/drone/routes">Routes</a> and <a href="http://www.gorillatoolkit.org/pkg/mux">Gorilla Mux</a>. If you're already familiar with them, you might want to <a href="#benchmarks">skip to the benchmarks</a> and summary.</p>
+
+<h2>Pat</h2>
+
+<p><a href="https://github.com/bmizerany/pat">Pat</a> by Blake Mizerany is the simplest and lightest of the three packages. It supports basic pattern matching on request paths, matching on request method (GET, POST etc), and the capture of named parameters.</p>
+
+<p>The syntax for defining URL patterns should feel familiar if you're from the Ruby world &ndash; named parameters start with a colon, with the remainder of the path matched literally. For example, the pattern <code>/user/:name/profile</code> would match a request to <code>/user/oomi/profile</code>, with the name <code>oomi</code> captured as a parameter.</p>
+
+<p>It's worth pointing out that behind the scenes Pat uses a custom algorithm for pattern matching, rather than a regular expression based approach like the other two packages. In theory this means it should be more a little more optimised for the task at hand.</p>
+
+<p>Let's take a look at a sample application using Pat:</p>
+
+<figure class="shell"><code><pre>
+$ mkdir pat-example && cd pat-example
+$ touch app.go
+$ go get github.com/bmizerany/pat
+</pre></code></figure>
+
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+package main
+
+import (
+  "github.com/bmizerany/pat"
+  "log"
+  "net/http"
+)
+
+func main() {
+  mux := pat.New()
+  mux.Get("/user/:name/profile", http.HandlerFunc(profile))
+
+  http.Handle("/", mux)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+func profile(w http.ResponseWriter, r *http.Request) {
+  params := r.URL.Query()
+  name := params.Get(":name")
+  w.Write([]byte("Hello " + name))
+}
+</pre></code></figure>
+
+<p>We'll quickly step through the interesting bits.</p>
+
+<p>In the <code>main</code> function we start by creating a new HTTP request multiplexer (or mux for short) with Pat. Then we add a rule to the mux so that all <code>GET</code> requests which match the specified pattern are routed to the <code>profile</code> function.</p>
+
+<p>Next we use the <a href="http://golang.org/pkg/net/http/#Handle">Handle</a> function to register our custom mux as the handler for <em>all incoming requests</em> in Go's DefaultServeMux.</p>
+
+<p>Because we're only using a single handler in this code, an alternative approach would be to skip registering with the DefaultServeMux, and pass our custom mux directly to <a href="http://golang.org/pkg/net/http/#ListenAndServe">ListenAndServe</a> as the handler instead.</p>
+
+<p>When a request gets matched, Pat adds any named parameters to the URL <a href="http://golang.org/pkg/net/url/#URL">RawQuery</a>. In the <code>profile</code> function we then access these in the same way as a normal query string value.</p>
+
+<p>Go ahead and run the application:</p>
+
+<figure class="shell"><code><pre>
+$ go run app
+<samp>Listening...</samp>
+</pre></code></figure>
+
+<p>And visit <a href="http://localhost:3000/user/oomi/profile">localhost:3000/user/oomi/profile</a> in your browser. You should see a <code>Hello oomi</code> response.</p>
+
+
+<p>Pat also provides a couple of other nice touches, including redirecting paths with trailing slashes. Here's the <a href="http://godoc.org/github.com/bmizerany/pat">full documentation</a>.</p>
+
+<h2>Routes</h2>
+
+<p><a href="https://github.com/drone/routes">Routes</a> by Drone provides a similar  interface to Pat, with the additional benefit that patterns can be more tightly controlled with optional Regular Expressions. For example, the two patterns below are both valid, with the second one matching if the name parameter contains lowercase letters only:</p>
+
+<ul>
+  <li><code>/user/:name/profile</code></li>
+  <li><code>/user/:name([a-z]+)/profile</code></li>
+</ul>
+
+<p>Routes also provides a few other nice features, including:</p>
+
+<ul>
+  <li>Built-in routing for a static files.</li>
+  <li>A before filter, so specific code can be run before each request is handled.</li>
+  <li>Helpers for returning JSON and XML responses.</li>
+</ul>
+
+<p>Basic usage of Routes is almost identical to Pat:</p>
+
+<figure class="shell"><code><pre>
+$ mkdir routes-example && cd routes-example
+$ touch app.go
+$ go get github.com/drone/routes
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+package main
+
+import (
+  "github.com/drone/routes"
+  "log"
+  "net/http"
+)
+
+func main() {
+  mux := routes.New()
+  mux.Get("/user/:name([a-z]+)/profile", profile)
+
+  http.Handle("/", mux)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+func profile(w http.ResponseWriter, r *http.Request) {
+  params := r.URL.Query()
+  name := params.Get(":name")
+  w.Write([]byte("Hello " + name))
+}
+</pre></code></figure>
+
+<h2>Gorilla Mux</h2>
+
+<p><a href="http://www.gorillatoolkit.org/pkg/mux">Gorilla Mux</a> is the most full-featured of the three packages. It supports:</p>
+
+<ul>
+  <li>Pattern matching on request paths, with optional regular expressions.</li>
+  <li>Matching on URL host and scheme, request method, header and query values.</li>
+  <li>Matching based on custom functions.</li>
+  <li>Use of sub-routers for easy nested routing.</li>
+</ul>
+
+<p>Additionally the matchers can be chained together, giving a lot of potential for granular routing rules if you need them.</p>
+
+<p>The pattern syntax that Gorilla uses is slightly different to the other packages, with named parameters surrounded by curly braces. For example: <code>/user/{name}/profile</code> and <code>/user/{name:[a-z]+}/profile</code>.</p>
+
+<p>Let's take a look at an example:</p>
+
+<figure class="shell"><code><pre>
+$ mkdir gorilla-example && cd gorilla-example
+$ touch app.go
+$ go get github.com/gorilla/mux
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+package main
+
+import (
+  "github.com/gorilla/mux"
+  "log"
+  "net/http"
+)
+
+func main() {
+  rtr := mux.NewRouter()
+  rtr.HandleFunc("/user/{name:[a-z]+}/profile", profile).Methods("GET")
+
+  http.Handle("/", rtr)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+func profile(w http.ResponseWriter, r *http.Request) {
+  params := mux.Vars(r)
+  name := params["name"]
+  w.Write([]byte("Hello " + name))
+}
+</pre></code></figure>
+
+<p>Fundamentally there's the same thing going on here as in the previous two examples. So although the syntax looks a bit different I won't dwell on it &ndash; the Gorilla <a href="http://www.gorillatoolkit.org/pkg/mux">documentation</a> does a fine job of explaining it if it's not immediately clear.</p>
+
+<h2 id="benchmarks">Relative Performance</h2>
+
+<p>I ran two different sets of benchmarks on the packages. The first was a stripped-down benchmark to look at their performance in isolation, and the second was an attempt at profiling a more real-world use case.</p>
+
+<p>In both tests I measured the number of successful requests across a ten second period, and took the average over 50 iterations, all running on my local machine.</p>
+
+<p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the <a href="https://gist.github.com/alexedwards/6404944">code samples</a> and results:</p>
+
+<figure class="chart">
+  <img src="/static/images/muxer-performance-comparison.png" alt="">
+</figure>
+
+<p>In this test the best performing package appeared to be Pat by a large margin. It handled around 30% more requests than Routes and Gorilla Mux, which were very evenly matched.</p>
+
+<p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the <a href="https://gist.github.com/alexedwards/6414164">code samples</a> and results:</p>
+
+<figure class="chart">
+  <img src="/static/images/muxer-performance-comparison-2.png" alt="">
+</figure>
+
+
+<p>In this benchmark the performance difference between the three packages was negligible.</p>
+
+<p>Although it's always dangerous to draw conclusions from just one set of tests, it does point toward the overall performance impact of a router being much smaller for higher-latency applications, such as those with a lot of file system or database access in the handlers.</p>
+
+<h2>Summary</h2>
+
+<p>Pat would appear to be a good choice for scenarios where performance is important, you have a low-latency application, and only require simple pattern-based routing.</p>
+
+<p>If you're likely to be validating a lot of parameter input with regular expressions in your application, then it probably makes sense to skip Pat and use Routes or Gorilla Mux instead, with the expressions built into your routing patterns.</p>
+
+<p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

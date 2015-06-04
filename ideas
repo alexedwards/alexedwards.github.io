@@ -1,0 +1,65 @@
+- Serving Static Sites in Go
+- Gorilla vs Pat vs Regex: A router showdown
+- A Recap of Request Handling in Go
+- Shotgun
+- Laymans guide to race conditions => Understanding Mutexes
+- JSON responses => Response Snippets
+- Form Validation in Go
+
+-> Middleware (tutorial post) Before filters / Chaining handlers / Middleware
+-> Gzip (post and repository)
+-> Middleware list (post and repository)
+-> PostgreSQL (tutorial post)
+-> Restful applications / controllers / custom routing (explain /user/f doesn't match /user/foo but /user/ does)
+
+* Redis
+* MongoDB
+* Cookies / Flash
+
+* Passing context in different ways
+* Testing web applications
+* Supercharging Go's FileServer (incl. neuteredDir, caching, pre-emptive map?) http://edgeguides.rubyonrails.org/asset_pipeline.html
+* MVC pattern / application structure
+* Buffered outputs: https://github.com/goods/httpbuf/blob/master/httpbuf.go
+* Ajax content loading with Go, jQuery and HTML5 Pushstate (see https://gist.github.com/alexedwards/4619259)
+* URL shortner [video]
+* Wrapping your head around Go Templates
+* Optimising sites - Gzip, caching, etc
+* Resourses for learning Go - gobyexample, karl seguin, effective go, installing go, setting up workspace.
+* Building a Blog in Go - with BlackFriday
+* File uploads
+* Revel review
+* Head requests http://golang.org/src/pkg/net/http/server.go?h=HEAD
+* HTTPS / securing applications
+* Rate limiting https://code.google.com/p/go-wiki/wiki/RateLimiting
+* Go's HTTP package: The unsexy bits
+* Websockets/Streaming application
+* Running Nginx and Go - FCGI
+* Using with Nginx and Apache
+* Multiplayer game: See http://robbaines.blogspot.co.uk/2013/08/go-man-api-learning-go-by-writing.html?m=1
+* godoc - command line, package documentation creation, http://golang.org/doc/articles/godoc_documenting_go_code.html
+    $ godoc sync Mutex
+    $ godoc -http=:9000
+    $ godoc -src sync Mutex
+* pdf creation
+* RSS feeds
+
+Some useful links:
+<ul>
+  <li><a href="http://morsmachine.dk/go-scheduler">The Go scheduler</a></li>
+  <li><a href="http://talks.golang.org/2012/concurrency.slide">Go Concurrency Patterns</a></li>
+  <li><a href="http://vimeo.com/49718712">Concurrency Is Not Parallelism</a> [video]</li>
+  - http://golang.org/doc/articles/race_detector.html#Typical_Data_Races
+- http://golang.org/ref/mem
+
+http://talks.golang.org/2012/concurrency.slide
+</ul>
+
+process
+-------
+
+1. do in real life
+2. add code
+3. speak parts
+4. edit - shortern sentences. cut cruft. don't be afraid to order the reader. spellcheck.
+5. publicise

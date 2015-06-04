@@ -1,0 +1,172 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Context-Aware Handler Chains in Go (using Stack)</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Context-Aware Handler Chains in Go <br>(using Stack)</h1> <span>3rd December 2014</span></header>
+
+<p>I've written a package for chaining context-aware handlers in Go, called Stack (<a href="https://github.com/alexedwards/stack">view it on Github</a>). It was heavily inspired by <a href="https://github.com/justinas/alice">Alice</a>.</p>
+
+<h2>What do you mean by 'context-aware'?</h2>
+
+<p>If you're using a <a href="/blog/making-and-using-middleware">middleware pattern</a> to process HTTP requests in Go, you may want to share some data or <em>context</em> between middleware handlers and your application handlers. For example you might want to:</p>
+
+<ul>
+<li>Use some middleware to create a CRSF token, and later render the token to a template in your application handler. Or perhaps...</li>
+<li><em>Authenticate</em> a user in one middleware handler, and then pass the user details to a second middleware handler which checks if the user is <em>authorised</em> to access the resource.</li>
+</ul>
+
+<p>There are a few packages that can help with this. Matt Silverlock has written a good article about some of the different approaches and tools &ndash; I won't rehash it here, instead I recommend <a href="http://elithrar.github.io/article/map-string-interface/">giving it a read</a>.</p>
+
+<h2>Why make another package?</h2>
+
+<p>Because none of the existing tools seemed ideal &ndash; at least to me. <a href="http://www.gorillatoolkit.org/pkg/context">Gorilla Context</a> is simple and very flexible, but relies on a global context map and you remembering to clear the context after each request. (It's still my favourite though). <a href="https://goji.io/">Goji</a> provides request-scoped context, which is good, but it's part of a larger package and ties you into using the Goji router. The same is true of <a href="https://github.com/gocraft/web">Gocraft/web</a>, which also relies on reflection tricks under the hood that I struggle to wrap my head around.</p>
+
+<p>I realised that the only time you need to worry about context is when you're chaining handlers together. So I looked at my favorite tool for chaining handlers, Alice, and began adapting that to create Stack.</p>
+
+<p>I wanted the package to:</p>
+
+<ul>
+  <li>Do a simple job, and then get out of the way.</li>
+  <li>Provide a <strong>request-scoped context</strong> map.</li>
+  <li>Let you create <strong>stackable, reusable, handler chains</strong> in the Alice style.</li>
+  <li>Be as <strong>type-safe</strong> at compile time as it possibly could be.</li>
+  <li>Be <strong>simple to understand and non-magic</strong>.</li>
+  <li>Operate nicely with existing standards. In particular:</li>
+    <ul>
+      <li>The handler chain must <strong>satisfy the <code>http.Handler</code> interface</strong>, so it can be used with the <code>http.DefaultServeMux</code>.</li>
+      <li>It should be <strong>compatible with the <code>func(http.Handler) http.Handler</code> pattern</strong> commonly used by third-party middleware packages.</li>
+    </ul>
+</ul>
+
+<p>The <a href="https://github.com/alexedwards/stack/blob/master/README.md">full documentation for Stack is here</a>, but here's a quick example of how to use it:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+    "fmt"
+    "github.com/alexedwards/stack"
+    "github.com/goji/httpauth"
+    "net/http"
+)
+
+func main() {
+    // Setup goji/httpauth, some third-party middleware
+    authenticate := stack.Middleware(httpauth.SimpleBasicAuth("user", "pass"))
+
+    // Create a handler chain and register it with the DefaultServeMux
+    http.Handle("/", stack.New(authenticate, tokenMiddleware).Then(tokenHandler))
+    http.ListenAndServe(":3000", nil)
+}
+
+func tokenMiddleware(ctx stack.Context, next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Add a value to Context with the key 'token'
+        ctx["token"] = "c9e452805dee5044ba520198628abcaa"
+        next.ServeHTTP(w, r)
+    })
+}
+
+func tokenHandler(ctx stack.Context) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Retrieve the token from Context and print it
+        fmt.Fprintf(w, "Token is: %s", ctx["token"])
+    })
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i user:pass@localhost:3000
+<samp>HTTP/1.1 200 OK
+Content-Length: 41
+Content-Type: text/plain; charset=utf-8
+
+Token is: c9e452805dee5044ba520198628abcaa</samp>
+$ curl -i user:wrongpass@localhost:3000
+<samp>HTTP/1.1 401 Unauthorized
+Content-Length: 13
+Content-Type: text/plain; charset=utf-8
+Www-Authenticate: Basic realm="Restricted"
+
+Unauthorized</samp>
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

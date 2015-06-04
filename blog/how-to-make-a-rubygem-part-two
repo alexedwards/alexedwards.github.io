@@ -1,0 +1,261 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Testing and Documenting a Rubygem</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Testing and Documenting a Rubygem</h1> <span>13th May 2013</span> </header>
+
+<p>In this post we&#39;re going to continue working on the gem we made in the <a href="/blog/how-to-make-a-rubygem">previous tutorial</a>, getting it ready for publication by adding tests with RSpec and documenting it using YARD.</p>
+<h2>Setting up RSpec</h2>
+
+<p>Before you make any gem public it&#39;s good practice to add a suite of tests &ndash; especially if you expect other people to be working on it and contributing back to your codebase.</p>
+
+<p>There are a few different testing tools available for Ruby, but in this tutorial we&#39;re going to be using <a href="http://rspec.info/">RSpec</a>. If you&#39;re following along, install the gem with the following command:</p>
+
+<figure class="shell"><code><pre>
+$ sudo gem install rspec
+</pre></code></figure>
+
+<p>As well as installing the RSpec gem on your local machine, we need to add it as a dependancy in our <code>listless.gemspec</code> file. Anyone who forks our gem should be running tests in a development environment (rather than production), so it makes sense to use the <code>gem.add_development_dependency</code> method here.</p>
+
+<figure class="file"><figcaption>File: listless.gemspec</figcaption><code><pre class="highlight ruby">
+<span class="no">Gem</span><span class="o">::</span><span class="no">Specification</span><span class="nf">.new</span> <span class="k">do</span> <span class="o">|</span><span class="n">gem</span><span class="o">|</span>
+  <span class="nf">..</span><span class="o">.</span>
+  <span class="n">gem</span><span class="nf">.add_dependency</span> <span class="s2">&quot;htmlentities&quot;</span>
+  <span class="n">gem</span><span class="nf">.add_development_dependency</span> <span class="s2">&quot;rspec&quot;</span>
+<span class="k">end</span>
+</pre></code></figure>
+
+<h2>Adding Tests</h2>
+
+<p>Learning the RSpec syntax is a whole tutorial in itself, so if you&#39;re not familiar with it I recommend browsing the introductions from <a href="http://blog.davidchelimsky.net/2007/05/14/an-introduction-to-rspec-part-i/">David Chelimsky</a> and <a href="http://blog.teamtreehouse.com/an-introduction-to-rspec">Treehouse</a> before reading on.</p>
+
+<p>A common convention when using RSpec is to keep all your tests scripts contained in a directory named <code>spec</code>. We should also make sure that all the names of our test scripts end in <code>_spec.rb</code>, so that the RSpec executable knows that they contain tests that need to be run. Let&#39;s create the directory and a single file for holding our tests.</p>
+
+<figure class="shell"><code><pre>
+$ mkdir spec
+$ touch spec/listless_spec.rb
+</pre></code></figure>
+
+<p>Great stuff. We&#39;ll now open the empty <code>listless_spec.rb</code> file and add a couple of simple behavioral tests &ndash; one that checks the gem is transforming an Array into an HTML list, and another which checks that characters are being HTML encoded properly.</p>
+
+<figure class="file"><figcaption>File: spec/listless_spec.rb</figcaption><code><pre class="highlight ruby"><span class="c1"># -*- encoding: utf-8 -*-</span>
+<span class="n">require_relative</span> <span class="s1">'../lib/listless'</span>
+
+<span class="n">describe</span> <span class="no">Listless</span> <span class="k">do</span>
+  <span class="n">describe</span> <span class="s2">&quot;#ul&quot;</span> <span class="k">do</span>
+
+    <span class="n">it</span> <span class="s2">&quot;should create an unordered list&quot;</span> <span class="k">do</span>
+      <span class="no">Listless</span><span class="nf">.ul</span><span class="p">(</span><span class="o">[</span><span class="s1">'foo'</span><span class="p">,</span> <span class="s1">'bar'</span><span class="o">]</span><span class="p">)</span><span class="nf">.should</span> <span class="n">eql</span> <span class="s2">&quot;&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;/ul&gt;&quot;</span>
+    <span class="k">end</span>
+
+    <span class="n">it</span> <span class="s2">&quot;should escape appropriate characters&quot;</span> <span class="k">do</span>
+      <span class="no">Listless</span><span class="nf">.ul</span><span class="p">(</span><span class="o">[</span><span class="s1">'&lt;élan&gt;'</span><span class="o">]</span><span class="p">)</span><span class="nf">.should</span> <span class="n">match</span> <span class="sr">%r(&amp;lt;&amp;eacute;lan&amp;gt;)</span>
+    <span class="k">end</span>
+
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></code></figure>
+
+<p>It&#39;s also worth pointing out the <code>require_relative</code> statement at the top of the code, which gives the tests access the main <code>Listless</code> module and allows them to run correctly.</p>
+
+<p>We can execute our tests by running <code>rspec</code> from the terminal, passing in the name of the folder holding our test scripts.</p>
+
+<figure class="shell"><code><pre>
+$ rspec spec
+<samp>..
+Finished in 0.00696 seconds
+2 examples, 0 failures</samp>
+</pre></code></figure>
+
+<p>If the results look good and you get a pair of dots indicating that the two tests have passed, then now is a good time to commit the changes.</p>
+
+<figure class="shell"><code><pre>
+$ git add .
+$ git commit -a -m 'add: behavior tests using rspec'
+</pre></code></figure>
+
+<h2>Complete the README</h2>
+
+<p>When we used Bundler to set up our gem in the previous tutorial, a boilerplate <code>README.md</code> was created. Arguably the most important piece of documentation for a gem, the content of the README acts as the homepage when we generate YARD documentation (in the next section), and is also used by Github and Bitbucket as the default landing page for a repository.</p>
+
+<p>Let&#39;s complete this by filling in the description and usage sections, using <a href="http://daringfireball.net/projects/markdown/syntax">Markdown</a> for formatting.</p>
+
+<figure class="file"><figcaption>File: README.md</figcaption><code><pre class="highlight markdown">
+<span class="gu">## Listless</span>
+
+Listless is an example gem created for a series of blog posts about <span class="p">[</span><span class="nv">how to make a rubygem</span><span class="p">](</span><span class="sx">http://www.alexedwards.net/blog/how-to-make-a-rubygem</span><span class="p">)</span>, and not intended for production use.
+
+It provides a helper method to convert a Ruby Array into a HMTL unordered list.
+
+…
+
+<span class="gu">## Usage</span>
+
+Require the Gem:<span class="sb">
+
+    require 'listless'
+
+</span><span class="gu">### Creating unordered lists</span>
+
+You can create an unordered list from an Array using the <span class="sb">`ul`</span> method. For example:<span class="sb">
+
+    Listless.ul ['foo', 'bar']
+    #=&gt; &quot;&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;/ul&gt;&quot;
+
+</span></pre></code></figure>
+
+<p>Again, let&#39;s commit the changes.</p>
+
+<figure class="shell"><code><pre>
+$ git commit -a -m 'add: description and usage instructions'
+</pre></code></figure>
+
+<h2>Adding Documentation</h2>
+
+<p>Finally we&#39;re going to add some documentation using YARD. Unlike RDoc (another common documentation tool) YARD ships as a standalone gem which we&#39;ll first need to install.</p>
+
+<figure class="shell"><code><pre>
+$ sudo gem install yard
+</pre></code></figure>
+
+<p>Documenting the gem is straightforward &ndash; you simply add a comment block before each method describing what it does. Although there&#39;s no set list of things a comment should include, it&#39;s generally a good idea to describe the arguments a method takes, its return values and any exceptions. Providing an example can also be useful.</p>
+
+<p>To do this in a machine-readable way, YARD provides a number of tags to help markup your comment, like <code>@params</code>, <code>@return</code>, <code>@raise</code> and <code>@example</code>.</p>
+
+<p>The official YARD <a href="http://rubydoc.info/docs/yard/file/docs/GettingStarted.md">Getting Started Guide</a> is great, short read, and you can find a complete list of tags <a href="http://rubydoc.info/docs/yard/file/docs/Tags.md">here</a>.</p>
+
+<p>Let&#39;s go ahead and document our lone public method.</p>
+
+<figure class="file"><figcaption>File: lib/listless.rb</figcaption><code><pre class="highlight ruby">
+<span class="nb">require</span> <span class="s2">&quot;listless/version&quot;</span>
+<span class="nb">require</span> <span class="s2">&quot;htmlentities&quot;</span>
+
+<span class="k">module</span> <span class="nn">Listless</span>
+  <span class="kp">extend</span> <span class="nb">self</span>
+
+  <span class="c1"># Create a HTML unordered list from an array</span>
+  <span class="c1">#</span>
+  <span class="c1"># @param array [Array]</span>
+  <span class="c1"># @return [String]</span>
+  <span class="c1">#</span>
+  <span class="c1"># @example</span>
+  <span class="c1">#   Listless.ul ['foo', 'bar'] #=&gt; &quot;&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;/ul&gt;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">ul</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+    <span class="n">list</span> <span class="o">=</span> <span class="n">array</span><span class="nf">.map</span> <span class="p">{</span> <span class="o">|</span><span class="n">x</span><span class="o">|</span> <span class="n">tag</span><span class="p">(</span><span class="ss">:li</span><span class="p">,</span> <span class="n">escape</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="p">}</span><span class="nf">.join</span>
+    <span class="n">tag</span><span class="p">(</span><span class="ss">:ul</span><span class="p">,</span> <span class="n">list</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="err">…</span>
+
+<span class="k">end</span>
+</pre></code></figure>
+
+<p>And that&#39;s all there is too it, nice and easy. Now that we&#39;ve added the YARD comments, we can automatically generate some nice HTML documentation for publication on the web. Run the following command in your gem directory.</p>
+
+<figure class="shell"><code><pre>
+$ yard doc
+</pre></code></figure>
+
+<p>You should see a directory called <code>doc</code> being generated in the root folder of our gem. Open up <code>doc\index.html</code> in your browser and take a look around &ndash; don&#39;t miss the <code>Method List</code> link in the top right to see how the comment we just added is being rendered. Pretty neat, hey?</p>
+
+<p><img src='/static/images/yard-documentation.png'></p>
+
+<p>As a side note, because this HTML documentation is automatically generated based on other files in our gem, it doesn&#39;t make sense to include it in version control. Open up the hidden <code>.gitignore</code> file in the gem directory and check that it includes a <code>doc/</code> line, instructing Git to ignore the contents.</p>
+
+<p>Let&#39;s commit our changes.</p>
+
+<figure class="shell"><code><pre>
+$ git commit -a -m 'add: YARD documentation for public methods'
+</pre></code></figure>
+
+<p>As a second side note, if you rebuild and reinstall the gem on your local machine, you can also view the documentation from the terminal using the <code>ri</code> command.</p>
+
+<figure class="shell"><code><pre>
+$ gem build listless.gemspec
+$ sudo gem install --local listless-0.0.1.gem
+$ ri Listless.ul
+</pre></code></figure>
+
+<h2>Wrapup</h2>
+
+<p>Our simple gem is now tested, documented, and ready to share with the outside world. In the <a href="/blog/how-to-make-a-rubygem-part-three">final tutorial</a> we&#39;ll look at how to publish our gem on <a href="https://rubygems.org/">Rubygems.org</a>, handle changes and versioning of our gem in a sensible way, and also add an executable so we can use our gem on the command line, outside of IRB.</p>
+
+<p>You can find the full source code for this gem on <a href="https://github.com/alexedwards/listless">Github</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/ruby">ruby</a>, <a href="/blog/category/tutorial">tutorial</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

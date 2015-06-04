@@ -1,0 +1,233 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>How to make a Rubygem</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header> <h1>How to make a Rubygem</h1> <span>12th May 2013</span> </header>
+
+<p>This is the first of 3 tutorials about how to develop a Rubygem, from getting set up through to publication. In this post we&#39;ll cover the basics steps of building a gem and using it on your local machine.</p>
+<p>Getting started is simple thanks to the tools baked into <a href="http://gembundler.com/">Bundler</a> and Git, both of which you&#39;ll need to install if you&#39;re following along.</p>
+
+<figure class="shell"><code><pre>
+$ sudo apt-get install git
+$ sudo gem install bundler
+</pre></code></figure>
+
+<p>Alright, let&#39;s get cracking. For this tutorial we&#39;re going to create a simple gem called <code>listless</code>, which takes a Ruby Array and coverts it into a HTML unordered list. Bundler ships with a handy utility for setting up new gems, which we&#39;ll take advantage of to generate the boilerplate files and structure we need. Run the command:</p>
+
+<figure class="shell"><code><pre>
+$ bundle gem listless
+</pre></code></figure>
+
+<p>You should see a new directory appear containing the following files:</p>
+
+<figure class="shell"><code><pre>
+$ tree listless
+<samp>listless
+├── Gemfile
+├── lib
+│   ├── listless
+│   │   └── version.rb
+│   └── listless.rb
+├── LICENSE.txt
+├── listless.gemspec
+├── Rakefile
+└── README.md</samp>
+</pre></code></figure>
+
+<p>For now, the most important parts are the <code>lib</code> directory (which will contain our code), and the <code>listless.gemspec</code> file (which defines the metadata for our gem).</p>
+
+<h2>Adding the code</h2>
+
+<p>By convention a Rubygem should always have a file in the <code>lib</code> directory with the <em>same name</em> as the gem &ndash; it&#39;s this file that gets automatically loaded whenever someone requires the gem in their code.</p>
+
+<p>In our case Bundler has already created the template <code>lib/listless.rb</code> file for us, which we&#39;ll now edit to include our logic.</p>
+
+<p>We&#39;ll keep the code nice and simple for now &ndash; essentially all we want to do is run a command like <code>Listless.ul[&#39;foo&#39;, &#39;bar&#39;]</code> and receive the unordered list <code>&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;/ul&gt;</code> in return. We&#39;ll also use the external <a href="http://htmlentities.rubyforge.org/">HTMLEntities</a> gem to make sure any content gets encoded properly.</p>
+
+
+<figure class="file"><figcaption>File: lib/listless.rb</figcaption><code><pre class="highlight ruby">
+<span class="nb">require</span> <span class="s2">&quot;listless/version&quot;</span>
+<span class="nb">require</span> <span class="s2">&quot;htmlentities&quot;</span>
+
+<span class="k">module</span> <span class="nn">Listless</span>
+  <span class="kp">extend</span> <span class="nb">self</span>
+
+  <span class="k">def</span> <span class="nf">ul</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+    <span class="n">list</span> <span class="o">=</span> <span class="n">array</span><span class="nf">.map</span> <span class="p">{</span> <span class="o">|</span><span class="n">x</span><span class="o">|</span> <span class="n">tag</span><span class="p">(</span><span class="ss">:li</span><span class="p">,</span> <span class="n">escape</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="p">}</span><span class="nf">.join</span>
+    <span class="n">tag</span><span class="p">(</span><span class="ss">:ul</span><span class="p">,</span> <span class="n">list</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="kp">private</span>
+
+  <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+    <span class="s2">&quot;&lt;</span><span class="si">#{</span> <span class="n">element</span> <span class="si">}</span><span class="s2">&gt;</span><span class="si">#{</span> <span class="n">string</span> <span class="si">}</span><span class="s2">&lt;/</span><span class="si">#{</span> <span class="n">element</span> <span class="si">}</span><span class="s2">&gt;&quot;</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">escape</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">entities</span> <span class="o">=</span> <span class="ss">:named</span><span class="p">)</span>
+    <span class="n">coder</span> <span class="o">=</span> <span class="no">HTMLEntities</span><span class="nf">.new</span>
+    <span class="n">coder</span><span class="nf">.encode</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">entities</span><span class="p">)</span>
+  <span class="k">end</span>
+
+<span class="k">end</span>
+</pre></code></figure>
+
+<h2>Completing the Gemspec</h2>
+
+<p>Every Rubygem should include a <a href="http://docs.rubygems.org/read/chapter/20">Gemspec</a> file, containing essential metadata like the version number, documentation links, and the gem&#39;s external dependencies. We rely on this when packaging our project into an actual <code>.gem</code> file in the next section, and it also provides important information to <a href="https://Rubygems.org">Rubygems.org</a> and other users when we publish it later.</p>
+
+<p>Again, Bundler has taken care of creating the <code>listless.gemspec</code> template for us and pre-filled most of the information. Let&#39;s finish it off by completing the description, summary and homepage fields, and add the HTMLEntities gem as a dependency at the bottom of the block.</p>
+
+
+<figure class="file"><figcaption>File: listless.gemspec</figcaption><code><pre class="highlight ruby">
+<span class="c1"># -*- encoding: utf-8 -*-</span>
+<span class="n">lib</span> <span class="o">=</span> <span class="no">File</span><span class="nf">.expand_path</span><span class="p">(</span><span class="s1">'../lib'</span><span class="p">,</span> <span class="kp">__FILE__</span><span class="p">)</span>
+<span class="vg">$LOAD_PATH</span><span class="nf">.unshift</span><span class="p">(</span><span class="n">lib</span><span class="p">)</span> <span class="k">unless</span> <span class="vg">$LOAD_PATH</span><span class="nf">.include?</span><span class="p">(</span><span class="n">lib</span><span class="p">)</span>
+<span class="nb">require</span> <span class="s1">'listless/version'</span>
+
+<span class="no">Gem</span><span class="o">::</span><span class="no">Specification</span><span class="nf">.new</span> <span class="k">do</span> <span class="o">|</span><span class="n">gem</span><span class="o">|</span>
+  <span class="n">gem</span><span class="nf">.name</span>          <span class="o">=</span> <span class="s2">&quot;listless&quot;</span>
+  <span class="n">gem</span><span class="nf">.version</span>       <span class="o">=</span> <span class="no">Listless</span><span class="o">::</span><span class="no">VERSION</span>
+  <span class="n">gem</span><span class="nf">.authors</span>       <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;Alex Edwards&quot;</span><span class="o">]</span>
+  <span class="n">gem</span><span class="nf">.email</span>         <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;ajmedwards@gmail.com&quot;</span><span class="o">]</span>
+  <span class="n">gem</span><span class="nf">.description</span>   <span class="o">=</span> <span class="sx">%q{A gem for converting Ruby Arrays to HTML unordered lists}</span>
+  <span class="n">gem</span><span class="nf">.summary</span>       <span class="o">=</span> <span class="sx">%q{Convert Arrays to HTML lists}</span>
+  <span class="n">gem</span><span class="nf">.homepage</span>      <span class="o">=</span> <span class="s2">&quot;https://github.com/alexedwards/listless&quot;</span>
+
+  <span class="n">gem</span><span class="nf">.files</span>         <span class="o">=</span> <span class="sb">`git ls-files`</span><span class="nf">.split</span><span class="p">(</span><span class="vg">$/</span><span class="p">)</span>
+  <span class="n">gem</span><span class="nf">.executables</span>   <span class="o">=</span> <span class="n">gem</span><span class="nf">.files.grep</span><span class="p">(</span><span class="sr">%r{^bin/}</span><span class="p">)</span><span class="nf">.map</span><span class="p">{</span> <span class="o">|</span><span class="n">f</span><span class="o">|</span> <span class="no">File</span><span class="nf">.basename</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="p">}</span>
+  <span class="n">gem</span><span class="nf">.test_files</span>    <span class="o">=</span> <span class="n">gem</span><span class="nf">.files.grep</span><span class="p">(</span><span class="sr">%r{^(test|spec|features)/}</span><span class="p">)</span>
+  <span class="n">gem</span><span class="nf">.require_paths</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;lib&quot;</span><span class="o">]</span>
+
+  <span class="n">gem</span><span class="nf">.add_dependency</span> <span class="s2">&quot;htmlentities&quot;</span>
+<span class="k">end</span>
+</pre></code></figure>
+
+<h2>Building the Gem</h2>
+
+<p>By now you&#39;ve probably noticed that a Git repository was initialised for us when we setup our gem, and the Gemspec file leverages this to avoid manually listing out all the different files our gem contains.</p>
+
+<p>So before we build our gem, we first need to make sure that all our files and changes have been committed into Git.</p>
+
+<figure class="shell"><code><pre>
+$ git add .
+$ git commit -m 'initial commit'
+</pre></code></figure>
+
+<p>Now we&#39;re ready to build the actual gem package.</p>
+
+<figure class="shell"><code><pre>
+$ gem build listless.gemspec
+</pre></code></figure>
+
+<p>If the build completes successfully you should see a <code>listless-0.0.1.gem</code> package appear in your directory.</p>
+
+<h2>Using it locally</h2>
+
+<p>There are two main options for using a gem locally. The first is to simply install it alongside all the other gems on your local machine.</p>
+
+<figure class="shell"><code><pre>
+$ sudo gem install --local /path/to/listless-0.0.1.gem
+</pre></code></figure>
+
+<p>Let&#39;s do that, then give it a quick check at the IRB prompt to make sure everything works as expected.</p>
+
+<figure class="shell"><code><pre>
+$ irb
+$ irb(main):0001:0&gt; require 'listless'
+<samp>=&gt; true</samp>
+$ irb(main):002:0&gt; Listless.ul ['foo', 'bar', 'báz']
+<samp>=&gt; &quot;&lt;ul&gt;&lt;li&gt;foo&lt;/li&gt;&lt;li&gt;bar&lt;/li&gt;&lt;li&gt;b&amp;aacute;z&lt;/li&gt;&lt;/ul&gt;&quot;</samp>
+</pre></code></figure>
+
+<p>Alternatively, if you want to use the gem in another project, you can reference the gem directly in the project&#39;s Gemfile instead using the <code>:path</code> option  For example:</p>
+
+
+<figure class="file"><figcaption>File: Gemfile</figcaption><code><pre class="highlight ruby">
+<span class="n">source</span> <span class="s1">'http://rubygems.org'</span>
+
+<span class="n">gem</span> <span class="s1">'sinatra'</span>
+<span class="n">gem</span> <span class="s1">'listless'</span><span class="p">,</span> <span class="ss">:path</span> <span class="o">=&gt;</span> <span class="s1">'/path/to/listless'</span>
+</pre></code></figure>
+
+<h2>Wrapup</h2>
+
+<p>Hopefully this tutorial has de-mystified the basic process behind building a gem, and given you an understanding of the main components. In the <a href="/blog/how-to-make-a-rubygem-part-two">next post</a> we&#39;ll get our gem ready for publication, adding tests using RSpec and documenting it with YARD.</p>
+
+<p>You can find the full source code for this gem on <a href="https://github.com/alexedwards/listless">Github</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/ruby">ruby</a>, <a href="/blog/category/tutorial">tutorial</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

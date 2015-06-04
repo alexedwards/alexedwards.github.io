@@ -1,0 +1,2320 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>Alex Edwards</title>
+  <link>http://www.alexedwards.net/blog</link>
+  <language>en-gb</language>
+  <lastBuildDate>Wed, 03 Dec 2014 22:00:00 GMT</lastBuildDate>
+  <item>
+    <pubDate>Wed, 03 Dec 2014 22:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/handler-chains-using-stack</link>
+    <guid>http://www.alexedwards.net/blog/handler-chains-using-stack</guid>
+    <title>Context-Aware Handler Chains in Go (using Stack)</title>
+    <description><![CDATA[
+    <p>I've written a package for chaining context-aware handlers in Go, called <a href="https://github.com/alexedwards/stack">Stack</a>. It was heavily inspired by <a href="https://github.com/justinas/alice">Alice</a>.</p>
+
+    <h2>What do you mean by 'context-aware'?</h2>
+
+    <p>If you're using a <a href="/blog/making-and-using-middleware">middleware pattern</a> to process HTTP requests in Go, you may want to share some data or <em>context</em> between middleware handlers and your application handlers. For example you might want to:</p>
+
+    <ul>
+    <li>Use some middleware to create a CRSF token, and later render the token to a template in your application handler. Or perhaps...</li>
+    <li><em>Authenticate</em> a user in one middleware handler, and then pass the user details to a second middleware handler which checks if the user is <em>authorised</em> to access the resource.</li>
+    </ul>
+
+    <p>There are a few packages that can help with this. Matt Silverlock has written a good article about some of the different approaches and tools &ndash; I won't rehash it here, instead I recommend <a href="http://elithrar.github.io/article/map-string-interface/">giving it a read</a>.</p>
+
+    <h2>Why make another package?</h2>
+
+    <p>Because none of the existing tools seemed ideal &ndash; at least to me. <a href="http://www.gorillatoolkit.org/pkg/context">Gorilla Context</a> is simple and very flexible, but relies on a global context map and you remembering to clear the context after each request. (It's still my favourite though). <a href="https://goji.io/">Goji</a> provides request-scoped context, which is good, but it's part of a larger package and ties you into using the Goji router. The same is true of <a href="https://github.com/gocraft/web">Gocraft/web</a>, which also relies on reflection tricks under the hood that I struggle to wrap my head around.</p>
+
+    <p>I realised that the only time you need to worry about context is when you're chaining handlers together. So I looked at my favorite tool for chaining handlers, Alice, and began adapting that to create Stack.</p>
+
+    <p>I wanted the package to:</p>
+
+    <ul>
+      <li>Do a simple job, and then get out of the way.</li>
+      <li>Provide a <strong>request-scoped context</strong> map.</li>
+      <li>Let you create <strong>stackable, reusable, handler chains</strong> in the Alice style.</li>
+      <li>Be as <strong>type-safe</strong> at compile time as it possibly could be.</li>
+      <li>Be <strong>simple to understand and non-magic</strong>.</li>
+      <li>Operate nicely with existing standards. In particular:</li>
+        <ul>
+          <li>The handler chain must <strong>satisfy the <code>http.Handler</code> interface</strong>, so it can be used with the <code>http.DefaultServeMux</code>.</li>
+          <li>It should be <strong>compatible with the <code>func(http.Handler) http.Handler</code> pattern</strong> commonly used by third-party middleware packages.</li>
+        </ul>
+    </ul>
+
+    <p>The <a href="https://github.com/alexedwards/stack/blob/master/README.md">full documentation for Stack is here</a>, but here's a quick example of how to use it:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+        "fmt"
+        "github.com/alexedwards/stack"
+        "github.com/goji/httpauth"
+        "net/http"
+    )
+
+    func main() {
+        // Setup goji/httpauth, some third-party middleware
+        authenticate := stack.Middleware(httpauth.SimpleBasicAuth("user", "pass"))
+
+        // Create a handler chain and register it with the DefaultServeMux
+        http.Handle("/", stack.New(authenticate, tokenMiddleware).Then(tokenHandler))
+        http.ListenAndServe(":3000", nil)
+    }
+
+    func tokenMiddleware(ctx stack.Context, next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            // Add a value to Context with the key 'token'
+            ctx["token"] = "c9e452805dee5044ba520198628abcaa"
+            next.ServeHTTP(w, r)
+        })
+    }
+
+    func tokenHandler(ctx stack.Context) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            // Retrieve the token from Context and print it
+            fmt.Fprintf(w, "Token is: %s", ctx["token"])
+        })
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i user:pass@localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Length: 41
+    Content-Type: text/plain; charset=utf-8
+
+    Token is: c9e452805dee5044ba520198628abcaa</samp>
+    $ curl -i user:wrongpass@localhost:3000
+    <samp>HTTP/1.1 401 Unauthorized
+    Content-Length: 13
+    Content-Type: text/plain; charset=utf-8
+    Www-Authenticate: Basic realm="Restricted"
+
+    Unauthorized</samp>
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Tue, 21 Oct 2014 20:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/making-and-using-middleware</link>
+    <guid>http://www.alexedwards.net/blog/making-and-using-middleware</guid>
+    <title>Making and Using HTTP Middleware</title>
+    <description><![CDATA[
+    <p>When you're building a web application there's probably some shared functionality that you want to run for many (or even all) HTTP requests. You might want to log every request, gzip every response, or check a cache before doing some  heavy processing.</p>
+
+    <p>One way of organising this shared functionality is to set it up as <em>middleware</em> &ndash; self-contained code which independently acts on a request before or after your normal application handlers. In Go a common place to use middleware is between a ServeMux and your application handlers, so that the flow of control for a HTTP request looks like:</p>
+
+    <p><code>ServeMux => Middleware Handler => Application Handler</code></p>
+
+    <p>In this post I'm going to explain how to make custom middleware that works in this pattern, as well as running through some concrete examples of using third-party middleware packages.</p>
+
+    <h2>The Basic Principles</h2>
+
+    <p>Making and using middleware in Go is fundamentally simple. We want to:<p>
+
+    <ul>
+      <li>Implement our middleware so that it satisfies the <a href="http://golang.org/pkg/net/http/#Handler">http.Handler</a> interface.</li>
+      <li>Build up a <em>chain of handlers</em> containing both our middleware handler and our normal application handler, which we can register with a <a href="http://golang.org/pkg/net/http/#ServeMux">http.ServeMux</a>.</li>
+    </ul>
+
+    <p>I'll explain how.</p>
+
+    <p>Hopefully you're already familiar with the following method for constructing a handler (if not, it's probably best to read <a href="http://www.alexedwards.net/blog/a-recap-of-request-handling">this primer</a> before continuing).</p>
+
+    <figure class="plain"><code class="go"><pre>
+    func messageHandler(message string) http.Handler {
+      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte(message)
+      })
+    }
+    </pre></code></figure>
+
+    <p>In this snippet we're placing our handler logic (a simple <code>w.Write</code>) in an anonymous function and closing-over the <code>message</code> variable to form a closure. We're then converting this closure to a handler by using the <a href="http://golang.org/pkg/net/http/#HandlerFunc">http.HandlerFunc</a> adapter and returning it.</p>
+
+    <p>We can use this same approach to create a chain of handlers. Instead of passing a string into the closure (like above) we could pass <em>the next handler in the chain</em> as a variable, and then transfer control to this next handler by calling it's <code>ServeHTTP()</code> method.</p>
+
+    <p>This gives us a complete pattern for constructing middleware:</p>
+
+    <figure class="plain"><code class="go"><pre>
+    func exampleMiddleware(next http.Handler) http.Handler {
+      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Our middleware logic goes here...
+        next.ServeHTTP(w, r)
+      })
+    }
+    </pre></code></figure>
+
+    <p>You'll notice that this middleware function has a <code>func(http.Handler) http.Handler</code> signature. It accepts a handler as a parameter and returns a handler. This is useful for two reasons:</p>
+
+    <ul>
+      <li>Because it returns a handler we can register the middleware function directly with the standard ServeMux provided by the net/http package.</li>
+      <li>We can create an arbitrarily long handler chain by nesting middleware functions inside each other. For example:</li>
+    </ul>
+
+    <p><code>http.Handle("/", middlewareOne(middlewareTwo(finalHandler)))</code></p>
+
+    <h2>Illustrating the Flow of Control</h2>
+
+    <p>Let's look at a stripped-down example with some middleware that simply writes log messages to stdout:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+    )
+
+    func middlewareOne(next http.Handler) http.Handler {
+      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Executing middlewareOne")
+        next.ServeHTTP(w, r)
+        log.Println("Executing middlewareOne again")
+      })
+    }
+
+    func middlewareTwo(next http.Handler) http.Handler {
+      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Executing middlewareTwo")
+        if r.URL.Path != "/" {
+          return
+        }
+        next.ServeHTTP(w, r)
+        log.Println("Executing middlewareTwo again")
+      })
+    }
+
+    func final(w http.ResponseWriter, r *http.Request) {
+      log.Println("Executing finalHandler")
+      w.Write([]byte("OK"))
+    }
+
+    func main() {
+      finalHandler := http.HandlerFunc(final)
+
+      http.Handle("/", middlewareOne(middlewareTwo(finalHandler)))
+      http.ListenAndServe(":3000", nil)
+    }
+    </pre></code></figure>
+
+
+    <p>Run this application and make a request to <a href="http://localhost:3000/">http://localhost:3000</a>. You should get log output similar to this:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run main.go
+    <samp>2014/10/13 20:27:36 Executing middlewareOne
+    2014/10/13 20:27:36 Executing middlewareTwo
+    2014/10/13 20:27:36 Executing finalHandler
+    2014/10/13 20:27:36 Executing middlewareTwo again
+    2014/10/13 20:27:36 Executing middlewareOne again</samp>
+    </pre></code></figure>
+
+    <p>It's clear to see how control is being passed through the handler chain in the order we nested them, and then back up again in the <em>reverse direction</em>.</p>
+
+    <p>We can stop control propagating through the chain at any point by issuing a <code>return</code> from a middleware handler.</p>
+
+    <p>In the example above I've included a conditional return in the <code>middlewareTwo</code> function. Try it by visiting <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> and checking the log again &ndash; you'll see that this time the request gets no further than <code>middlewareTwo</code> before passing back up the chain.</p>
+
+    <h2>Understood. How About a Proper Example?</h2>
+
+    <p>OK, let's say that we're building a service which processes requests containing a XML body. We want to create some middleware which a) checks for the existence of a request body, and b) sniffs the body to make sure it is XML. If either of those checks fail, we want our middleware to write an error message and to stop the request from reaching our application handlers.</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+    package main
+
+    import (
+      "bytes"
+      "net/http"
+    )
+
+    func enforceXMLHandler(next http.Handler) http.Handler {
+      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Check for a request body
+        if r.ContentLength == 0 {
+          http.Error(w, http.StatusText(400), 400)
+          return
+        }
+        // Check its MIME type
+        buf := new(bytes.Buffer)
+        buf.ReadFrom(r.Body)
+        if http.DetectContentType(buf.Bytes()) != "text/xml; charset=utf-8" {
+          http.Error(w, http.StatusText(415), 415)
+          return
+        }
+        next.ServeHTTP(w, r)
+      })
+    }
+
+    func main() {
+      finalHandler := http.HandlerFunc(final)
+
+      http.Handle("/", enforceXMLHandler(finalHandler))
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func final(w http.ResponseWriter, r *http.Request) {
+      w.Write([]byte("OK"))
+    }
+    </pre></code></figure>
+
+    <p>This looks good. Let's test it by creating a simple XML file:</p>
+
+    <figure class="shell"><code><pre>
+    $ cat &gt; books.xml
+    &lt;?xml version="1.0"?&gt;
+    &lt;books&gt;
+      &lt;book&gt;
+        &lt;author&gt;H. G. Wells&lt;/author&gt;
+        &lt;title&gt;The Time Machine&lt;/title&gt;
+        &lt;price&gt;8.50&lt;/price&gt;
+      &lt;/book&gt;
+    &lt;/books&gt;
+    </pre></code></figure>
+
+    <p>And making some requests using cURL:</p>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 400 Bad Request
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 12
+
+    Bad Request</samp>
+    $ curl -i -d "This is not XML" localhost:3000
+    <samp>HTTP/1.1 415 Unsupported Media Type
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 23
+
+    Unsupported Media Type</samp>
+    $ curl -i -d @books.xml localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Date: Fri, 17 Oct 2014 13:42:10 GMT
+    Content-Length: 2
+    Content-Type: text/plain; charset=utf-8
+
+    OK</samp>
+    </pre></code></figure>
+
+    <h2>Using Third-Party Middleware</h2>
+
+    <p>Rather than rolling your own middleware all the time you might want to use a third-party package. We're going to look at a couple here: <a href="http://elithrar.github.io/article/httpauth-basic-auth-for-go/">goji/httpauth</a> and Gorilla's <a href="http://www.gorillatoolkit.org/pkg/handlers#LoggingHandler">LoggingHandler</a>.</p>
+
+    <p>The goji/httpauth package provides HTTP Basic Authentication functionality. It has a <a href="https://godoc.org/github.com/goji/httpauth#SimpleBasicAuth">SimpleBasicAuth</a> helper which returns a function with the signature <code>func(http.Handler) http.Handler</code>. This means we can use it in exactly the same way as our custom-built middleware.</p>
+
+    <figure class="shell"><code><pre>
+    $ go get github.com/goji/httpauth
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+    package main
+
+    import (
+      "github.com/goji/httpauth"
+      "net/http"
+    )
+
+    func main() {
+      finalHandler := http.HandlerFunc(final)
+      authHandler := httpauth.SimpleBasicAuth("username", "password")
+
+      http.Handle("/", authHandler(finalHandler))
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func final(w http.ResponseWriter, r *http.Request) {
+      w.Write([]byte("OK"))
+    }
+    </pre></code></figure>
+
+    <p>If you run this example you should get the responses you'd expect for valid and invalid credentials:</p>
+
+    <figure class="shell"><code><pre>
+    $ curl -i username:password@localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Length: 2
+    Content-Type: text/plain; charset=utf-8
+
+    OK</samp>
+    $ curl -i username:wrongpassword@localhost:3000
+    <samp>HTTP/1.1 401 Unauthorized
+    Content-Type: text/plain; charset=utf-8
+    Www-Authenticate: Basic realm=""Restricted""
+    Content-Length: 13
+
+    Unauthorized</samp>
+    </pre></code></figure>
+
+    <p>Gorilla's LoggingHandler &ndash; which records <a href="http://httpd.apache.org/docs/1.3/logs.html#common">Apache-style logs</a> &ndash; is a bit different.</p>
+
+    <p>It uses the signature <code>func(out io.Writer, h http.Handler) http.Handler</code>, so it takes not only the next handler but also the <a href="http://golang.org/pkg/io/#Writer">io.Writer</a> that the log will be written to.</p>
+
+    <p>Here's a simple example in which we write logs to a <code>server.log</code> file:</p>
+
+    <figure class="shell"><code><pre>
+    go get github.com/gorilla/handlers
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+    package main
+
+    import (
+      "github.com/gorilla/handlers"
+      "net/http"
+      "os"
+    )
+
+    func main() {
+      finalHandler := http.HandlerFunc(final)
+
+      logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+      if err != nil {
+        panic(err)
+      }
+
+      http.Handle("/", handlers.LoggingHandler(logFile, finalHandler))
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func final(w http.ResponseWriter, r *http.Request) {
+      w.Write([]byte("OK"))
+    }
+    </pre></code></figure>
+
+    <p>In a trivial case like this our code is fairly clear. But what happens if we want to use LoggingHandler as part of a larger middleware chain? We could easily end up with a declaration looking something like this:</p>
+
+    <p><code>http.Handle("/", handlers.LoggingHandler(logFile, authHandler(enforceXMLHandler(finalHandler))))</code></p>
+
+    <p>Woah! That makes my brain hurt.</p>
+
+    <p>We can clean this up by creating a constructor function (let's call it <code>myLoggingHandler</code>) with the signature <code>func(http.Handler) http.Handler</code>. This will allow us to nest it more neatly with other middleware:</p>
+
+    <figure class="plain"><code class="go"><pre>
+    func myLoggingHandler(h http.Handler) http.Handler {
+      logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+      if err != nil {
+        panic(err)
+      }
+      return handlers.LoggingHandler(logFile, h)
+    }
+
+    func main() {
+      finalHandler := http.HandlerFunc(final)
+
+      http.Handle("/", myLoggingHandler(finalHandler))
+      http.ListenAndServe(":3000", nil)
+    }
+    </pre></code></figure>
+
+    <p>If you run this application and make a few requests your <code>server.log</code> file should look something like this:</p>
+
+    <figure class="shell"><code><pre>
+    $ cat server.log
+    <samp>127.0.0.1 - - [21/Oct/2014:18:56:43 +0100] "GET / HTTP/1.1" 200 2
+    127.0.0.1 - - [21/Oct/2014:18:56:36 +0100] "POST / HTTP/1.1" 200 2
+    127.0.0.1 - - [21/Oct/2014:18:56:43 +0100] "PUT / HTTP/1.1" 200 2</samp>
+    </pre></code></figure>
+
+    <p>If you're interested, here's a gist of the <a href="https://gist.github.com/alexedwards/6f9496caecb2996ac61d">three middleware handlers</a> from this post combined in one example</a>.</p>
+
+    <p>As a side note: notice that the Gorilla LoggingHandler is recording the response status (<code>200</code>) and response length (<code>2</code>) in the logs. This is interesting. How did the upstream logging middleware get to know about the response body written by our application handler?</p>
+
+    <p>It does this by defining it's own <code>responseLogger</code> type which wraps <code>http.ResponseWriter</code>, and creating custom <code>responseLogger.Write()</code> and <code>responseLogger.WriteHeader()</code> methods. These methods not only write the response but also store the size and status for later examination. Gorilla's LoggingHandler passes <code>responseLogger</code> onto the next handler in the chain, instead of the normal <code>http.ResponseWriter</code>.</p>
+
+    <p>(I'll probably write a proper tutorial about this sometime, in which case I'll add a link here!)</p>
+
+    <h2>Additional Tools</h2>
+
+    <p><a href="https://github.com/justinas/alice">Alice by Justinas Stankevičius</a> is a clever and very lightweight package which provides some syntactic sugar for chaining middleware handlers. At it's most basic  Alice lets you rewrite this:</p>
+
+    <p><code>http.Handle("/", myLoggingHandler(authHandler(enforceXMLHandler(finalHandler))))</code></p>
+
+    <p>As this:</p>
+
+    <p><code>http.Handle("/", alice.New(myLoggingHandler, authHandler, enforceXMLHandler).Then(finalHandler))</code></p>
+
+    <p>In my eyes at least, that code is slightly clearer to understand at a glance. However, the real benefit of Alice is that it lets you to specify a handler chain once and reuse it for multiple routes. Like so:</p>
+
+    <figure class="plain"><code class="go"><pre>
+    stdChain := alice.New(myLoggingHandler, authHandler, enforceXMLHandler)
+
+    http.Handle("/foo", stdChain.Then(fooHandler))
+    http.Handle("/bar", stdChain.Then(barHandler))
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Tue, 19 Nov 2013 18:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/simple-flash-messages-in-golang</link>
+    <guid>http://www.alexedwards.net/blog/simple-flash-messages-in-golang</guid>
+    <title>Simple Flash Messages in Go</title>
+    <description><![CDATA[
+    <p>Often in web applications you need to temporarily store data in-between requests, such as an error or success message during the Post-Redirect-Get process for a form submission. Frameworks such as Rails and Django have the concept of transient single-use <em>flash messages</em> to help with this.</p>
+
+    <p>In this post I'm going to look at a way to create your own cookie-based flash messages in Go.</p>
+
+    <p>We'll start by creating a directory for the project, along with a <code>flash.go</code> file for our code and a <code>main.go</code> file for an example application.</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir flash-example
+    $ cd flash-example
+    $ touch flash.go main.go
+    </pre></code></figure>
+
+    <p>In order to keep our request handlers nice and clean, we'll create our primary <code>SetFlash()</code> and <code>GetFlash()</code> helper functions in the <code>flash.go</code> file.</p>
+
+    <figure class="file"><figcaption>File: flash.go</figcaption><code><pre>
+    package main
+
+    import (
+      "encoding/base64"
+      "net/http"
+      "time"
+    )
+
+    func SetFlash(w http.ResponseWriter, name string, value []byte) {
+      c := &http.Cookie{Name: name, Value: encode(value)}
+      http.SetCookie(w, c)
+    }
+
+    func GetFlash(w http.ResponseWriter, r *http.Request, name string) ([]byte, error) {
+      c, err := r.Cookie(name)
+      if err != nil {
+        switch err {
+        case http.ErrNoCookie:
+          return nil, nil
+        default:
+          return nil, err
+        }
+      }
+      value, err := decode(c.Value)
+      if err != nil {
+        return nil, err
+      }
+      dc := &http.Cookie{Name: name, MaxAge: -1, Expires: time.Unix(1, 0)}
+      http.SetCookie(w, dc)
+      return value, nil
+    }
+
+    // -------------------------
+
+    func encode(src []byte) string {
+      return base64.URLEncoding.EncodeToString(src)
+    }
+
+    func decode(src string) ([]byte, error) {
+      return base64.URLEncoding.DecodeString(src)
+    }
+    </pre></code></figure>
+
+    <p>Our <code>SetFlash()</code> function is pretty succinct.</p>
+
+    <p>It creates a new <a href="http://golang.org/pkg/net/http/#Cookie">Cookie</a>, containing the name of the flash message and the content. You'll notice that we're encoding the content &ndash; this is because <a href="http://tools.ietf.org/html/rfc6265#section-4.1.1">RFC 6265</a> is quite strict about the characters cookie values can contain, and encoding to base64 ensures our value satisfies the permitted character set. We then use the <a href="http://golang.org/pkg/net/http/#SetCookie">SetCookie</a> function to write the cookie to the response.</p>
+
+    <p>In the <code>GetFlash()</code> helper we use the <a href="http://golang.org/pkg/net/http/#Request.Cookie">request.Cookie</a> method to load up the cookie containing the flash message &ndash; returning <code>nil</code> if it doesn't exist &ndash; and then decode the value from base64 back into a byte array.</p>
+
+    <p>Because we want a flash message to only be available once, we need to instruct clients to not resend the cookie with future requests. We can do this by setting a new cookie with exactly the same name, with <code>MaxAge</code> set to a negative number and <code>Expiry</code> set to a historical time (to cater for old versions of IE). You should note that Go will only set an expiry time on a cookie if it is after the <a href="http://en.wikipedia.org/wiki/Unix_time#Encoding_time_as_a_number">Unix epoch</a>, so we've set ours for 1 second after that.</p>
+
+    <p>Let's use these helper functions in a short example:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "fmt"
+      "net/http"
+    )
+
+    func main() {
+      http.HandleFunc("/set", set)
+      http.HandleFunc("/get", get)
+      fmt.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func set(w http.ResponseWriter, r *http.Request) {
+      fm := []byte("This is a flashed message!")
+      SetFlash(w, "message", fm)
+    }
+
+    func get(w http.ResponseWriter, r *http.Request) {
+      fm, err := GetFlash(w, r, "message")
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+      }
+      if fm == nil {
+        fmt.Fprint(w, "No flash messages")
+        return
+      }
+      fmt.Fprintf(w, "%s", fm)
+    }
+    </pre></code></figure>
+
+    <p>Run the application:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run main.go flash.go
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>And make some requests against it using <a href="http://curl.haxx.se/">cURL</a>:</p>
+
+    <figure class="shell"><code><pre>
+    $ curl -i --cookie-jar cj localhost:3000/set
+    <samp>HTTP/1.1 200 OK
+    Set-Cookie: message=VGhpcyBpcyBhIGZsYXNoZWQgbWVzc2FnZSE=
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 0</samp>
+
+    $ curl -i --cookie-jar cj --cookie cj localhost:3000/get
+    <samp>HTTP/1.1 200 OK
+    Set-Cookie: message=; Expires=Thu, 01 Jan 1970 00:00:01 UTC; Max-Age=0
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 26
+
+    This is a flashed message!</samp>
+
+    $ curl -i --cookie-jar cj --cookie cj localhost:3000/get
+    <samp>HTTP/1.1 200 OK
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 17
+
+    No flash messages</samp>
+    </pre></code></figure>
+
+    <p>You can see our flash message being set, retrieved, and then not passed with subsequent requests as expected.</p>
+
+    <h2>Additional Tools</h2>
+
+    <p>If you don't want to roll your own helpers for flash messages, or need them to be 'signed' to prevent tampering, then the <a href="http://www.gorillatoolkit.org/pkg/sessions">Gorilla Sessions</a> package is a good option. Here's the previous example implemented with Gorilla instead:</p>
+
+    <figure class="plain"><code><pre>
+    package main
+
+    import (
+      "fmt"
+      "github.com/gorilla/sessions"
+      "net/http"
+    )
+
+    func main() {
+      http.HandleFunc("/set", set)
+      http.HandleFunc("/get", get)
+      fmt.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    var store = sessions.NewCookieStore([]byte("a-secret-string"))
+
+    func set(w http.ResponseWriter, r *http.Request) {
+      session, err := store.Get(r, "flash-session")
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+      session.AddFlash("This is a flashed message!", "message")
+      session.Save(r, w)
+    }
+
+    func get(w http.ResponseWriter, r *http.Request) {
+      session, err := store.Get(r, "flash-session")
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+      fm := session.Flashes("message")
+      if fm == nil {
+        fmt.Fprint(w, "No flash messages")
+        return
+      }
+      session.Save(r, w)
+      fmt.Fprintf(w, "%v", fm[0])
+    }
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Fri, 01 Nov 2013 23:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/form-validation-and-processing</link>
+    <guid>http://www.alexedwards.net/blog/form-validation-and-processing</guid>
+    <title>Form Validation and Processing in Go</title>
+    <description><![CDATA[
+     <p>In this post I'm going to run through a start-to-finish tutorial for building a online contact form in Go. I'll be trying to explain the different steps in detail, as well as outlining a sensible pattern for processing that can be extended to other forms.</p>
+
+    <p>Let's begin the example by creating a new directory for the application, along with a <code>main.go</code> file for our code and a couple of vanilla HTML templates:</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir -p contact-form/templates
+    $ cd contact-form
+    $ touch main.go templates/index.html templates/confirmation.html
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+    &lt;h1&gt;Contact&lt;/h1&gt;
+    &lt;form action="/" method="POST" novalidate&gt;
+      &lt;div&gt;
+        &lt;label&gt;Your email:&lt;/label&gt;
+        &lt;input type="email" name="email"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Your message:&lt;/label&gt;
+        &lt;textarea name="content"&gt;&lt;/textarea&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;input type="submit" value="Send message"&gt;
+      &lt;/div&gt;
+    &lt;/form&gt;
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: templates/confirmation.html</figcaption><code><pre>
+    &lt;h1&gt;Confirmation&lt;/h1&gt;
+    &lt;p&gt;Your message has been sent!&lt;/p&gt;
+    </pre></code></figure>
+
+    <p>Our contact form will issue a POST request to <code>/</code>, which will be the same URL path that we use for presenting the form. This means that we'll need to route requests for the same URL to different handlers based on the HTTP method.</p>
+
+    <p>There are a few ways of achieving this, but we'll use <a href="https://github.com/bmizerany/pat">Pat</a> &ndash; a third-party routing library which I've <a href="http://www.alexedwards.net/blog/a-mux-showdown">talked about before</a>. You'll need to install it if you're following along:</p>
+
+    <figure class="shell"><code><pre>
+    $ go get github.com/bmizerany/pat
+    </pre></code></figure>
+
+    <p>Go ahead and create a skeleton for the application:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "github.com/bmizerany/pat"
+      "html/template"
+      "log"
+      "net/http"
+    )
+
+    func main() {
+      mux := pat.New()
+      mux.Get("/", http.HandlerFunc(index))
+      mux.Post("/", http.HandlerFunc(send))
+      mux.Get("/confirmation", http.HandlerFunc(confirmation))
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+
+    func index(w http.ResponseWriter, r *http.Request) {
+      render(w, "templates/index.html", nil)
+    }
+
+    func send(w http.ResponseWriter, r *http.Request) {
+      // Validate form
+      // Send message in an email
+      // Redirect to confirmation page
+    }
+
+    func confirmation(w http.ResponseWriter, r *http.Request) {
+      render(w, "templates/confirmation.html", nil)
+    }
+
+    func render(w http.ResponseWriter, filename string, data interface{}) {
+      tmpl, err := template.ParseFiles(filename)
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+      if err := tmpl.Execute(w, data); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+    }
+    </pre></code></figure>
+
+    <p>This is fairly straightforward stuff so far. The only real point of note is that we've put the template handling into a <code>render</code> function to cut down on boilerplate code.</p>
+
+    <p>If you run the application:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run main.go
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>And visit <a href="http://localhost:3000/">localhost:3000</a> in your browser you should see the contact form, although it doesn't do anything yet.</p>
+
+    <p>Now for the interesting part. Let's add a couple of validation rules to our contact form, display the errors if there are any, and make sure that the form values get presented back if there's an error so the user doesn't need to retype them.</p>
+
+    <p>One approach to setting this up is to add the code inline in our <code>send</code> handler, but personally I find it cleaner and neater to break out the logic into a separate <code>message.go</code> file:</p>
+
+    <figure class="shell"><code><pre>
+    $ touch message.go
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: message.go</figcaption><code><pre>
+    package main
+
+    import (
+      "regexp"
+      "strings"
+    )
+
+    type Message struct {
+      Email    string
+      Content string
+      Errors  map[string]string
+    }
+
+    func (msg *Message) Validate() bool {
+      msg.Errors = make(map[string]string)
+
+      re := regexp.MustCompile(".+@.+\\..+")
+      matched := re.Match([]byte(msg.Email))
+      if matched == false {
+        msg.Errors["Email"] = "Please enter a valid email address"
+      }
+
+      if strings.TrimSpace(msg.Content) == "" {
+        msg.Errors["Content"] = "Please write a message"
+      }
+
+      return len(msg.Errors) == 0
+    }
+
+    </pre></code></figure>
+
+    <p>So what's going on here?</p>
+
+    <p>We've started by defining a new <code>Message</code> type, consisting of the <code>Email</code> and <code>Content</code> values (which will hold the data from the submitted form), along with an <code>Errors</code> map to hold any validation error messages.</p>
+
+    <p>We then created a <code>Validate</code> method that acts on a given <code>Message</code>, which summarily checks the format of the email address and makes sure that the content isn't blank. In the event of any errors we add them to the <code>Errors</code> map, and finally return a <code>true</code> or <code>false</code> value to indicate whether validation passed successful or not.</p>
+
+    <p>This approach means that we can keep the code in our <code>send</code> handler fantastically light. All we need it to do is retrieve the form values from the POST request, create a new <code>Message</code> object with them, and call <code>Validate()</code>. If the validation fails we'll then want to reshow the contact form, passing back the relevant <code>Message</code> object.</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    ...
+    func send(w http.ResponseWriter, r *http.Request) {
+      msg := &Message{
+        Email: r.FormValue("email"),
+        Content: r.FormValue("content"),
+      }
+
+      if msg.Validate() == false {
+        render(w, "templates/index.html", msg)
+        return
+      }
+
+      // Send message in an email
+      // Redirect to confirmation page
+    }
+    ...
+    </pre></code></figure>
+
+    <p>As a side note, in this example above we're using the <a href="http://golang.org/pkg/net/http/#Request.FormValue">FormValue</a> method on the request to access the POST data. We could also access the data directly via <code>r.Form</code>, but there is a gotcha to point out &ndash; by default <code>r.Form</code> will be empty until it is filled by calling <a href="http://golang.org/pkg/net/http/#Request.ParseForm">ParseForm</a> on the request. Once that's done, we can access it in the same way as any <a href="http://golang.org/pkg/net/url/#Values">url.Values</a> type. For example:</p>
+
+    <figure class="plain"><code><pre>
+    err := r.ParseForm()
+    // Handle error
+    msg := &Message{
+      Email: r.Form.Get("email"),
+      Content: r.Form.Get("content"),
+    }
+    </pre></code></figure>
+
+
+    <p>Anyway, let's update our template so it shows the validation errors (if they exist) above the relevant fields, and repopulate the form inputs with any information that the user previously typed in:</p>
+
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+    &lt;style type="text/css"&gt;.error &#123;color: red;&#125;&lt;/style&gt;
+
+    &lt;h1&gt;Contact&lt;/h1&gt;
+    &lt;form action="/" method="POST" novalidate&gt;
+      &lt;div&gt;
+        &#123;&#123; with .Errors.Email &#125;&#125;
+        &lt;p class="error"&gt;&#123;&#123; . &#125;&#125;&lt;/p&gt;
+        &#123;&#123; end &#125;&#125;
+        &lt;label&gt;Your email:&lt;/label&gt;
+        &lt;input type="email" name="email" value="&#123;&#123; .Email &#125;&#125;"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &#123;&#123; with .Errors.Content &#125;&#125;
+        &lt;p class="error" &gt;&#123;&#123; . &#125;&#125;&lt;/p&gt;
+        &#123;&#123; end &#125;&#125;
+        &lt;label&gt;Your message:&lt;/label&gt;
+        &lt;textarea name="content"&gt;&#123;&#123; .Content &#125;&#125;&lt;/textarea&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;input type="submit" value="Send message"&gt;
+      &lt;/div&gt;
+    &lt;/form&gt;
+    </pre></code></figure>
+
+    <p>Go ahead and give it a try:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run main.go message.go
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>Still, our contact form is pretty useless unless we actually do something with it. Let's add a <code>Deliver</code> method which sends the contact form message to a particular email address. In the code below I'm using Gmail, but the same thing should work with any other SMTP server.</p>
+
+    <figure class="file"><figcaption>File: message.go</figcaption><code><pre>
+    package main
+
+    import (
+      "fmt"
+      "net/smtp"
+      "regexp"
+      "strings"
+    )
+    ...
+
+    func (msg *Message) Deliver() error {
+      to := []string{"someone@example.com"}
+      body := fmt.Sprintf("Reply-To: %v\r\nSubject: New Message\r\n%v", msg.Email, msg.Content)
+
+      username := "you@gmail.com"
+      password := "..."
+      auth := smtp.PlainAuth("", username, password, "smtp.gmail.com")
+
+      return smtp.SendMail("smtp.gmail.com:587", auth, msg.Email, to, []byte(body))
+    }
+    </pre></code></figure>
+
+    <p>The final step is to head back to our <code>main.go</code> file,  add some code to call <code>Deliver()</code>, and issue a 303 redirect to the confirmation page that we made earlier:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    ...
+    func send(w http.ResponseWriter, r *http.Request) {
+      msg := &Message{
+        Email: r.FormValue("email"),
+        Content: r.FormValue("content"),
+      }
+
+      if msg.Validate() == false {
+        render(w, "templates/index.html", msg)
+        return
+      }
+
+      if err := msg.Deliver(); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+      }
+      http.Redirect(w, r, "/confirmation", http.StatusSeeOther)
+    }
+    ...
+    </pre></code></figure>
+
+    <h2>Additional Tools</h2>
+
+    <p>If mapping form data to objects is something that you're doing a lot of, you may find <a href="http://www.gorillatoolkit.org/pkg/schema">Gorilla Schema's</a> automatic decoder useful. If we were using it for our contact form example, the code would look a bit like this:</p>
+
+    <figure class="plain"><code><pre>
+    import "github.com/gorilla/schema"
+    ...
+    err := r.ParseForm()
+    // Handle error
+    msg := new(Message)
+    decoder := schema.NewDecoder()
+    decoder.Decode(msg, r.Form)
+    </pre></code></figure>
+
+    <p>Additionally, <a href="https://github.com/absoludity/goforms">Goforms</a> appears to be a promising idea, with a fairly slick Django-like approach to dealing with forms. However, the existing validation options are fairly limited and the library doesn't seem to be under active development at the moment. It's still worth a look though, especially if you're thinking of rolling something a bit more generic for your form handling.</p>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Sat, 19 Oct 2013 12:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/golang-response-snippets</link>
+    <guid>http://www.alexedwards.net/blog/golang-response-snippets</guid>
+    <title>HTTP Response Snippets for Go</title>
+    <description><![CDATA[
+    <p>Taking inspiration from the Rails <a href="http://guides.rubyonrails.org/layouts_and_rendering.html">layouts and rendering</a> guide, I thought it'd be a nice idea to build a snippet collection illustrating some common HTTP responses for Go web applications.</p>
+
+    <ol style="margin-left: 21px;">
+      <li><a href="#headers">Sending Headers Only</a></li>
+      <li><a href="#plain">Rendering Plain Text</a></li>
+      <li><a href="#json">Rendering JSON</a></li>
+      <li><a href="#xml">Rendering XML</a></li>
+      <li><a href="#file">Serving a File</a></li>
+      <li><a href="#html">Rendering a HTML Template</a></li>
+      <li><a href="#string">Rendering a HTML Template to a String</a></li>
+      <li><a href="#nesting">Using Layouts and Nested Templates</a></li>
+    </ol>
+
+    <h2 id="headers">Sending Headers Only</h2>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "net/http"
+    )
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      w.Header().Set("Server", "A Go Web Server")
+      w.WriteHeader(200)
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Server: A Go Web Server
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 0</samp>
+    </pre></code></figure>
+
+    <h2 id="plain">Rendering Plain Text</h2>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "net/http"
+    )
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      w.Write([]byte("OK"))
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Type: text/plain; charset=utf-8
+    Content-Length: 2
+
+    OK</samp>
+    </pre></code></figure>
+
+    <h2 id="json">Rendering JSON</h2>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "encoding/json"
+      "net/http"
+    )
+
+    type Profile struct {
+      Name    string
+      Hobbies []string
+    }
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+      js, err := json.Marshal(profile)
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+      }
+
+      w.Header().Set("Content-Type", "application/json")
+      w.Write(js)
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Type: application/json
+    Content-Length: 56
+
+    {"Name":"Alex",Hobbies":["snowboarding","programming"]}</samp>
+    </pre></code></figure>
+
+    <h2 id="xml">Rendering XML</h2>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "encoding/xml"
+      "net/http"
+    )
+
+    type Profile struct {
+      Name    string
+      Hobbies []string `xml:"Hobbies>Hobby"`
+    }
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+      x, err := xml.MarshalIndent(profile, "", "  ")
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+      }
+
+      w.Header().Set("Content-Type", "application/xml")
+      w.Write(x)
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Type: application/xml
+    Content-Length: 128
+
+    &lt;Profile&gt;
+      &lt;Name&gt;Alex&lt;/Name&gt;
+      &lt;Hobbies&gt;
+        &lt;Hobby&gt;snowboarding&lt;/Hobby&gt;
+        &lt;Hobby&gt;programming&lt;/Hobby&gt;
+      &lt;/Hobbies&gt;
+    &lt;/Profile&gt;</samp>
+    </pre></code></figure>
+
+    <h2 id="file">Serving a File</h2>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "net/http"
+      "path"
+    )
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      // Assuming you want to serve a photo at 'images/foo.png'
+      fp := path.Join("images", "foo.png")
+      http.ServeFile(w, r, fp)
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -I localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Accept-Ranges: bytes
+    Content-Length: 236717
+    Content-Type: image/png
+    Last-Modified: Thu, 10 Oct 2013 22:23:26 GMT</samp>
+    </pre></code></figure>
+
+    <h2 id="html">Rendering a HTML Template</h2>
+
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+    &lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
+    &lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "html/template"
+      "net/http"
+      "path"
+    )
+
+    type Profile struct {
+      Name    string
+      Hobbies []string
+    }
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+      fp := path.Join("templates", "index.html")
+      tmpl, err := template.ParseFiles(fp)
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+      }
+
+      if err := tmpl.Execute(w, profile); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Content-Length: 84
+
+    &lt;h1&gt;Hello Alex&lt;/h1&gt;
+    &lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;</samp>
+    </pre></code></figure>
+
+    <h2 id="string">Rendering a HTML Template to a String</h2>
+
+    <p>Instead of passing in the <code>http.ResponseWriter</code> when executing your template (like in the above snippet) use a buffer instead:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    ...
+    buf := new(bytes.Buffer)
+    if err := tmpl.Execute(buf, profile); err != nil {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
+    templateString := buf.String()
+    ...
+    </pre></code></figure>
+
+    <h2 id="nesting">Using Layouts and Nested Templates</h2>
+
+    <figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>
+    &lt;html&gt;
+      &lt;head&gt;
+        &lt;title&gt;&#123;&#123; template "title" . &#125;&#125;&lt;/title&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+        &#123;&#123; template "content" . &#125;&#125;
+      &lt;/body&gt;
+    &lt;/html&gt;
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+    &#123;&#123; define "title" &#125;&#125;An example layout&#123;&#123; end &#125;&#125;
+
+    &#123;&#123; define "content" &#125;&#125;
+    &lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
+    &lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
+    &#123;&#123; end &#125;&#125;
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "html/template"
+      "net/http"
+      "path"
+    )
+
+    type Profile struct {
+      Name    string
+      Hobbies []string
+    }
+
+    func main() {
+      http.HandleFunc("/", foo)
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func foo(w http.ResponseWriter, r *http.Request) {
+      profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+      lp := path.Join("templates", "layout.html")
+      fp := path.Join("templates", "index.html")
+
+      // Note that the layout file must be the first parameter in ParseFiles
+      tmpl, err := template.ParseFiles(lp, fp)
+      if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+      }
+
+      if err := tmpl.Execute(w, profile); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+    }
+    </pre></code></figure>
+
+    <figure class="shell"><code><pre>
+    $ curl -i localhost:3000
+    <samp>HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Content-Length: 180
+
+    &lt;html&gt;
+      &lt;head&gt;
+        &lt;title&gt;An example layout&lt;/title&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+        &lt;h1&gt;Hello Alex&lt;/h1&gt;
+        &lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;</samp>
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Fri, 04 Oct 2013 20:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/understanding-mutexes</link>
+    <guid>http://www.alexedwards.net/blog/understanding-mutexes</guid>
+    <title>Understanding Mutexes</title>
+    <description><![CDATA[
+    <p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own Goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
+
+    <p>In case you're new to concurrent programming, I'll quickly explain the problem.</p>
+
+    <p>Race conditions occur when two or more Goroutines try to use a piece of shared data at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
+
+    <p>As an illustration, here's an example where two Goroutines try to add money to a shared bank balance at the same time:</p>
+
+    <table style="width: 100%; text-align: center">
+    <tr><th>Instruction</th><th>Goroutine 1</th><th>Goroutine 2</th><th>Bank Balance</th></tr>
+    <tr><td>1</td><td>Read balance &lArr; &pound;50</td><td></td><td>&pound;50</td></tr>
+    <tr><td>2</td><td></td><td>Read balance &lArr; &pound;50</td><td>&pound;50</td></tr>
+    <tr><td>3</td><td>Add &pound;100 to balance</td><td></td><td>&pound;50</td></tr>
+    <tr><td>4</td><td></td><td>Add &pound;50 to balance</td><td>&pound;50</td></tr>
+    <tr><td>5</td><td>Write balance &rArr; &pound;150</td><td></td><td>&pound;150</td></tr>
+    <tr><td>6</td><td></td><td>Write balance &rArr; &pound;100</td><td>&pound;100</td></tr>
+    </table>
+
+    <p>Despite making two separate deposits, only the second one is reflected in the final balance because the two Goroutines were <em>racing</em> each other to make the change.</p>
+
+    <p>The Go blog describes the downsides:</p>
+
+    <blockquote>Race conditions are among the most insidious and elusive programming errors. They typically cause erratic and mysterious failures, often long after the code has been deployed to production. While Go's concurrency mechanisms make it easy to write clean concurrent code, they don't prevent race conditions. Care, diligence, and testing are required.</blockquote>
+
+    <p>Go provides a number of tools to help us avoid data races. These include <a href="http://golangtutorials.blogspot.co.uk/2011/06/channels-in-go.html">Channels</a> for communicating data between Goroutines, a <a href="http://www.goinggo.net/2013/09/detecting-race-conditions-with-go.html">Race Detector</a> for monitoring unsynchronized access to memory at runtime, and a variety of 'locking' features in the <a href="http://golang.org/pkg/sync/atomic/">Atomic</a> and <a href="http://golang.org/pkg/sync/">Sync</a> packages. One of these features are Mutual Exclusion locks, or <em>mutexes</em>, which we'll be looking at in the rest of this post.</p>
+
+    <h2>Creating a Basic Mutex</h2>
+
+    <p>Let's create some toy code to mimic the bank balance example:
+
+    <figure class="plain"><code><pre>
+    import "strconv"
+
+    var Balance = &amp;currency{50.00, "GBP"}
+
+    type currency struct {
+      amount float64
+      code   string
+    }
+
+    func (c *currency) Add(i float64) {
+      // This is racy
+      c.amount += i
+    }
+
+    func (c *currency) Display() string {
+      // This is racy
+      return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+    }
+    </pre></code></figure>
+
+    <p>We know that if there are multiple Goroutines using this code and calling <code>Balance.Add()</code> and <code>Balance.Display()</code>, then at some point a race condition is likely to occur.</p>
+
+    <p>One way we could prevent a data race is to ensure that if one Goroutine is using the <code>Balance</code> variable, then all other Goroutines are prevented (or <em>mutually excluded</em>) from using it at the same time.</p>
+
+    <p>We can do this by creating a <a href="http://golang.org/pkg/sync/#Mutex">Mutex</a> and setting a <em>lock</em> around particular lines of code with it. While one Goroutine holds the lock, all other Goroutines are prevented from executing any lines of code protected by the same mutex, and are forced to wait until the lock is yielded before they can proceed.</p>
+
+    <p>In practice, it's more simple than it sounds:</p>
+
+    <figure class="plain"><code><pre>
+    import (
+      "strconv"
+      "sync"
+    )
+
+    var mu = &amp;sync.Mutex{}
+    var Balance = &amp;currency{50.00, "GBP"}
+
+    type currency struct {
+      amount float64
+      code   string
+    }
+
+    func (c *currency) Add(i float64) {
+      mu.Lock()
+      c.amount += i
+      mu.Unlock()
+    }
+
+    func (c *currency) Display() string {
+      mu.Lock()
+      amt := c.amount
+      mu.Unlock()
+      return strconv.FormatFloat(amt, 'f', 2, 64) + " " + c.code
+    }
+    </pre></code></figure>
+
+    <p>Here we've created a new mutex and assigned it to <code>mu</code>. We then use <code>mu.Lock()</code> to create a lock immediately before both racy parts of the code, and <code>mu.Unlock()</code> to yield the lock immediately after.</p>
+
+    <p>There's a couple of things to note:</p>
+
+    <ul>
+      <li>The same mutex variable can be used in multiple places throughout your code. So long as it's the same mutex (in our case <code>mu</code>) then <em>none</em> of the chunks of code protected by it can be executed at the same time.</li>
+      <li>Holding a mutex lock doesn't 'protect' a memory location from being read or updated. A non-mutex-locked line of code could still access it at any time and create a race condition. Therefore you need to be careful to make sure all points in your code which are potentially racy are protected.</li>
+    </ul>
+
+    <p>Let's tidy up the example a bit:</p>
+
+    <figure class="plain"><code><pre>
+    import (
+      "strconv"
+      "sync"
+    )
+
+    var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+
+    type currency struct {
+      sync.Mutex
+      amount float64
+      code   string
+    }
+
+    func (c *currency) Add(i float64) {
+      c.Lock()
+      c.amount += i
+      c.Unlock()
+    }
+
+    func (c *currency) Display() string {
+      c.Lock()
+      defer c.Unlock()
+      return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+    }
+    </pre></code></figure>
+
+    <p>So what's changed here?</p>
+
+    <p>Because our mutex is only being used in the context of a <code>currency</code> object, it makes sense to anonymously embed it in the <code>currency</code> struct (an idea borrowed from Andrew Gerrard's excellent <a href="http://nf.wh3rd.net/10things/#1">
+    10 things you (probably) don't know about Go</a> slideshow). If you look at a larger codebase with lots of mutexes, like Go's <a href="http://golang.org/src/pkg/net/http/server.go">HTTP Server</a>, you can see how this approach helps to keep locking rules nice and clear.</p>
+
+    <p>We've also made use of the <a href="http://golang.org/doc/effective_go.html#defer">defer</a> statement, which ensures that the mutex gets unlocked immediately before a function returns. This is common practice for functions that contain multiple return statements, or where the return statement itself is racy.</p>
+
+    <h2>Read Write Mutexes</h2>
+
+    <p>In our bank balance example, having a full mutex lock on the <code>Display()</code> function isn't strictly necessary. It would be OK for us to have multiple reads of <code>Balance</code> happening at the same time, so long as nothing is being written.</p>
+
+    <p>We can achieve this using <a href="http://golang.org/pkg/sync/#RWMutex">RWMutex</a>, a reader/writer mutual exclusion lock which allows any number of readers to hold the lock <strong>or</strong> one writer. Depending on the nature of your application and ratio of reads to writes, this may be more efficient than using a full mutex.</p>
+
+    <p>Reader locks can be opened and closed with <code>RLock()</code> and <code>RUnlock()</code> like so:</p>
+
+    <figure class="plain"><code><pre>
+    import (
+      "strconv"
+      "sync"
+    )
+
+    var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+
+    type currency struct {
+      sync.RWMutex
+      amount float64
+      code   string
+    }
+
+    func (c *currency) Add(i float64) {
+      c.Lock()
+      c.amount += i
+      c.Unlock()
+    }
+
+    func (c *currency) Display() string {
+      c.RLock()
+      defer c.RUnlock()
+      return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+    }
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Fri, 20 Sep 2013 22:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/golang-automatic-reloads</link>
+    <guid>http://www.alexedwards.net/blog/golang-automatic-reloads</guid>
+    <title>Golang Automatic Reloads</title>
+    <description><![CDATA[
+    <p>I wrote a short Bash script to automatically reload Go programs.</p>
+
+    <p>The script acts as a light wrapper around <code>go run</code>, stopping and restarting it whenever a <code>.go</code> file in your current directory or <code>$GOPATH/src</code> folder is saved. I've been using it mainly when developing web applications, in the same way that I use Shotgun or Guard when working with Ruby.</p>
+
+    <p>You can grab this from the <a href="https://github.com/alexedwards/go-reload">Github repository</a>.</p>
+
+    <figure class="file"><figcaption>File: go-reload</figcaption><code><pre>
+    #!/bin/bash
+
+    # Watch all *.go files in the specified directory
+    # Call the restart function when they are saved
+    function monitor() {
+      inotifywait -q -m -r -e close_write --exclude '[^g][^o]$' $1 |
+      while read line; do
+        restart
+      done
+    }
+
+    # Terminate and rerun the main Go program
+    function restart {
+      if [ "$(pidof $PROCESS_NAME)" ]; then
+        killall -q -w -9 $PROCESS_NAME
+      fi
+      echo ">> Reloading..."
+      go run $FILE_PATH $ARGS &
+    }
+
+    # Make sure all background processes get terminated
+    function close {
+      killall -q -w -9 inotifywait
+      exit 0
+    }
+
+    trap close INT
+    echo "== Go-reload"
+    echo ">> Watching directories, CTRL+C to stop"
+
+    FILE_PATH=$1
+    FILE_NAME=$(basename $FILE_PATH)
+    PROCESS_NAME=${FILE_NAME%%.*}
+
+    shift
+    ARGS=$@
+
+    # Start the main Go program
+    go run $FILE_PATH $ARGS &
+
+    # Monitor the /src directories in all directories on the GOPATH
+    OIFS="$IFS"
+    IFS=':'
+    for path in $GOPATH
+    do
+      monitor $path/src &
+    done
+    IFS="$OIFS"
+
+    # Monitor the current directory
+    monitor .
+    </pre></code></figure>
+
+    <h2>Usage</h2>
+
+    <p>The only dependency for this script is <a href="https://github.com/rvoicilas/inotify-tools/wiki">inotify-tools</a>, which is used to monitor the filesystem for changes.<p>
+
+    <figure class="shell"><code><pre>
+    $ sudo apt-get install inotify-tools
+    </pre></code></figure>
+
+    <p>Once you've <a href="https://raw.github.com/alexedwards/go-reload/master/go-reload">downloaded</a> (or copy-pasted) the script, you'll need to make it executable and move it to <code>/usr/local/bin</code> or another directory on your system path:</p>
+
+    <figure class="shell"><code><pre>
+    $ wget https://raw.github.com/alexedwards/go-reload/master/go-reload
+    $ chmod +x go-reload
+    $ sudo mv go-reload /usr/local/bin/
+    </pre></code></figure>
+
+    <p>You should then be able to use the <code>go-reload</code> command in place of <code>go run</code>:</p>
+
+    <figure class="shell"><code><pre>
+    $ go-reload main.go
+    <samp>== Go-reload
+    >> Watching directories, CTRL+C to stop</samp>
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Thu, 12 Sep 2013 19:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/a-recap-of-request-handling</link>
+    <guid>http://www.alexedwards.net/blog/a-recap-of-request-handling</guid>
+    <title>A Recap of Request Handling in Go</title>
+    <description><![CDATA[
+    <p>Processing HTTP requests with Go is primarily about two things: ServeMuxes and Handlers.</p>
+
+    <p>A <a href="http://golang.org/pkg/net/http/#ServeMux">ServeMux</a> is essentially a HTTP request router (or <em>multiplexor</em>). It compares incoming requests against a list of predefined URL paths, and calls the associated handler for the path whenever a match is found.</p>
+
+    <p>Handlers are responsible for writing response headers and bodies. Almost any object can be a handler, so long as it satisfies the <a href="http://golang.org/pkg/net/http/#Handler">Handler interface</a>. In lay terms, that simply means it must have a <code>ServeHTTP</code> method with the following signature:</p>
+
+    <p><code>ServeHTTP(http.ResponseWriter, *http.Request)</code></p>
+
+    <p>Go's HTTP package ships with a few functions to generate common handlers, such as <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a>,  <a href="http://golang.org/pkg/net/http/#NotFoundHandler">NotFoundHandler</a> and <a href="http://golang.org/pkg/net/http/#RedirectHandler">RedirectHandler</a>. Let's begin with a simple but contrived example:</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir handler-example
+    $ cd handler-example
+    $ touch main.go
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+    )
+
+    func main() {
+      mux := http.NewServeMux()
+
+      rh := http.RedirectHandler("http://example.org", 307)
+      mux.Handle("/foo", rh)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+    </pre></code></figure>
+    <p>Let's step through this quickly:</p>
+
+    <ul>
+      <li>In the <code>main</code> function we use the <a href="http://golang.org/pkg/net/http/#NewServeMux">http.NewServeMux</a> function to create an empty ServeMux.
+      <li>We then use the <a href="http://golang.org/pkg/net/http/#RedirectHandler">http.RedirectHandler</a> function to create a new handler. This handler 307 redirects all requests it receives to <code>http://example.org</code>.</li>
+      <li>Next we use the <a href="http://golang.org/pkg/net/http/#ServeMux.Handle">ServeMux.Handle</a> function to register this with our new ServeMux, so it acts as the handler for all incoming requests with the URL path <code>/foo</code>.</li>
+      <li>Finally we create a new server and start listening for incoming requests with the <a href="http://golang.org/pkg/net/http/#ListenAndServe">http.ListenAndServe</a> function, passing in our ServeMux for it to match requests against.</li>
+    </ul>
+
+    <p>Go ahead and run the application:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run main.go
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>And visit <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> in your browser. You should find that your request gets successfully redirected.</p>
+
+    <p>The eagle-eyed of you might have noticed something interesting: The signature for the ListenAndServe function is <code>ListenAndServe(addr string, handler Handler)</code>, but we passed a ServeMux as the second parameter.</p>
+
+    <p>We were able to do this because ServeMux also <a href="http://golang.org/pkg/net/http/#ServeMux.ServeHTTP">has a ServeHTTP method</a>, meaning that it too satisfies the Handler interface.</p>
+
+    <p>For me it simplifies things to think of a ServeMux as <em>just being a special kind of handler</em>, which instead of providing a response itself passes the request on to a second handler. This isn't as much of a leap as it first sounds &ndash; chaining handlers together is fairly commonplace in Go<!-- , and we'll take a look at an example further down the page -->.</p>
+
+    <h2>Custom Handlers</h2>
+
+    <p>Let's create a custom handler which responds with the current local time in a given format:</p>
+
+    <figure class="plain"><code><pre>
+    type timeHandler struct {
+      format string
+    }
+
+    func (th *timeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+      tm := time.Now().Format(th.format)
+      w.Write([]byte("The time is: " + tm))
+    }
+    </pre></code></figure>
+
+    <p>The exact code here isn't too important.</p>
+
+    <p>All that really matters is that we have an object (in this case it's a <code>timeHandler</code> struct, but it could equally be a string or function or anything else), and we've implemented a method with the signature <code>ServeHTTP(http.ResponseWriter, *http.Request)</code> on it. That's all we need to make a handler.</p>
+
+    <p>Let's embed this in a concrete example:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+      "time"
+    )
+
+    type timeHandler struct {
+      format string
+    }
+
+    func (th *timeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+      tm := time.Now().Format(th.format)
+      w.Write([]byte("The time is: " + tm))
+    }
+
+    func main() {
+      mux := http.NewServeMux()
+
+      th := &timeHandler{format: time.RFC1123}
+      mux.Handle("/time", th)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+    </pre></code></figure>
+
+    <p>In the <code>main</code> function we initialised the <code>timeHandler</code> in exactly the same way we would any normal struct, using the <code>&amp;</code> symbol to yield a pointer. And then, like the previous example, we use the <code>mux.Handle</code> function to register this with our ServeMux.</p>
+
+    <p>Now when we run the application, the ServeMux will pass any request for <code>/time</code> straight on to our <code>timeHandler.ServeHTTP</code> method.</p>
+
+    <p>Go ahead and give it a try: <a href="http://localhost:3000/time">http://localhost:3000/time</a>.</p>
+
+    <p>Notice too that we could easily reuse the <code>timeHandler</code> in multiple routes:</p>
+
+    <figure class="plain"><code><pre>
+    func main() {
+      mux := http.NewServeMux()
+
+      th1123 := &timeHandler{format: time.RFC1123}
+      mux.Handle("/time/rfc1123", th1123)
+
+      th3339 := &timeHandler{format: time.RFC3339}
+      mux.Handle("/time/rfc3339", th3339)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+    </pre></code></figure>
+
+    <p><code>  </code></p>
+
+    <h2>Functions as Handlers</h2>
+
+    <p>For simple cases (like the example above) defining new custom types and ServeHTTP methods feels a bit verbose. Let's look at an alternative approach, where we leverage Go's <a href="http://golang.org/pkg/net/http/#HandlerFunc">http.HandlerFunc</a> type to coerce a normal function into satisfying the Handler interface.</p>
+
+    <p>Any function which has the signature <code>func(http.ResponseWriter, *http.Request)</code> can be converted into a HandlerFunc type. This is useful because HandleFunc objects come with an inbuilt ServeHTTP method which &ndash; rather cleverly and conveniently &ndash; executes the content of the original function.</p>
+
+    <p>If that sounds confusing, try taking a look at the <a href="http://golang.org/src/pkg/net/http/server.go?s=35455:35502#L1221">relevant source code</a>. You'll see that it's a very succinct way of making a function satisfy the Handler interface.</p>
+
+    <p>Let's reproduce the timeHandler application using this technique:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+      "time"
+    )
+
+    func timeHandler(w http.ResponseWriter, r *http.Request) {
+      tm := time.Now().Format(time.RFC1123)
+      w.Write([]byte("The time is: " + tm))
+    }
+
+    func main() {
+      mux := http.NewServeMux()
+
+      // Convert the timeHandler function to a HandleFunc type
+      th := http.HandlerFunc(timeHandler)
+      // And add it to the ServeMux
+      mux.Handle("/time", th)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+    </pre></code></figure>
+
+    <!-- TODO: -->
+
+    <p>In fact, converting a function to a HandlerFunc type and then adding it to a ServeMux like this is so common that Go provides a shortcut: the <a href="http://golang.org/pkg/net/http/#ServeMux.HandleFunc">ServeMux.HandleFunc</a> method.</p>
+
+    <p>This is what the <code>main()</code> function would have looked like if we'd used this shortcut instead:</p>
+
+    <figure class="plain"><code><pre>
+    func main() {
+      mux := http.NewServeMux()
+
+      mux.HandleFunc("/time", timeHandler)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+    </pre></code></figure>
+
+    <p id="passing-variables">Most of the time using a function as a handler like this works well. But there is a bit of a limitation when things start getting more complex.</p>
+
+    <p>You've probably noticed that, unlike the method before, we've had to hardcode the time format in the <code>timeHandler</code> function. <em>What happens when we want to pass information or variables from <code>main()</code> to a handler?</em></p>
+
+    <p>A neat approach is to put our handler logic into a closure, and <em>close over</em> the variables we want to use:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+      "time"
+    )
+
+    func timeHandler(format string) http.Handler {
+      fn := func(w http.ResponseWriter, r *http.Request) {
+        tm := time.Now().Format(format)
+        w.Write([]byte("The time is: " + tm))
+      }
+      return http.HandlerFunc(fn)
+    }
+
+    func main() {
+      mux := http.NewServeMux()
+
+      th := timeHandler(time.RFC1123)
+      mux.Handle("/time", th)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", mux)
+    }
+    </pre></code></figure>
+
+    <p>The <code>timeHandler</code> function now has a subtly different role. Instead of coercing the function into a handler (like we did previously), we are now using it to <em>return a handler</em>. There's two key elements to making this work.</p>
+
+    <p>First it creates <code>fn</code>, an anonymous function which accesses &dash; or closes over &ndash; the <code>format</code> variable forming a <em>closure</em>. Regardless of what we do with the closure it will always be able to access the variables that are local to the scope it was created in &ndash; which in this case means it'll always have access to the <code>format</code> variable.</p>
+
+    <p>Secondly our closure has the signature <code>func(http.ResponseWriter, *http.Request)</code>. As you may remember from earlier, this means that we can convert it into a HandlerFunc type (so that it satisfies the Handler interface). Our <code>timeHandler</code> function then returns this converted closure.</p>
+
+    <p>In this example we've just been passing a simple string to a handler. But in a real-world application you could use this method to pass database connection, template map, or any other application-level context. It's a good alternative to using global variables, and has the added benefit of making neat self-contained handlers for testing.</p>
+
+    <p>You might also see this same pattern written as:</p>
+
+    <figure class="plain"><code><pre>
+    func timeHandler(format string) http.Handler {
+      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        tm := time.Now().Format(format)
+        w.Write([]byte("The time is: " + tm))
+      })
+    }
+    </pre></code></figure>
+
+    <p>Or using an implicit conversion to the HandlerFunc type on return:</p>
+
+    <figure class="plain"><code><pre>
+    func timeHandler(format string) http.HandlerFunc {
+      return func(w http.ResponseWriter, r *http.Request) {
+        tm := time.Now().Format(format)
+        w.Write([]byte("The time is: " + tm))
+      }
+    }
+    </pre></code></figure>
+
+    <!-- TODO: Talk about defining as methods: https://gist.github.com/tsenart/5fc18c659814c078378d -->
+
+    <h2>The DefaultServeMux</h2>
+
+    <p>You've probably seen DefaultServeMux mentioned in lots of places, from the simplest Hello World examples to the Go source code.</p>
+
+    <p>It took me a long time to realise it isn't anything special. The DefaultServeMux is just a  plain ol' ServeMux like we've already been using, which gets instantiated by default when the HTTP package is used. Here's the relevant line from the Go source:</p>
+
+    <p><code>var DefaultServeMux = NewServeMux()</code></p>
+
+    <p>The HTTP package provides a couple of shortcuts for working with the DefaultServeMux: <a href="http://golang.org/pkg/net/http/#Handle">http.Handle</a> and <a href="http://golang.org/pkg/net/http/#HandleFunc">http.HandleFunc</a>. These do exactly the same as their namesake functions we've already looked at, with the difference that they add handlers to the DefaultServeMux instead of one that you've created. </p>
+
+    <p>Additionally, ListenAndServe will fall back to using the DefaultServeMux if no other handler is provided (that is, the second parameter is set to <code>nil</code>).</p>
+
+    <p>So as a final step, let's update our timeHandler application to use the DefaultServeMux instead:</p></del>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+      "time"
+    )
+
+    func timeHandler(format string) http.Handler {
+      fn := func(w http.ResponseWriter, r *http.Request) {
+        tm := time.Now().Format(format)
+        w.Write([]byte("The time is: " + tm))
+      }
+      return http.HandlerFunc(fn)
+    }
+
+    func main() {
+      // Note that we skip creating the ServeMux...
+
+      var format string = time.RFC1123
+      th := timeHandler(format)
+
+      // We use http.Handle instead of mux.Handle...
+      http.Handle("/time", th)
+
+      log.Println("Listening...")
+      // And pass nil as the handler to ListenAndServe.
+      http.ListenAndServe(":3000", nil)
+    }
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+   <item>
+    <pubDate>Mon, 2 Sep 2013 12:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/a-mux-showdown</link>
+    <guid>http://www.alexedwards.net/blog/a-mux-showdown</guid>
+    <title>Gorilla vs Pat vs Routes: A Mux Showdown</title>
+    <description><![CDATA[
+    <p>One of the first things I missed when learning Go was being able to route HTTP requests to handlers based on the <em>pattern</em> of a URL path, like you can with web frameworks like Sinatra and Django.</p>
+
+    <p>Although Go's <a href="http://golang.org/pkg/net/http/#NewServeMux">ServeMux</a> does a great job at routing incoming requests, it only works for fixed URL paths. To support pretty URLs with variable parameters we either need to roll a custom router (or <em>HTTP request multiplexer</em> in Go terminology), or look to a third-party package.</p>
+
+    <p>In this post we'll compare and contrast three popular packages for the job: <a href="https://github.com/bmizerany/pat">Pat</a>, <a href="https://github.com/drone/routes">Routes</a> and <a href="http://www.gorillatoolkit.org/pkg/mux">Gorilla Mux</a>. If you're already familiar with them, you might want to <a href="#benchmarks">skip to the benchmarks</a> and summary.</p>
+
+    <h2>Pat</h2>
+
+    <p><a href="https://github.com/bmizerany/pat">Pat</a> by Blake Mizerany is the simplest and lightest of the three packages. It supports basic pattern matching on request paths, matching on request method (GET, POST etc), and the capture of named parameters.</p>
+
+    <p>The syntax for defining URL patterns should feel familiar if you're from the Ruby world &ndash; named parameters start with a colon, with the remainder of the path matched literally. For example, the pattern <code>/user/:name/profile</code> would match a request to <code>/user/oomi/profile</code>, with the name <code>oomi</code> captured as a parameter.</p>
+
+    <p>It's worth pointing out that behind the scenes Pat uses a custom algorithm for pattern matching, rather than a regular expression based approach like the other two packages. In theory this means it should be more a little more optimised for the task at hand.</p>
+
+    <p>Let's take a look at a sample application using Pat:</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir pat-example && cd pat-example
+    $ touch app.go
+    $ go get github.com/bmizerany/pat
+    </pre></code></figure>
+
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    package main
+
+    import (
+      "github.com/bmizerany/pat"
+      "log"
+      "net/http"
+    )
+
+    func main() {
+      mux := pat.New()
+      mux.Get("/user/:name/profile", http.HandlerFunc(profile))
+
+      http.Handle("/", mux)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func profile(w http.ResponseWriter, r *http.Request) {
+      params := r.URL.Query()
+      name := params.Get(":name")
+      w.Write([]byte("Hello " + name))
+    }
+    </pre></code></figure>
+
+    <p>We'll quickly step through the interesting bits.</p>
+
+    <p>In the <code>main</code> function we start by creating a new HTTP request multiplexer (or mux for short) with Pat. Then we add a rule to the mux so that all <code>GET</code> requests which match the specified pattern are routed to the <code>profile</code> function.</p>
+
+    <p>Next we use the <a href="http://golang.org/pkg/net/http/#Handle">Handle</a> function to register our custom mux as the handler for <em>all incoming requests</em> in Go's DefaultServeMux.</p>
+
+    <p>Because we're only using a single handler in this code, an alternative approach would be to skip registering with the DefaultServeMux, and pass our custom mux directly to <a href="http://golang.org/pkg/net/http/#ListenAndServe">ListenAndServe</a> as the handler instead.</p>
+
+    <p>When a request gets matched, Pat adds any named parameters to the URL <a href="http://golang.org/pkg/net/url/#URL">RawQuery</a>. In the <code>profile</code> function we then access these in the same way as a normal query string value.</p>
+
+    <p>Go ahead and run the application:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run app
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>And visit <a href="http://localhost:3000/user/oomi/profile">localhost:3000/user/oomi/profile</a> in your browser. You should see a <code>Hello oomi</code> response.</p>
+
+
+    <p>Pat also provides a couple of other nice touches, including redirecting paths with trailing slashes. Here's the <a href="http://godoc.org/github.com/bmizerany/pat">full documentation</a>.</p>
+
+    <h2>Routes</h2>
+
+    <p><a href="https://github.com/drone/routes">Routes</a> by Drone provides a similar  interface to Pat, with the additional benefit that patterns can be more tightly controlled with optional Regular Expressions. For example, the two patterns below are both valid, with the second one matching if the name parameter contains lowercase letters only:</p>
+
+    <ul>
+      <li><code>/user/:name/profile</code></li>
+      <li><code>/user/:name([a-z]+)/profile</code></li>
+    </ul>
+
+    <p>Routes also provides a few other nice features, including:</p>
+
+    <ul>
+      <li>Built-in routing for a static files.</li>
+      <li>A before filter, so specific code can be run before each request is handled.</li>
+      <li>Helpers for returning JSON and XML responses.</li>
+    </ul>
+
+    <p>Basic usage of Routes is almost identical to Pat:</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir routes-example && cd routes-example
+    $ touch app.go
+    $ go get github.com/drone/routes
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    package main
+
+    import (
+      "github.com/drone/routes"
+      "log"
+      "net/http"
+    )
+
+    func main() {
+      mux := routes.New()
+      mux.Get("/user/:name([a-z]+)/profile", profile)
+
+      http.Handle("/", mux)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func profile(w http.ResponseWriter, r *http.Request) {
+      params := r.URL.Query()
+      name := params.Get(":name")
+      w.Write([]byte("Hello " + name))
+    }
+    </pre></code></figure>
+
+    <h2>Gorilla Mux</h2>
+
+    <p><a href="http://www.gorillatoolkit.org/pkg/mux">Gorilla Mux</a> is the most full-featured of the three packages. It supports:</p>
+
+    <ul>
+      <li>Pattern matching on request paths, with optional regular expressions.</li>
+      <li>Matching on URL host and scheme, request method, header and query values.</li>
+      <li>Matching based on custom functions.</li>
+      <li>Use of sub-routers for easy nested routing.</li>
+    </ul>
+
+    <p>Additionally the matchers can be chained together, giving a lot of potential for granular routing rules if you need them.</p>
+
+    <p>The pattern syntax that Gorilla uses is slightly different to the other packages, with named parameters surrounded by curly braces. For example: <code>/user/{name}/profile</code> and <code>/user/{name:[a-z]+}/profile</code>.</p>
+
+    <p>Let's take a look at an example:</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir gorilla-example && cd gorilla-example
+    $ touch app.go
+    $ go get github.com/gorilla/mux
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    package main
+
+    import (
+      "github.com/gorilla/mux"
+      "log"
+      "net/http"
+    )
+
+    func main() {
+      rtr := mux.NewRouter()
+      rtr.HandleFunc("/user/{name:[a-z]+}/profile", profile).Methods("GET")
+
+      http.Handle("/", rtr)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func profile(w http.ResponseWriter, r *http.Request) {
+      params := mux.Vars(r)
+      name := params["name"]
+      w.Write([]byte("Hello " + name))
+    }
+    </pre></code></figure>
+
+    <p>Fundamentally there's the same thing going on here as in the previous two examples. So although the syntax looks a bit different I won't dwell on it &ndash; the Gorilla <a href="http://www.gorillatoolkit.org/pkg/mux">documentation</a> does a fine job of explaining it if it's not immediately clear.</p>
+
+    <h2 id="benchmarks">Relative Performance</h2>
+
+    <p>I ran two different sets of benchmarks on the packages. The first was a stripped-down benchmark to look at their performance in isolation, and the second was an attempt at profiling a more real-world use case.</p>
+
+    <p>In both tests I measured the number of successful requests across a ten second period, and took the average over 50 iterations, all running on my local machine.</p>
+
+    <p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the <a href="https://gist.github.com/alexedwards/6404944">code samples</a> and results:</p>
+
+    <figure class="chart">
+      <img src="/static/images/muxer-performance-comparison.png" alt="">
+    </figure>
+
+    <p>In this test the best performing package appeared to be Pat by a large margin. It handled around 30% more requests than Routes and Gorilla Mux, which were very evenly matched.</p>
+
+    <p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the <a href="https://gist.github.com/alexedwards/6414164">code samples</a> and results:</p>
+
+    <figure class="chart">
+      <img src="/static/images/muxer-performance-comparison-2.png" alt="">
+    </figure>
+
+
+    <p>In this benchmark the performance difference between the three packages was negligible.</p>
+
+    <p>Although it's always dangerous to draw conclusions from just one set of tests, it does point toward the overall performance impact of a router being much smaller for higher-latency applications, such as those with a lot of file system or database access in the handlers.</p>
+
+    <h2>Summary</h2>
+
+    <p>Pat would appear to be a good choice for scenarios where performance is important, you have a low-latency application, and only require simple pattern-based routing.</p>
+
+    <p>If you're likely to be validating a lot of parameter input with regular expressions in your application, then it probably makes sense to skip Pat and use Routes or Gorilla Mux instead, with the expressions built into your routing patterns.</p>
+
+    <p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+   <item>
+    <pubDate>Sat, 24 Aug 2013 12:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/serving-static-sites-with-go</link>
+    <guid>http://www.alexedwards.net/blog/serving-static-sites-with-go</guid>
+    <title>Serving Static Sites with Go</title>
+    <description><![CDATA[
+    <p>I've recently moved the site you're reading right now from a Sinatra application to an (almost) static one served by Go. While it's fresh in my head, here's an explanation of principles behind creating and serving static sites with Go.</p>
+
+    <p>Let's begin with a simple but real-world example: serving vanilla HTML and CSS files from a particular location.</p>
+
+    <p>Start by creating a directory to hold the project:</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir static-site
+    $ cd static-site
+    </pre></code></figure>
+
+    <p>Along with an <code>app.go</code> file to hold our code, and some sample HTML and CSS files in a <code>static</code> directory.</p>
+
+    <figure class="shell"><code><pre>
+    $ touch app.go
+    $ mkdir -p static/stylesheets
+    $ touch static/example.html static/stylesheets/main.css
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: static/example.html</figcaption><code><pre>
+    &lt;!doctype html&gt;
+    &lt;html&gt;
+    &lt;head&gt;
+      &lt;meta charset="utf-8"&gt;
+      &lt;title&gt;A static page&lt;/title&gt;
+      &lt;link rel="stylesheet" href="/stylesheets/main.css"&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Hello from a static page&lt;/h1&gt;
+    &lt;/body&gt;
+    &lt;/html&gt;
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: static/stylesheets/main.css</figcaption><code><pre>
+    body {color: #c0392b}
+    </pre></code></figure>
+
+    <p>Once those files are created, the code we need to get up and running is wonderfully compact:</p>
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    package main
+
+    import (
+      "log"
+      "net/http"
+    )
+
+    func main() {
+      fs := http.FileServer(http.Dir("static"))
+      http.Handle("/", fs)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+    </pre></code></figure>
+
+    <p>Let's step through this. First we use the <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a> function to create a handler that responds to HTTP requests with the contents of a given <a href="http://golang.org/pkg/net/http/#FileSystem">FileSystem</a>. Here we've used the <code>static</code> directory relative to our application, but you could use any other directory on your system (or indeed anything that implements the FileSystem interface). Next we use the <a href="http://golang.org/pkg/net/http/#Handle">Handle</a> function to register it as the handler for all requests, and launch the server listening on port 3000.</p>
+
+    <p>Go ahead and run the application:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run app.go
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the HTML page we made with a big red heading.</p>
+
+    <h2>Almost-Static Sites</h2>
+
+    <p>If you're creating a lot of static HTML files by hand, it can be tedious to keep repeating boilerplate content. Let's explore using the <a href="http://golang.org/pkg/text/template/">Template</a> package to put shared markup in a <em>layout</em> file.</p>
+
+    <p>At the moment <em>all</em> requests are being handled by our file server. Let's make a slight adjustment so that it only handles request paths that begin with the pattern <code>/static/</code> instead.</p>
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    ...
+    fs := http.FileServer(http.Dir("static"))
+    http.Handle("/static/", http.StripPrefix("/static/", fs))
+    ...
+    </pre></code></figure>
+
+    <p>If you restart the application, you should find the CSS file we made earlier available at <a href="http://localhost:3000/static/stylesheets/main.css">localhost:3000/static/stylesheets/main.css</a>.</p>
+
+    <p>Now let's create a <code>templates</code> directory, containing a <code>layout.html</code> file with shared markup, and an <code>example.html</code> file with some page-specific content.</p>
+
+    <figure class="shell"><code><pre>
+    $ mkdir templates
+    $ touch templates/layout.html templates/example.html
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>
+    &#123;&#123;define "layout"&#125;&#125;
+    &lt;!doctype html&gt;
+    &lt;html&gt;
+    &lt;head&gt;
+      &lt;meta charset="utf-8"&gt;
+      &lt;title&gt;&#123;&#123;template "title"&#125;&#125;&lt;/title&gt;
+      &lt;link rel="stylesheet" href="/static/stylesheets/main.css"&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &#123;&#123;template "body"&#125;&#125;
+    &lt;/body&gt;
+    &lt;/html&gt;
+    &#123;&#123;end&#125;&#125;
+    </pre></code></figure>
+
+    <figure class="file"><figcaption>File: templates/example.html</figcaption><code><pre>
+    &#123;&#123;define "title"&#125;&#125;A templated page&#123;&#123;end&#125;&#125;
+
+    &#123;&#123;define "body"&#125;&#125;
+    &lt;h1&gt;Hello from a templated page&lt;/h1&gt;
+    &#123;&#123;end&#125;&#125;
+    </pre></code></figure>
+
+    <p>If you've used templating in other web frameworks or languages before, this should hopefully feel familiar.</p>
+
+    <p>Go templates &ndash; in the way we're using them here &ndash; are essentially just named text blocks surrounded by <code>&#123;&#123;define&#125;&#125;</code> and <code>&#123;&#123;end&#125;&#125;</code> tags. Templates can be embedded into each other, as we do above where the <code>layout</code> template embeds both the <code>title</code> and <code>body</code> templates.</p>
+
+    <p>Let's update the application code to use these:</p>
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    package main
+
+    import (
+      "html/template"
+      "log"
+      "net/http"
+      "path"
+    )
+
+    func main() {
+      fs := http.FileServer(http.Dir("static"))
+      http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+      http.HandleFunc("/", serveTemplate)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func serveTemplate(w http.ResponseWriter, r *http.Request) {
+      lp := path.Join("templates", "layout.html")
+      fp := path.Join("templates", r.URL.Path)
+
+      templates, _ := template.ParseFiles(lp, fp)
+      templates.ExecuteTemplate(w, "layout", nil)
+    }
+    </pre></code></figure>
+
+    <p>So what's changed here?</p>
+
+    <p>First we've added the <code>html/template</code> and <code>path</code> packages to the import statement.</p>
+
+    <p>We've then specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate</code> function.</p>
+
+    <p>In the <code>serveTemplate</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="http://golang.org/pkg/path/#Join">Join</a>, which has the advantage of cleaning the path to help prevent directory traversal attacks.</p>
+
+    <p>We then use the <a href="http://golang.org/pkg/text/template/#Template.ParseFiles">ParseFiles</a> function to bundle the requested template and layout into a <em>template set</em>. Finally, we use the <a href="http://golang.org/pkg/text/template/#Template.ExecuteTemplate">ExecuteTemplate</a> function to render a named template in the set, in our case the <code>layout</code> template.</p>
+
+    <p>Restart the application:</p>
+
+    <figure class="shell"><code><pre>
+    $ go run app.go
+    <samp>Listening...</samp>
+    </pre></code></figure>
+
+    <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. If you look at the source you should find the markup from both templates merged together. You might also notice that the <code>Content-Type</code> and <code>Content-Length</code> headers have been set for us, courtesy of the <code>ExecuteTemplate</code> function.</p>
+
+    <p>Lastly, let's make the code a bit more robust. We should:</p>
+
+    <ul>
+      <li>Send a <code>404</code> response if the requested template doesn't exist.</li>
+      <li>Send a <code>404</code> response if the requested template path is a directory.</li>
+      <li>Send and log a <code>500</code> response if the <code>template.ParseFiles</code> function throws an error.</li>
+    </ul>
+
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+    package main
+
+    import (
+      "html/template"
+      "log"
+      "net/http"
+      "os"
+      "path"
+    )
+
+    func main() {
+      fs := http.FileServer(http.Dir("static"))
+      http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+      http.HandleFunc("/", serveTemplate)
+
+      log.Println("Listening...")
+      http.ListenAndServe(":3000", nil)
+    }
+
+    func serveTemplate(w http.ResponseWriter, r *http.Request) {
+      lp := path.Join("templates", "layout.html")
+      fp := path.Join("templates", r.URL.Path)
+
+      // Return a 404 if the template doesn't exist
+      info, err := os.Stat(fp)
+      if err != nil {
+        if os.IsNotExist(err) {
+          http.NotFound(w, r)
+          return
+        }
+      }
+
+      // Return a 404 if the request is for a directory
+      if info.IsDir() {
+        http.NotFound(w, r)
+        return
+      }
+
+      templates, err := template.ParseFiles(lp, fp)
+      if err != nil {
+        log.Print(err)
+        http.Error(w, "500 Internal Server Error", 500)
+        return
+      }
+      templates.ExecuteTemplate(w, "layout", nil)
+    }
+    </pre></code></figure>
+
+    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    ]]></description>
+  </item>
+  <item>
+    <pubDate>Sat, 17 Aug 2013 12:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/cleaner-better-faster</link>
+    <guid>http://www.alexedwards.net/blog/cleaner-better-faster</guid>
+    <title>Cleaner, Better, Faster</title>
+    <description><![CDATA[
+    <p>I've never really known what to do with my personal site. Over the years it's been a dumping ground for links to different projects, and played host to various half-hearted attempts at blogging. But it's never really had much in the way of an actual purpose.</p>
+
+    <p>I decided to start afresh and relaunch this site with more of a focus. After speaking to the guys from <a href="http://techzinglive.com/">Techzing</a>, I'm going to hunker down and focus my efforts on learning <a href="http://golang.org/">Go</a> really well, with the aim of possibly doing some consultancy work around it in the future. So over the coming months and maybe even years, I hope to create a lot of useful content for anyone else doing the same.</p>
+
+    <p>Because it's also full redesign of the site, I'll do a little colophon.</p>
+
+    <p>The site is now just static content, although I use <a href="http://sass-lang.com/">Sass</a> for stylesheets and <a href="http://daringfireball.net/projects/markdown/">Markdown</a> for writing blog posts (both of which are compiled on my local machine before publication). Some custom Go code handles the routing and templating, and it's all hosted on <a href="https://www.heroku.com">Heroku</a>.</p>
+
+    <p>For development I used <a href="http://www.ubuntu.com/">Ubuntu</a> as my operating system, <a href="http://www.sublimetext.com/">Sublime Text</a> as my editor, <a href="http://git-scm.com/">Git</a> for version control, and <a href="https://www.dropbox.com/">Dropbox</a> for real-time backups.</p>
+
+    <p>So with the mandatory first new post out of the way, I'm looking forward to doing a lot more with this site in the future!</p>
+    ]]></description>
+  </item>
+</channel>
+</rss>

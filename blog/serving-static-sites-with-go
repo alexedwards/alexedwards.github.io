@@ -1,0 +1,322 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Serving Static Sites with Go</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Serving Static Sites with Go</h1> <span>24th August 2013</span></header>
+
+<p>I've recently moved the site you're reading right now from a Sinatra application to an (almost) static one served by Go. While it's fresh in my head, here's an explanation of principles behind creating and serving static sites with Go.</p>
+
+<p>Let's begin with a simple but real-world example: serving vanilla HTML and CSS files from a particular location.</p>
+
+<p>Start by creating a directory to hold the project:</p>
+
+<figure class="shell"><code><pre>
+$ mkdir static-site
+$ cd static-site
+</pre></code></figure>
+
+<p>Along with an <code>app.go</code> file to hold our code, and some sample HTML and CSS files in a <code>static</code> directory.</p>
+
+<figure class="shell"><code><pre>
+$ touch app.go
+$ mkdir -p static/stylesheets
+$ touch static/example.html static/stylesheets/main.css
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: static/example.html</figcaption><code><pre>
+&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;A static page&lt;/title&gt;
+  &lt;link rel="stylesheet" href="/stylesheets/main.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Hello from a static page&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: static/stylesheets/main.css</figcaption><code><pre>
+body {color: #c0392b}
+</pre></code></figure>
+
+<p>Once those files are created, the code we need to get up and running is wonderfully compact:</p>
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+)
+
+func main() {
+  fs := http.FileServer(http.Dir("static"))
+  http.Handle("/", fs)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+</pre></code></figure>
+
+<p>Let's step through this.</p>
+
+<p>First we use the <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a> function to create a handler which responds to all HTTP requests with the contents of a given <a href="http://golang.org/pkg/net/http/#FileSystem">FileSystem</a>. For our FileSystem we're using the <code>static</code> directory relative to our application, but you could use any other directory on your machine (or indeed any object that implements the FileSystem interface). Next we use the <a href="http://golang.org/pkg/net/http/#Handle">Handle</a> function to register our FileServer as the handler for all requests, and launch the server listening on port 3000.</p>
+
+<p>It's worth pointing out that in Go the pattern <code>"/"</code> matches all request paths, rather than just the empty path.</p>
+
+<p>Go ahead and run the application:</p>
+
+<figure class="shell"><code><pre>
+$ go run app.go
+<samp>Listening...</samp>
+</pre></code></figure>
+
+<p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the HTML page we made with a big red heading.</p>
+
+<h2>Almost-Static Sites</h2>
+
+<p>If you're creating a lot of static HTML files by hand, it can be tedious to keep repeating boilerplate content. Let's explore using the <a href="http://golang.org/pkg/text/template/">Template</a> package to put shared markup in a <em>layout</em> file.</p>
+
+<p>At the moment <em>all</em> requests are being handled by our FileServer. Let's make a slight adjustment to our application so it only handles request paths that begin with the pattern <code>/static/</code> instead.</p>
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+...
+fs := http.FileServer(http.Dir("static"))
+http.Handle("/static/", http.StripPrefix("/static/", fs))
+...
+</pre></code></figure>
+
+<p>Notice that because our <code>static</code> directory is set as the root of the FileSystem, we need to strip off the <code>/static/</code> prefix from the request path <em>before</em> searching the FileSystem for the given file. We do this using the <a href="http://golang.org/pkg/net/http/#StripPrefix">StripPrefix</a> function.</p>
+
+<p>If you restart the application, you should find the CSS file we made earlier available at <a href="http://localhost:3000/static/stylesheets/main.css">localhost:3000/static/stylesheets/main.css</a>.</p>
+
+<p>Now let's create a <code>templates</code> directory, containing a <code>layout.html</code> file with shared markup, and an <code>example.html</code> file with some page-specific content.</p>
+
+<figure class="shell"><code><pre>
+$ mkdir templates
+$ touch templates/layout.html templates/example.html
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>
+&#123;&#123;define "layout"&#125;&#125;
+&lt;!doctype html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;&#123;&#123;template "title"&#125;&#125;&lt;/title&gt;
+  &lt;link rel="stylesheet" href="/static/stylesheets/main.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &#123;&#123;template "body"&#125;&#125;
+&lt;/body&gt;
+&lt;/html&gt;
+&#123;&#123;end&#125;&#125;
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: templates/example.html</figcaption><code><pre>
+&#123;&#123;define "title"&#125;&#125;A templated page&#123;&#123;end&#125;&#125;
+
+&#123;&#123;define "body"&#125;&#125;
+&lt;h1&gt;Hello from a templated page&lt;/h1&gt;
+&#123;&#123;end&#125;&#125;
+</pre></code></figure>
+
+<p>If you've used templating in other web frameworks or languages before, this should hopefully feel familiar.</p>
+
+<p>Go templates &ndash; in the way we're using them here &ndash; are essentially just named text blocks surrounded by <code>&#123;&#123;define&#125;&#125;</code> and <code>&#123;&#123;end&#125;&#125;</code> tags. Templates can be embedded into each other, as we do above where the <code>layout</code> template embeds both the <code>title</code> and <code>body</code> templates.</p>
+
+<p>Let's update the application code to use these:</p>
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+package main
+
+import (
+  "html/template"
+  "log"
+  "net/http"
+  "path"
+)
+
+func main() {
+  fs := http.FileServer(http.Dir("static"))
+  http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+  http.HandleFunc("/", serveTemplate)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+func serveTemplate(w http.ResponseWriter, r *http.Request) {
+  lp := path.Join("templates", "layout.html")
+  fp := path.Join("templates", r.URL.Path)
+
+  tmpl, _ := template.ParseFiles(lp, fp)
+  tmpl.ExecuteTemplate(w, "layout", nil)
+}
+</pre></code></figure>
+
+<p>So what's changed here?</p>
+
+<p>First we've added the <code>html/template</code> and <code>path</code> packages to the import statement.</p>
+
+<p>We've then specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate</code> function (if you were wondering, Go matches patterns based on length, with longer patterns take precedence over shorter ones).</p>
+
+<p>In the <code>serveTemplate</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="http://golang.org/pkg/path/#Join">Join</a>, which has the advantage of cleaning the path to help prevent directory traversal attacks.</p>
+
+<p>We then use the <a href="http://golang.org/pkg/text/template/#Template.ParseFiles">ParseFiles</a> function to bundle the requested template and layout into a <em>template set</em>. Finally, we use the <a href="http://golang.org/pkg/text/template/#Template.ExecuteTemplate">ExecuteTemplate</a> function to render a named template in the set, in our case the <code>layout</code> template.</p>
+
+<p>Restart the application:</p>
+
+<figure class="shell"><code><pre>
+$ go run app.go
+<samp>Listening...</samp>
+</pre></code></figure>
+
+<p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. If you look at the source you should find the markup from both templates merged together. You might also notice that the <code>Content-Type</code> and <code>Content-Length</code> headers have automatically been set for us.</p>
+
+<p>Lastly, let's make the code a bit more robust. We should:</p>
+
+<ul>
+  <li>Send a <code>404</code> response if the requested template doesn't exist.</li>
+  <li>Send a <code>404</code> response if the requested template path is a directory.</li>
+  <li>Send a <code>500</code> response if the <code>template.ParseFiles</code> or <code>template.ExecuteTemplate</code> functions throw an error, and log the detailed error message.</li>
+</ul>
+
+<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+package main
+
+import (
+  "html/template"
+  "log"
+  "net/http"
+  "os"
+  "path"
+)
+
+func main() {
+  fs := http.FileServer(http.Dir("static"))
+  http.Handle("/static/", http.StripPrefix("/static/", fs))
+  http.HandleFunc("/", serveTemplate)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+func serveTemplate(w http.ResponseWriter, r *http.Request) {
+  lp := path.Join("templates", "layout.html")
+  fp := path.Join("templates", r.URL.Path)
+
+  // Return a 404 if the template doesn't exist
+  info, err := os.Stat(fp)
+  if err != nil {
+    if os.IsNotExist(err) {
+      http.NotFound(w, r)
+      return
+    }
+  }
+
+  // Return a 404 if the request is for a directory
+  if info.IsDir() {
+    http.NotFound(w, r)
+    return
+  }
+
+  tmpl, err := template.ParseFiles(lp, fp)
+  if err != nil {
+    // Log the detailed error
+    log.Println(err.Error())
+    // Return a generic "Internal Server Error" message
+    http.Error(w, http.StatusText(500), 500)
+    return
+  }
+
+  if err := tmpl.ExecuteTemplate(w, "layout", nil); err != nil {
+    log.Println(err.Error())
+    http.Error(w, http.StatusText(500), 500)
+  }
+}
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a> <br> Last updated: 9th July 2014 (for Go version 1.3)</p>
+
+<p></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

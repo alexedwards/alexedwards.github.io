@@ -1,0 +1,95 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Alex Edwards</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<div class="wrapper">
+
+<div class="splash">
+<img src="/static/images/alex-edwards.jpg" alt="Alex Edwards" width="120" height="120">
+<p>Hi, I'm Alex Edwards. I'm the founder of <a href="https://www.listmark.net">Listmark</a>, developer of <a href="https://github.com/alexedwards/shift">Shift</a> and I manage the <a href="http://www.police.uk">Police.uk</a> service at the Home Office.</p>
+</div>
+
+<div class="copy">
+<p>I've spent the past five years working with the Government to improve online services and open data in the UK, and currently manage the police.uk and data.police.uk services. Outside my day job I've built a couple of small businesses, and enjoy supporting and continuing to grow those. I generally work with Go, Ruby, AWS, Git and Linux, and write a lot about building web applications with Go.</p>
+
+<p>If you'd like to discuss something or need any advice, please shoot me an email. I'm pretty friendly.</p>
+</div>
+
+<div class="left break">
+<h2>Online</h2>
+<ul class="no-bullet">
+  <li><a href="https://twitter.com/ajmedwards">Twitter</a></li>
+  <li><a href="https://github.com/alexedwards">Github</a></li>
+  <li><a href='m&#97;i&#108;&#116;o&#58;&#97;&#106;medw&#97;rds&#64;g%&#54;Dai%6C&#46;&#37;63&#37;6F&#109;'>aj&#109;ed&#119;&#97;rds&#64;gma&#105;l&#46;com</a></li>
+</ul>
+</div>
+
+<div class="right break">
+<h2>Recent Blog Posts</h2>
+<ul class="no-bullet">
+  <li><a href="/blog/handler-chains-using-stack">Context-Aware Handler Chains in Go</a></li>
+  <li><a href="/blog/making-and-using-middleware">Making and Using HTTP Middleware</a></li>
+  <li><a href="/blog/simple-flash-messages-in-golang">Simple Flash Messages in Go</a></li>
+</ul>
+</div>
+
+</div>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

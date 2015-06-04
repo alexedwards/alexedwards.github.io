@@ -1,0 +1,386 @@
+@import 'normalize';
+@import 'reset';
+@import 'solarized';
+
+/* ==========================================================================
+  Variables and Mixins
+  ========================================================================== */
+
+$black: #333;
+$silver: #eee;
+$blue: #3498db;
+$dark-blue: #2980b9;
+$orange: #f07746;
+$pad: 24px;
+
+@mixin clearfix {
+  *zoom: 1;
+  &:before,
+  &:after {
+    content: " ";
+    display: table;
+  }
+  &:after {
+    clear: both;
+  }
+}
+
+@mixin mq($mq) {
+  @if $mq == handheld {
+    @media only screen and (max-width: 640px) { @content; }
+  }
+  @if $mq == phone {
+    @media only screen and (max-width: 550px) { @content; }
+  }
+}
+
+/* ==========================================================================
+  General
+  ========================================================================== */
+
+
+body {
+  color: $black;
+  line-height: 1.5;
+  padding-bottom: $pad * 2;
+  @include mq(phone) {
+    padding-bottom: $pad;
+  }
+}
+
+.wrapper {
+  @include clearfix;
+  margin: 0 auto;
+  width: 660px;
+  @include mq(handheld) {
+    padding: 0 $pad;
+    width: 100%;
+  }
+}
+
+.left {
+  width: 50%;
+  float: left;
+  @include mq(handheld) {
+    width: 100%;
+    float: none;
+    margin-bottom: $pad;
+  }
+}
+
+.right {
+  width: 50%;
+  float: right;
+  @include mq(handheld) {
+    width: 100%;
+    float: none;
+  }
+}
+
+/* ==========================================================================
+  Typography
+  ========================================================================== */
+
+body {
+  font-family: "PT Serif", serif;
+  @include mq(phone) {
+    font-size: 0.875em;
+  }
+}
+
+h1 {
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+}
+
+h2 {
+  font-size: 1em;
+}
+
+a {
+  color: $blue;
+  text-decoration: none;
+}
+
+a:hover {
+  color: $dark-blue;
+  text-decoration: underline;
+}
+
+a:focus, a:active {
+  color: white;
+  background-color: $orange;
+  text-decoration: underline;
+}
+
+.copy {
+  p, figure, div, ol, ul, table, blockquote {
+    margin-bottom: $pad;
+  }
+  ul.spaced li {
+    margin-bottom: $pad/2;
+  }
+}
+
+ul > ul {
+  margin-left: $pad;
+}
+
+mark {
+  background-color: yellow;
+  display: inline-block;
+}
+
+q {
+  font-style: italic;
+}
+
+blockquote {
+  border-left: solid 5px #eee;
+  padding-left: $pad;
+  font-style: italic;
+}
+
+/* ==========================================================================
+  Code and Highlighting
+  ========================================================================== */
+
+figure {
+  padding: $pad / 2;
+  margin-bottom: $pad;
+  position: relative;
+  overflow: auto;
+}
+
+figcaption, code, table{
+  font-size: 0.875em;
+}
+
+figcaption, code, samp, code > pre, table {
+  font-family: "PT Mono", monospace;
+  white-space: pre;
+}
+
+figcaption {
+  background: darken(#eee, 3%);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  padding: 12px;
+}
+
+.shell {
+  background: #555;
+  color: #fff;
+  samp {
+    color: #aaa;
+  }
+}
+
+.file {
+  background-color: #eee;
+  padding-top: 45px + $pad / 2;
+}
+
+.plain {
+  background-color: #eee;
+}
+
+span.comment {
+  color: rgb(147, 161, 161);
+  span {
+    color: rgb(147, 161, 161) !important;
+  }
+}
+
+table {
+  background: #eee;
+  th {
+    background: darken(#eee, 3%);
+    font-weight: 400;
+  }
+  th, td {
+    padding: $pad/2;
+    border: solid 1px darken(#eee, 3%);
+  }
+}
+
+//   p > code {
+//     background-color: rgb(238, 238, 238);
+//   }
+// }
+
+// mark {
+//   background: darken(#eee, 3%);
+//   border-left: solid 5px  darken(#eee, 3%);;
+//   display: inline-block;
+//   position: relative;
+//   width: 100%;
+//   left: -$pad/2;
+//   padding-left: $pad/2 - 5px;
+// }
+
+.chart {
+  background: #555;
+  text-align: center;
+  padding: $pad;
+}
+
+/* ==========================================================================
+  Header and Navigation
+  ========================================================================== */
+
+body > header {
+  border-bottom: solid 1px $silver;
+  margin-bottom: $pad * 3;
+  @include mq(phone) {
+    margin-bottom: $pad;
+  }
+  padding: $pad 0;
+}
+
+header > nav {
+  @include clearfix;
+  @extend .wrapper;
+}
+
+header > nav img {
+  float: right;
+}
+
+header ul {
+  float: right;
+  list-style-type: none;
+  li {
+    display: inline-block;
+    margin-left: $pad;
+  }
+}
+
+/* ==========================================================================
+  Splash
+  ========================================================================== */
+
+.splash {
+  @include clearfix;
+  margin-bottom: $pad * 2;
+  @include mq(phone) {
+    margin-bottom: $pad;
+  }
+}
+
+.splash > img {
+  float: left;
+  margin-right: $pad;
+  border-radius: 50%;
+  @include mq(phone) {
+    display: block;
+    float: none;
+    margin: 0 auto;
+    margin-bottom: $pad;
+  }
+}
+
+.splash > p {
+  font-size: 1.25em;
+  // (120px - (20px * 3 *1.5))/2
+  padding: 15px 0;
+  @include mq(phone) {
+    text-align: center;
+    padding: 0;
+  }
+}
+
+/* ==========================================================================
+  Articles
+  ========================================================================== */
+
+article {
+  @extend .copy;
+  @extend .wrapper;
+}
+
+article > header {
+  text-align: center;
+  margin-bottom: $pad * 2.5;
+  @include mq(phone) {
+    margin-bottom: $pad;
+  }
+  h1 {
+    margin-bottom: $pad / 2;
+  }
+  span {
+    @extend .subtle;
+    position: relative;
+    display: inline-block;
+    &:before {
+      position: absolute;
+      content: "";
+      width: $pad * 4;
+      @include mq(phone) {
+        width: $pad;
+      }
+      border-top: solid 1px $silver;
+      left: 100%;
+      top: 12px;
+      margin-left: $pad / 2;
+
+    }
+    &:after {
+      position: absolute;
+      content: "";
+      width: $pad * 4;
+      @include mq(phone) {
+        width: $pad;
+      }
+      border-top: solid 1px $silver;
+      right: 100%;
+      top: 12px;
+      margin-right: $pad / 2;
+    }
+  }
+}
+
+article h2, .tags {
+  @extend .break;
+  margin-bottom: $pad;
+}
+
+article img {
+  // width: 100%;
+}
+
+
+/* ==========================================================================
+  Random
+  ========================================================================== */
+
+.no-bullet {
+  list-style-type: none;
+}
+
+.break {
+  padding-top: 24px;
+  border-top: solid 1px $silver;
+}
+
+div.expandable {
+  display:none
+}
+
+.subtle {
+  color: #c0c0c0;
+}
+
+time {
+  text-align: right;
+  float: right;
+  @include mq(phone) {
+    display: block;
+    float: none;
+    text-align: left;
+  }
+}
+

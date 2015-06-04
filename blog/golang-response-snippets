@@ -1,0 +1,419 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Golang Response Snippets: JSON, XML and more</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>HTTP Response Snippets for Go</h1> <span>19th October 2013</span></header>
+
+<p>Taking inspiration from the Rails <a href="http://guides.rubyonrails.org/layouts_and_rendering.html">layouts and rendering</a> guide, I thought it'd be a nice idea to build a snippet collection illustrating some common HTTP responses for Go web applications.</p>
+
+<ol style="margin-left: 21px;">
+  <li><a href="#headers">Sending Headers Only</a></li>
+  <li><a href="#plain">Rendering Plain Text</a></li>
+  <li><a href="#json">Rendering JSON</a></li>
+  <li><a href="#xml">Rendering XML</a></li>
+  <li><a href="#file">Serving a File</a></li>
+  <li><a href="#html">Rendering a HTML Template</a></li>
+  <li><a href="#string">Rendering a HTML Template to a String</a></li>
+  <li><a href="#nesting">Using Layouts and Nested Templates</a></li>
+</ol>
+
+<h2 id="headers">Sending Headers Only</h2>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "net/http"
+)
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  w.Header().Set("Server", "A Go Web Server")
+  w.WriteHeader(200)
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 200 OK
+Server: A Go Web Server
+Content-Type: text/plain; charset=utf-8
+Content-Length: 0</samp>
+</pre></code></figure>
+
+<h2 id="plain">Rendering Plain Text</h2>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "net/http"
+)
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("OK"))
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Content-Length: 2
+
+OK</samp>
+</pre></code></figure>
+
+<h2 id="json">Rendering JSON</h2>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "encoding/json"
+  "net/http"
+)
+
+type Profile struct {
+  Name    string
+  Hobbies []string
+}
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+  js, err := json.Marshal(profile)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  w.Header().Set("Content-Type", "application/json")
+  w.Write(js)
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 56
+
+{"Name":"Alex",Hobbies":["snowboarding","programming"]}</samp>
+</pre></code></figure>
+
+<h2 id="xml">Rendering XML</h2>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "encoding/xml"
+  "net/http"
+)
+
+type Profile struct {
+  Name    string
+  Hobbies []string `xml:"Hobbies>Hobby"`
+}
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+  x, err := xml.MarshalIndent(profile, "", "  ")
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  w.Header().Set("Content-Type", "application/xml")
+  w.Write(x)
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 200 OK
+Content-Type: application/xml
+Content-Length: 128
+
+&lt;Profile&gt;
+  &lt;Name&gt;Alex&lt;/Name&gt;
+  &lt;Hobbies&gt;
+    &lt;Hobby&gt;snowboarding&lt;/Hobby&gt;
+    &lt;Hobby&gt;programming&lt;/Hobby&gt;
+  &lt;/Hobbies&gt;
+&lt;/Profile&gt;</samp>
+</pre></code></figure>
+
+<h2 id="file">Serving a File</h2>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "net/http"
+  "path"
+)
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  // Assuming you want to serve a photo at 'images/foo.png'
+  fp := path.Join("images", "foo.png")
+  http.ServeFile(w, r, fp)
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -I localhost:3000
+<samp>HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 236717
+Content-Type: image/png
+Last-Modified: Thu, 10 Oct 2013 22:23:26 GMT</samp>
+</pre></code></figure>
+
+<h2 id="html">Rendering a HTML Template</h2>
+
+<figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+&lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
+&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "html/template"
+  "net/http"
+  "path"
+)
+
+type Profile struct {
+  Name    string
+  Hobbies []string
+}
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+  fp := path.Join("templates", "index.html")
+  tmpl, err := template.ParseFiles(fp)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  if err := tmpl.Execute(w, profile); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  }
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 84
+
+&lt;h1&gt;Hello Alex&lt;/h1&gt;
+&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;</samp>
+</pre></code></figure>
+
+<h2 id="string">Rendering a HTML Template to a String</h2>
+
+<p>Instead of passing in the <code>http.ResponseWriter</code> when executing your template (like in the above snippet) use a buffer instead:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+...
+buf := new(bytes.Buffer)
+if err := tmpl.Execute(buf, profile); err != nil {
+  http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+templateString := buf.String()
+...
+</pre></code></figure>
+
+<h2 id="nesting">Using Layouts and Nested Templates</h2>
+
+<figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;&#123;&#123; template "title" . &#125;&#125;&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &#123;&#123; template "content" . &#125;&#125;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+&#123;&#123; define "title" &#125;&#125;An example layout&#123;&#123; end &#125;&#125;
+
+&#123;&#123; define "content" &#125;&#125;
+&lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
+&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
+&#123;&#123; end &#125;&#125;
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "html/template"
+  "net/http"
+  "path"
+)
+
+type Profile struct {
+  Name    string
+  Hobbies []string
+}
+
+func main() {
+  http.HandleFunc("/", foo)
+  http.ListenAndServe(":3000", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+  profile := Profile{"Alex", []string{"snowboarding", "programming"}}
+
+  lp := path.Join("templates", "layout.html")
+  fp := path.Join("templates", "index.html")
+
+  // Note that the layout file must be the first parameter in ParseFiles
+  tmpl, err := template.ParseFiles(lp, fp)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  if err := tmpl.Execute(w, profile); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  }
+}
+</pre></code></figure>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 180
+
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;An example layout&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Hello Alex&lt;/h1&gt;
+    &lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</samp>
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

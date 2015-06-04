@@ -1,0 +1,266 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Simple Flash Messages in Go</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Simple Flash Messages in Go</h1> <span>19th November 2013</span></header>
+
+<p>Often in web applications you need to temporarily store data in-between requests, such as an error or success message during the Post-Redirect-Get process for a form submission. Frameworks such as Rails and Django have the concept of transient single-use <em>flash messages</em> to help with this.</p>
+
+<p>In this post I'm going to look at a way to create your own cookie-based flash messages in Go.</p>
+
+<p>We'll start by creating a directory for the project, along with a <code>flash.go</code> file for our code and a <code>main.go</code> file for an example application.</p>
+
+<figure class="shell"><code><pre>
+$ mkdir flash-example
+$ cd flash-example
+$ touch flash.go main.go
+</pre></code></figure>
+
+<p>In order to keep our request handlers nice and clean, we'll create our primary <code>SetFlash()</code> and <code>GetFlash()</code> helper functions in the <code>flash.go</code> file.</p>
+
+<figure class="file"><figcaption>File: flash.go</figcaption><code><pre>
+package main
+
+import (
+  "encoding/base64"
+  "net/http"
+  "time"
+)
+
+func SetFlash(w http.ResponseWriter, name string, value []byte) {
+  c := &http.Cookie{Name: name, Value: encode(value)}
+  http.SetCookie(w, c)
+}
+
+func GetFlash(w http.ResponseWriter, r *http.Request, name string) ([]byte, error) {
+  c, err := r.Cookie(name)
+  if err != nil {
+    switch err {
+    case http.ErrNoCookie:
+      return nil, nil
+    default:
+      return nil, err
+    }
+  }
+  value, err := decode(c.Value)
+  if err != nil {
+    return nil, err
+  }
+  dc := &http.Cookie{Name: name, MaxAge: -1, Expires: time.Unix(1, 0)}
+  http.SetCookie(w, dc)
+  return value, nil
+}
+
+// -------------------------
+
+func encode(src []byte) string {
+  return base64.URLEncoding.EncodeToString(src)
+}
+
+func decode(src string) ([]byte, error) {
+  return base64.URLEncoding.DecodeString(src)
+}
+</pre></code></figure>
+
+<p>Our <code>SetFlash()</code> function is pretty succinct.</p>
+
+<p>It creates a new <a href="http://golang.org/pkg/net/http/#Cookie">Cookie</a>, containing the name of the flash message and the content. You'll notice that we're encoding the content &ndash; this is because <a href="http://tools.ietf.org/html/rfc6265#section-4.1.1">RFC 6265</a> is quite strict about the characters cookie values can contain, and encoding to base64 ensures our value satisfies the permitted character set. We then use the <a href="http://golang.org/pkg/net/http/#SetCookie">SetCookie</a> function to write the cookie to the response.</p>
+
+<p>In the <code>GetFlash()</code> helper we use the <a href="http://golang.org/pkg/net/http/#Request.Cookie">request.Cookie</a> method to load up the cookie containing the flash message &ndash; returning <code>nil</code> if it doesn't exist &ndash; and then decode the value from base64 back into a byte array.</p>
+
+<p>Because we want a flash message to only be available once, we need to instruct clients to not resend the cookie with future requests. We can do this by setting a new cookie with exactly the same name, with <code>MaxAge</code> set to a negative number and <code>Expiry</code> set to a historical time (to cater for old versions of IE). You should note that Go will only set an expiry time on a cookie if it is after the <a href="http://en.wikipedia.org/wiki/Unix_time#Encoding_time_as_a_number">Unix epoch</a>, so we've set ours for 1 second after that.</p>
+
+<p>Let's use these helper functions in a short example:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "fmt"
+  "net/http"
+)
+
+func main() {
+  http.HandleFunc("/set", set)
+  http.HandleFunc("/get", get)
+  fmt.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+func set(w http.ResponseWriter, r *http.Request) {
+  fm := []byte("This is a flashed message!")
+  SetFlash(w, "message", fm)
+}
+
+func get(w http.ResponseWriter, r *http.Request) {
+  fm, err := GetFlash(w, r, "message")
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if fm == nil {
+    fmt.Fprint(w, "No flash messages")
+    return
+  }
+  fmt.Fprintf(w, "%s", fm)
+}
+</pre></code></figure>
+
+<p>Run the application:</p>
+
+<figure class="shell"><code><pre>
+$ go run main.go flash.go
+<samp>Listening...</samp>
+</pre></code></figure>
+
+<p>And make some requests against it using <a href="http://curl.haxx.se/">cURL</a>:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i --cookie-jar cj localhost:3000/set
+<samp>HTTP/1.1 200 OK
+Set-Cookie: message=VGhpcyBpcyBhIGZsYXNoZWQgbWVzc2FnZSE=
+Content-Type: text/plain; charset=utf-8
+Content-Length: 0</samp>
+
+$ curl -i --cookie-jar cj --cookie cj localhost:3000/get
+<samp>HTTP/1.1 200 OK
+Set-Cookie: message=; Expires=Thu, 01 Jan 1970 00:00:01 UTC; Max-Age=0
+Content-Type: text/plain; charset=utf-8
+Content-Length: 26
+
+This is a flashed message!</samp>
+
+$ curl -i --cookie-jar cj --cookie cj localhost:3000/get
+<samp>HTTP/1.1 200 OK
+Content-Type: text/plain; charset=utf-8
+Content-Length: 17
+
+No flash messages</samp>
+</pre></code></figure>
+
+<p>You can see our flash message being set, retrieved, and then not passed with subsequent requests as expected.</p>
+
+<h2>Additional Tools</h2>
+
+<p>If you don't want to roll your own helpers for flash messages, or need them to be 'signed' to prevent tampering, then the <a href="http://www.gorillatoolkit.org/pkg/sessions">Gorilla Sessions</a> package is a good option. Here's the previous example implemented with Gorilla instead:</p>
+
+<figure class="plain"><code><pre>
+package main
+
+import (
+  "fmt"
+  "github.com/gorilla/sessions"
+  "net/http"
+)
+
+func main() {
+  http.HandleFunc("/set", set)
+  http.HandleFunc("/get", get)
+  fmt.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
+
+var store = sessions.NewCookieStore([]byte("a-secret-string"))
+
+func set(w http.ResponseWriter, r *http.Request) {
+  session, err := store.Get(r, "flash-session")
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  }
+  session.AddFlash("This is a flashed message!", "message")
+  session.Save(r, w)
+}
+
+func get(w http.ResponseWriter, r *http.Request) {
+  session, err := store.Get(r, "flash-session")
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  }
+  fm := session.Flashes("message")
+  if fm == nil {
+    fmt.Fprint(w, "No flash messages")
+    return
+  }
+  session.Save(r, w)
+  fmt.Fprintf(w, "%v", fm[0])
+}
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

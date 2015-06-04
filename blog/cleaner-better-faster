@@ -1,0 +1,80 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Cleaner, Better, Faster</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>Cleaner, Better, Faster</h1> <span>17th August 2013</span></header>
+
+<p>I've never really known what to do with my personal site. Over the years it's been a dumping ground for links to different projects, and played host to various half-hearted attempts at blogging. But it's never really had much in the way of an actual purpose.</p>
+
+<p>I decided to start afresh and relaunch this site with more of a focus. After speaking to the guys from <a href="http://techzinglive.com/">Techzing</a>, I'm going to hunker down and focus my efforts on learning <a href="http://golang.org/">Go</a> really well, with the aim of possibly doing some consultancy work around it in the future. So over the coming months and maybe even years, I hope to create a lot of useful content for anyone else doing the same.</p>
+
+<p>Because it's also full redesign of the site, I'll do a little colophon.</p>
+
+<p>The site is now just static content, although I use <a href="http://sass-lang.com/">Sass</a> for stylesheets and <a href="http://daringfireball.net/projects/markdown/">Markdown</a> for writing blog posts (both of which are compiled on my local machine before publication). Some custom Go code handles the routing and templating, and it's all hosted on <a href="https://www.heroku.com">Heroku</a>.</p>
+
+<p>For development I used <a href="http://www.ubuntu.com/">Ubuntu</a> as my operating system, <a href="http://www.sublimetext.com/">Sublime Text</a> as my editor, <a href="http://git-scm.com/">Git</a> for version control, and <a href="https://www.dropbox.com/">Dropbox</a> for real-time backups.</p>
+
+<p>So with the mandatory first new post out of the way, I'm looking forward to doing a lot more with this site in the future!</p>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>

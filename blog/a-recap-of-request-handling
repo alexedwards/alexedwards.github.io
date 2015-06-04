@@ -1,0 +1,383 @@
+
+<!doctype html>
+<html lang="en-gb">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>A Recap of Request Handling in Go</title>
+
+<meta name="author" content="Alex Edwards">
+<meta name="copyright" content="Copyright Alex Edwards 2014.">
+
+<link rel="icon" href="/static/images/favicon.ico">
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+
+
+<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
+</head>
+<body>
+<header>
+<nav>
+  <a href="/">Alex Edwards</a>
+  <ul>
+    <li><a href="/blog">Blog</a></li>
+    <li><a href="/static/feed.rss">RSS</a></li>
+  </ul>
+</nav>
+</header>
+
+<article>
+
+<header><h1>A Recap of Request Handling in Go</h1> <span>12th September 2013</span></header>
+
+<p>Processing HTTP requests with Go is primarily about two things: ServeMuxes and Handlers.</p>
+
+<p>A <a href="http://golang.org/pkg/net/http/#ServeMux">ServeMux</a> is essentially a HTTP request router (or <em>multiplexor</em>). It compares incoming requests against a list of predefined URL paths, and calls the associated handler for the path whenever a match is found.</p>
+
+<p>Handlers are responsible for writing response headers and bodies. Almost any object can be a handler, so long as it satisfies the <a href="http://golang.org/pkg/net/http/#Handler">http.Handler interface</a>. In lay terms, that simply means it must have a <code>ServeHTTP</code> method with the following signature:</p>
+
+<p><code>ServeHTTP(http.ResponseWriter, *http.Request)</code></p>
+
+<p>Go's HTTP package ships with a few functions to generate common handlers, such as <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a>,  <a href="http://golang.org/pkg/net/http/#NotFoundHandler">NotFoundHandler</a> and <a href="http://golang.org/pkg/net/http/#RedirectHandler">RedirectHandler</a>. Let's begin with a simple but contrived example:</p>
+
+<figure class="shell"><code><pre>
+$ mkdir handler-example
+$ cd handler-example
+$ touch main.go
+</pre></code></figure>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+)
+
+func main() {
+  mux := http.NewServeMux()
+
+  rh := http.RedirectHandler("http://example.org", 307)
+  mux.Handle("/foo", rh)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", mux)
+}
+</pre></code></figure>
+<p>Let's step through this quickly:</p>
+
+<ul>
+  <li>In the <code>main</code> function we use the <a href="http://golang.org/pkg/net/http/#NewServeMux">http.NewServeMux</a> function to create an empty ServeMux.
+  <li>We then use the <a href="http://golang.org/pkg/net/http/#RedirectHandler">http.RedirectHandler</a> function to create a new handler. This handler 307 redirects all requests it receives to <code>http://example.org</code>.</li>
+  <li>Next we use the <a href="http://golang.org/pkg/net/http/#ServeMux.Handle">ServeMux.Handle</a> function to register this with our new ServeMux, so it acts as the handler for all incoming requests with the URL path <code>/foo</code>.</li>
+  <li>Finally we create a new server and start listening for incoming requests with the <a href="http://golang.org/pkg/net/http/#ListenAndServe">http.ListenAndServe</a> function, passing in our ServeMux for it to match requests against.</li>
+</ul>
+
+<p>Go ahead and run the application:</p>
+
+<figure class="shell"><code><pre>
+$ go run main.go
+<samp>Listening...</samp>
+</pre></code></figure>
+
+<p>And visit <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> in your browser. You should find that your request gets successfully redirected.</p>
+
+<p>The eagle-eyed of you might have noticed something interesting: The signature for the ListenAndServe function is <code>ListenAndServe(addr string, handler Handler)</code>, but we passed a ServeMux as the second parameter.</p>
+
+<p>We were able to do this because ServeMux also <a href="http://golang.org/pkg/net/http/#ServeMux.ServeHTTP">has a ServeHTTP method</a>, meaning that it too satisfies the Handler interface.</p>
+
+<p>For me it simplifies things to think of a ServeMux as <em>just being a special kind of handler</em>, which instead of providing a response itself passes the request on to a second handler. This isn't as much of a leap as it first sounds &ndash; chaining handlers together is fairly commonplace in Go.</p>
+
+<h2>Custom Handlers</h2>
+
+<p>Let's create a custom handler which responds with the current local time in a given format:</p>
+
+<figure class="plain"><code><pre>
+type timeHandler struct {
+  format string
+}
+
+func (th *timeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  tm := time.Now().Format(th.format)
+  w.Write([]byte("The time is: " + tm))
+}
+</pre></code></figure>
+
+<p>The exact code here isn't too important.</p>
+
+<p>All that really matters is that we have an object (in this case it's a <code>timeHandler</code> struct, but it could equally be a string or function or anything else), and we've implemented a method with the signature <code>ServeHTTP(http.ResponseWriter, *http.Request)</code> on it. That's all we need to make a handler.</p>
+
+<p>Let's embed this in a concrete example:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+  "time"
+)
+
+type timeHandler struct {
+  format string
+}
+
+func (th *timeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  tm := time.Now().Format(th.format)
+  w.Write([]byte("The time is: " + tm))
+}
+
+func main() {
+  mux := http.NewServeMux()
+
+  th := &timeHandler{format: time.RFC1123}
+  mux.Handle("/time", th)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", mux)
+}
+</pre></code></figure>
+
+<p>In the <code>main</code> function we initialised the <code>timeHandler</code> in exactly the same way we would any normal struct, using the <code>&amp;</code> symbol to yield a pointer. And then, like the previous example, we use the <code>mux.Handle</code> function to register this with our ServeMux.</p>
+
+<p>Now when we run the application, the ServeMux will pass any request for <code>/time</code> straight on to our <code>timeHandler.ServeHTTP</code> method.</p>
+
+<p>Go ahead and give it a try: <a href="http://localhost:3000/time">http://localhost:3000/time</a>.</p>
+
+<p>Notice too that we could easily reuse the <code>timeHandler</code> in multiple routes:</p>
+
+<figure class="plain"><code><pre>
+func main() {
+  mux := http.NewServeMux()
+
+  th1123 := &timeHandler{format: time.RFC1123}
+  mux.Handle("/time/rfc1123", th1123)
+
+  th3339 := &timeHandler{format: time.RFC3339}
+  mux.Handle("/time/rfc3339", th3339)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", mux)
+}
+</pre></code></figure>
+
+<p><code>  </code></p>
+
+<h2>Functions as Handlers</h2>
+
+<p>For simple cases (like the example above) defining new custom types and ServeHTTP methods feels a bit verbose. Let's look at an alternative approach, where we leverage Go's <a href="http://golang.org/pkg/net/http/#HandlerFunc">http.HandlerFunc</a> type to coerce a normal function into satisfying the Handler interface.</p>
+
+<p>Any function which has the signature <code>func(http.ResponseWriter, *http.Request)</code> can be converted into a HandlerFunc type. This is useful because HandleFunc objects come with an inbuilt ServeHTTP method which &ndash; rather cleverly and conveniently &ndash; executes the content of the original function.</p>
+
+<p>If that sounds confusing, try taking a look at the <a href="http://golang.org/src/pkg/net/http/server.go?s=35455:35502#L1221">relevant source code</a>. You'll see that it's a very succinct way of making a function satisfy the Handler interface.</p>
+
+<p>Let's reproduce the timeHandler application using this technique:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+  "time"
+)
+
+func timeHandler(w http.ResponseWriter, r *http.Request) {
+  tm := time.Now().Format(time.RFC1123)
+  w.Write([]byte("The time is: " + tm))
+}
+
+func main() {
+  mux := http.NewServeMux()
+
+  // Convert the timeHandler function to a HandleFunc type
+  th := http.HandlerFunc(timeHandler)
+  // And add it to the ServeMux
+  mux.Handle("/time", th)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", mux)
+}
+</pre></code></figure>
+
+
+
+<p>In fact, converting a function to a HandlerFunc type and then adding it to a ServeMux like this is so common that Go provides a shortcut: the <a href="http://golang.org/pkg/net/http/#ServeMux.HandleFunc">ServeMux.HandleFunc</a> method.</p>
+
+<p>This is what the <code>main()</code> function would have looked like if we'd used this shortcut instead:</p>
+
+<figure class="plain"><code><pre>
+func main() {
+  mux := http.NewServeMux()
+
+  mux.HandleFunc("/time", timeHandler)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", mux)
+}
+</pre></code></figure>
+
+<p id="passing-variables">Most of the time using a function as a handler like this works well. But there is a bit of a limitation when things start getting more complex.</p>
+
+<p>You've probably noticed that, unlike the method before, we've had to hardcode the time format in the <code>timeHandler</code> function. <em>What happens when we want to pass information or variables from <code>main()</code> to a handler?</em></p>
+
+<p>A neat approach is to put our handler logic into a closure, and <em>close over</em> the variables we want to use:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+  "time"
+)
+
+func timeHandler(format string) http.Handler {
+  fn := func(w http.ResponseWriter, r *http.Request) {
+    tm := time.Now().Format(format)
+    w.Write([]byte("The time is: " + tm))
+  }
+  return http.HandlerFunc(fn)
+}
+
+func main() {
+  mux := http.NewServeMux()
+
+  th := timeHandler(time.RFC1123)
+  mux.Handle("/time", th)
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", mux)
+}
+</pre></code></figure>
+
+<p>The <code>timeHandler</code> function now has a subtly different role. Instead of coercing the function into a handler (like we did previously), we are now using it to <em>return a handler</em>. There's two key elements to making this work.</p>
+
+<p>First it creates <code>fn</code>, an anonymous function which accesses &dash; or closes over &ndash; the <code>format</code> variable forming a <em>closure</em>. Regardless of what we do with the closure it will always be able to access the variables that are local to the scope it was created in &ndash; which in this case means it'll always have access to the <code>format</code> variable.</p>
+
+<p>Secondly our closure has the signature <code>func(http.ResponseWriter, *http.Request)</code>. As you may remember from earlier, this means that we can convert it into a HandlerFunc type (so that it satisfies the Handler interface). Our <code>timeHandler</code> function then returns this converted closure.</p>
+
+<p>In this example we've just been passing a simple string to a handler. But in a real-world application you could use this method to pass database connection, template map, or any other application-level context. It's a good alternative to using global variables, and has the added benefit of making neat self-contained handlers for testing.</p>
+
+<p>You might also see this same pattern written as:</p>
+
+<figure class="plain"><code><pre>
+func timeHandler(format string) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    tm := time.Now().Format(format)
+    w.Write([]byte("The time is: " + tm))
+  })
+}
+</pre></code></figure>
+
+<p>Or using an implicit conversion to the HandlerFunc type on return:</p>
+
+<figure class="plain"><code><pre>
+func timeHandler(format string) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    tm := time.Now().Format(format)
+    w.Write([]byte("The time is: " + tm))
+  }
+}
+</pre></code></figure>
+
+
+
+<h2>The DefaultServeMux</h2>
+
+<p>You've probably seen DefaultServeMux mentioned in lots of places, from the simplest Hello World examples to the Go source code.</p>
+
+<p>It took me a long time to realise it isn't anything special. The DefaultServeMux is just a  plain ol' ServeMux like we've already been using, which gets instantiated by default when the HTTP package is used. Here's the relevant line from the Go source:</p>
+
+<p><code>var DefaultServeMux = NewServeMux()</code></p>
+
+<p>The HTTP package provides a couple of shortcuts for working with the DefaultServeMux: <a href="http://golang.org/pkg/net/http/#Handle">http.Handle</a> and <a href="http://golang.org/pkg/net/http/#HandleFunc">http.HandleFunc</a>. These do exactly the same as their namesake functions we've already looked at, with the difference that they add handlers to the DefaultServeMux instead of one that you've created. </p>
+
+<p>Additionally, ListenAndServe will fall back to using the DefaultServeMux if no other handler is provided (that is, the second parameter is set to <code>nil</code>).</p>
+
+<p>So as a final step, let's update our timeHandler application to use the DefaultServeMux instead:</p></del>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+  "time"
+)
+
+func timeHandler(format string) http.Handler {
+  fn := func(w http.ResponseWriter, r *http.Request) {
+    tm := time.Now().Format(format)
+    w.Write([]byte("The time is: " + tm))
+  }
+  return http.HandlerFunc(fn)
+}
+
+func main() {
+  // Note that we skip creating the ServeMux...
+
+  var format string = time.RFC1123
+  th := timeHandler(format)
+
+  // We use http.Handle instead of mux.Handle...
+  http.Handle("/time", th)
+
+  log.Println("Listening...")
+  // And pass nil as the handler to ListenAndServe.
+  http.ListenAndServe(":3000", nil)
+}
+</pre></code></figure>
+
+<p>If you found this post useful, you might like to subscribe to my <a href="/static/feed.rss">RSS feed</a>.</p>
+
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a> <br> Last updated: 6th October 2014 (for Go version 1.3)</p>
+
+
+<div class="addthis_toolbox addthis_default_style addthis_counter_style" >
+<a class="addthis_button_tweet" tw:via="ajmedwards"></a>
+<a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+</div>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=xa-5259a8397e5219e4"></script>
+​<script type="text/javascript">
+var addthis_config = addthis_config||{};
+addthis_config.data_track_addressbar = false;
+addthis_config.data_track_clickback = false;
+</script>
+
+</article>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23830196-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  $(document).ready(function() {
+    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+
+    
+    
+    
+    
+    
+    
+    
+    
+  });
+
+</script>
+</body>
+</html>
