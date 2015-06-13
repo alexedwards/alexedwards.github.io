@@ -431,6 +431,16 @@
 
     <p>But this tutorial is already pretty long, so I'll explore some of the options for refactoring our code in the next post &ndash; Practical Persistence in Go: More SQL (<em>coming soon!</em>)</p>
 
+    <h2>Additional tools</h2>
+
+    <p>There a quite a few third-party packages that make working with SQL databases a bit easier.</p>
+
+    <p>The <a href="https://github.com/jmoiron/sqlx">Sqlx</a> package by Jason Moiron provides some additions to the standard <code>database/sql</code> functionality, including support for named placeholder parameters and automatic marshalling of rows into structs.</p>
+
+    <p>If you're looking for something more ORM-ish, you might like to consider <a href="https://github.com/jmoiron/modl">Modl</a> by the same author, or <a href="https://github.com/go-gorp/gorp">gorp</a> by James Cooper.</p>
+
+    <p>Lastly the <a href="https://github.com/guregu/null">null</a> package by <a href="https://github.com/guregu">guregu</a> can help make managing nullable values easier, if that's something you need to do a lot of.</p>
+
     <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>

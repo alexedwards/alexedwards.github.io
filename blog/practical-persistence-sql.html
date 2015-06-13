@@ -14,7 +14,7 @@
 
 <link rel="icon" href="/static/images/favicon.ico">
 <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono:400|PT+Serif:400,700,400italic" >
-<link rel="stylesheet" href="/static/stylesheets/main.min.css">
+<link rel="stylesheet" href="http://www.alexedwards.net/static/stylesheets/main.min.css">
 <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
 
 
@@ -453,6 +453,16 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 
 <p>But this tutorial is already pretty long, so I'll explore some of the options for refactoring our code in the next post &ndash; Practical Persistence in Go: More SQL (<em>coming soon!</em>)</p>
 
+<h2>Additional tools</h2>
+
+<p>There a quite a few third-party packages that make working with SQL databases a bit easier.</p>
+
+<p>The <a href="https://github.com/jmoiron/sqlx">Sqlx</a> package by Jason Moiron provides some additions to the standard <code>database/sql</code> functionality, including support for named placeholder parameters and automatic marshalling of rows into structs.</p>
+
+<p>If you're looking for something more ORM-ish, you might like to consider <a href="https://github.com/jmoiron/modl">Modl</a> by the same author, or <a href="https://github.com/go-gorp/gorp">gorp</a> by James Cooper.</p>
+
+<p>Lastly the <a href="https://github.com/guregu/null">null</a> package by <a href="https://github.com/guregu">guregu</a> can help make managing nullable values easier, if that's something you need to do a lot of.</p>
+
 <!-- <p>Q) Can I see prepared statements in Postgres?</p>
 <p>Q) What happens if my DB goes down after connection is made? A) Using normal queries, it still works.</p>
 <p>Q) What if I make prepared statements then stop pg? Then restart?</p>
@@ -465,6 +475,8 @@ I've also found guregu's <a href="https://github.com/guregu/null">null</a> packa
 <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
 
 <p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
+
+<p class="subtle"><small>All code snippets in this post are made available to freely use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
 
 <div class="addthis_toolbox addthis_default_style addthis_counter_style" >
 <a class="addthis_button_tweet" tw:via="ajmedwards"></a>
