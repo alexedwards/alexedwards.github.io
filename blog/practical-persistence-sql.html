@@ -316,7 +316,7 @@ func booksShow(w http.ResponseWriter, r *http.Request) {
 
 <p>Now we get to the interesting bit: <code><a href="http://golang.org/pkg/database/sql/#DB.QueryRow">DB.QueryRow()</a></code>. This method is similar to <code>DB.Query</code>, except that it fetches a single row instead of multiple rows.<p>
 
-<p>Because we need to include untrusted input (the <code>isbn</code> variable) in our query we take advantage of <strong>placeholder parameters</strong>, passing in the value of our placeholder as the second argument to <code>DB.QueryRow()</code> like so:</p>
+<p>Because we need to include untrusted input (the <code>isbn</code> variable) in our SQL query we take advantage of <strong>placeholder parameters</strong>, passing in the value of our placeholder as the second argument to <code>DB.QueryRow()</code> like so:</p>
 
 <p><code>db.QueryRow("SELECT * FROM books WHERE isbn = $1", isbn)</code></p>
 
