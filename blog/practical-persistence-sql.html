@@ -51,7 +51,7 @@ $ go get github.com/lib/pq
 
 <p>Let's build a simple Bookstore application, which carries out CRUD operations on a <code>books</code> table. </p>
 
-<p>If you'd like to follow along, you'll need to create a new <code>bookstore</code> database and scaffold it with the following SQL:</p>
+<p>If you'd like to follow along, you'll need to create a new <code>bookstore</code> database and scaffold it with the following:</p>
 
 <figure class="plain"><code class="sql"><pre>
 CREATE TABLE books (
@@ -131,7 +131,7 @@ func main() {
 
 <p>The first interesting thing is the way that we <strong>import the driver</strong>. We don't use anything in the <code>pq</code> package directly, which means that the Go compiler will raise an error if we try to import it normally. But we need the pq package's <code>init()</code> function to run so that our driver can <a href="http://golang.org/pkg/database/sql/#Register">register itself</a> with <code>database/sql</code>. We get around this by <a href="http://learntogoogleit.com/post/63748050636/aliasing-imports-in-golang">aliasing the package name</a> to the blank identifier. This means <code>pq.init()</code> still gets executed, but the alias is harmlessly discarded (and our code runs error-free). This approach is standard for most of Go's SQL drivers.</p>
 
-<p>Next we <strong>define a <code>Book</code> type</strong> &ndash; with the struct fields and their types aligning to our <code>books</code> SQL table. For completeness I should point out that we've only been able to use the <code>string</code> and <code>float32</code> types safely because we set <code>NOT NULL</code> constraints on the columns in our SQL table. If the table contained nullable fields we would need to use the <code>sql.NullString</code> and <code>sql.NullFloat64</code> types instead &ndash; see <a href="https://gist.github.com/alexedwards/dc3145c8e2e6d2fd6cd9">this Gist</a> for a working example. Generally it's easiest to avoid nullable fields altogether if you can, which is what we've done here.</p>
+<p>Next we <strong>define a <code>Book</code> type</strong> &ndash; with the struct fields and their types aligning to our <code>books</code> table. For completeness I should point out that we've only been able to use the <code>string</code> and <code>float32</code> types safely because we set <code>NOT NULL</code> constraints on the columns in our table. If the table contained nullable fields we would need to use the <code>sql.NullString</code> and <code>sql.NullFloat64</code> types instead &ndash; see <a href="https://gist.github.com/alexedwards/dc3145c8e2e6d2fd6cd9">this Gist</a> for a working example. Generally it's easiest to avoid nullable fields altogether if you can, which is what we've done here.</p>
 
 <p>In the <code>main()</code> function we <strong>initialise a new <code>sql.DB</code> object</strong> by calling <code><a href="http://golang.org/pkg/database/sql/#Open">sql.Open()</a></code>. We pass in the name of our driver (in this case <code>&quot;postgres&quot;</code>) and the connection string (you'll need to check your driver documentation for the correct format). It's worth emphasising that the <code>sql.DB</code> object it returns is not a <em>database connection</em> &ndash; it's an abstraction representing a pool of underlying connections. You can change the maximum number of open and idle connections in the pool with the <code>db.SetMaxOpenConns()</code> and <code>db.SetMaxIdleConns()</code> methods respectively. A final thing to note is that <code>sql.DB</code> is safe for concurrent access, which is very convenient if you're using it in a web application (like we will shortly).</p>
 
@@ -141,9 +141,9 @@ func main() {
 <li><p>We fetch a resultset from the <code>books</code> table using the <code><a href="http://golang.org/pkg/database/sql/#DB.Query">DB.Query()</a></code> method and assign it to a <code>rows</code> variable. Then we <code>defer rows.Close()</code> to ensure the resultset is properly closed before the parent function returns. <strong>Closing a resultset properly is really important</strong>. As long as a resultset is open it will keep the underlying database connection open &ndash; which in turn means the connection is not available to the pool. So if something goes wrong and the resultset isn't closed it can
  rapidly lead to all the connections in your pool being used up. Another gotcha (which caught me out when I first began) is that the defer statement should come <em>after</em> you check for an error from <code>DB.Query</code>. Otherwise, if <code>DB.Query()</code> returns an error, you'll get a panic trying to close a nil resultset.<p></li>
 
-<li><p>We then use <code><a href="http://golang.org/pkg/database/sql/#Rows.Next">rows.Next()</a></code> to iterate through the rows in the resultset. This preps the first (and then each subsequent) row to be acted on by the <code>rows.Scan()</code> method. Note that if iteration over all of the rows completes then the resultset automatically closes itself and frees-up the database connection.</p></li>
+<li><p>We then use <code>rows.Next()</code> to iterate through the rows in the resultset. This preps the first (and then each subsequent) row to be acted on by the <code>rows.Scan()</code> method. Note that if iteration over all of the rows completes then the resultset automatically closes itself and frees-up the  connection.</p></li>
 
-<li><p>We use the <code><a href="http://golang.org/pkg/database/sql/#Rows.Scan">rows.Scan()</a></code> method to copy the values from each field in the row to a new <code>Book</code> object that we created. We then check for any errors that occurred during Scan, and add the new <code>Book</code> to the <code>bks</code> slice we created earlier.</p></li>
+<li><p>We use the <code>rows.Scan()</code> method to copy the values from each field in the row to a new <code>Book</code> object that we created. We then check for any errors that occurred during Scan, and add the new <code>Book</code> to the <code>bks</code> slice we created earlier.</p></li>
 
 <li><p>When our <code>rows.Next()</code> loop has finished we call <code>rows.Err()</code>. This returns any error that was encountered during the interation. It's important to call this &ndash; don't just assume that we completed a successful iteration over the whole resultset.</p></li>
 </ol>
@@ -246,9 +246,9 @@ func booksIndex(w http.ResponseWriter, r *http.Request) {
 <p>So how is this different?</p>
 
 <ul>
-<li><p>We use the <code>init()</code> function to set up our database connection pool and assign it to the global variable <code>db</code>. We're using a global variable to store the connection pool because it's an easy way of making it available to our HTTP handlers &ndash; but it's by no means the only way. Because <code>sql.Open()</code> doesn't actually check a connection, we also call <code><a href="http://golang.org/pkg/database/sql/#DB.Ping">db.Ping()</a></code> to make sure that everything works OK on startup.</p></li>
+<li><p>We use the <code>init()</code> function to set up our connection pool and assign it to the global variable <code>db</code>. We're using a global variable to store the connection pool because it's an easy way of making it available to our HTTP handlers &ndash; but it's by no means the only way. Because <code>sql.Open()</code> doesn't actually check a connection, we also call <code><a href="http://golang.org/pkg/database/sql/#DB.Ping">DB.Ping()</a></code> to make sure that everything works OK on startup.</p></li>
 
-<li><p>In the <code>booksIndex</code> hander we return a <code>405 Method Not Allowed</code> response for any non-GET request. Then we have our database logic. This is exactly the same as the earlier example, except that we're now returning proper HTTP errors instead of exiting the program. Lastly we write the books' details as plain text to the <code>http.ResponseWriter</code>.</p></li>
+<li><p>In the <code>booksIndex</code> hander we return a <code>405 Method Not Allowed</code> response for any non-GET request. Then we have our data access logic. This is exactly the same as the earlier example, except that we're now returning proper HTTP errors instead of exiting the program. Lastly we write the books' details as plain text to the <code>http.ResponseWriter</code>.</p></li>
 </ul>
 
 <p>Run the application and then make a request:</p>
@@ -266,7 +266,7 @@ Content-Type: text/plain; charset=utf-8
 
 <h2>Querying a single row</h2>
 
-<p>For the <code>GET /books/show</code> route we want to retrieve single book from the database based on its ISBN, with the ISBN being passed in the query string like:</p>
+<p>For the <code>GET /books/show</code> route we want to retrieve single book based on its ISBN, with the ISBN being passed in the query string like:</p>
 
 <p><code>/books/show?isbn=978-1505255607</code></p>
 
@@ -312,25 +312,25 @@ func booksShow(w http.ResponseWriter, r *http.Request) {
 
 <p>Once again the handler starts again by checking that it's dealing with a GET request.</p>
 
-<p>We then use the <code><a href="http://golang.org/pkg/net/http/#Request.FormValue">Request.FormValue()</a></code> method to fetch the ISBN value from the request query string. This returns an empty string if there's no parameter found, so we check for that and issue a <code>400 Bad Request</code> response if it's missing.</p>
+<p>We then use the <code>Request.FormValue()</code> method to fetch the ISBN value from the request query string. This returns an empty string if there's no parameter found, so we check for that and issue a <code>400 Bad Request</code> response if it's missing.</p>
 
 <p>Now we get to the interesting bit: <code><a href="http://golang.org/pkg/database/sql/#DB.QueryRow">DB.QueryRow()</a></code>. This method is similar to <code>DB.Query</code>, except that it fetches a single row instead of multiple rows.<p>
 
-<p>Because we need to include untrusted input (the <code>isbn</code> variable) in our SQL query we take advantage of <strong>placeholder parameters</strong>, passing in the value of our placeholder as the second argument to <code>DB.QueryRow()</code> like so:</p>
+<p>Because we need to include untrusted input (the <code>isbn</code> variable) in our query we take advantage of <strong>placeholder parameters</strong>, passing in the value of our placeholder as the second argument to <code>DB.QueryRow()</code> like so:</p>
 
 <p><code>db.QueryRow("SELECT * FROM books WHERE isbn = $1", isbn)</code></p>
 
 <p>Behind the scenes, <code>db.QueryRow</code> (and also <code>db.Query()</code> and <code>db.Exec()</code>) work by creating a new prepared statement on the database, and subsequently execute that prepared statement using the placeholder parameters provided. This means that all three methods are safe from SQL injection when used correctly . From Wikipedia:</p>
 
 <blockquote>
-  Prepared statements are resilient against SQL injection, because parameter values, which are transmitted later using a different protocol, need not be correctly escaped. If the original statement template is not derived from external input, SQL injection cannot occur.
+  Prepared statements are resilient against SQL injection, because parameter values, which are transmitted later using a different protocol, need not be correctly escaped. If the original statement template is not derived from external input, injection cannot occur.
 </blockquote>
 
 <p>The placeholder parameter syntax differs depending on your database. Postgres uses the <code>$N</code> notation, but MySQL, SQL Server and others use the <code>?</code> character as a placeholder.</p>
 
 <p>OK, let's get back to our code.</p>
 
-<p>After we've got a row from <code>DB.QueryRow()</code> we use <code>row.Scan()</code> to copy the values into a new <code>Book</code> object. Note how any errors from <code>db.QueryRow()</code> are deferred and not surfaced until we call <code>row.Scan()</code>.</p>
+<p>After we've got a row from <code>DB.QueryRow()</code> we use <code>row.Scan()</code> to copy the values into a new <code>Book</code> object. Note how any errors from <code>DB.QueryRow()</code> are deferred and not surfaced until we call <code>row.Scan()</code>.</p>
 
 <p>If our query returned no rows, our call to <code>row.Scan()</code> will return an error of the type <code>sql.ErrNoRows</code>. We check for that error type specifically and return a <code>404 Not Found</code> response if that's the case. We then handle all other errors by returning a <code>500 Internal Server Error</code>.</p>
 
@@ -421,7 +421,7 @@ func booksCreate(w http.ResponseWriter, r *http.Request) {
 
 <p>The <code>sql.Result()</code> interface guarantees two methods: <code>LastInsertId()</code> &ndash; which is often used to return the value of an new auto increment id, and <code>RowsAffected()</code> &ndash; which contains the number of rows that the statement affected. In this code we're picking up the latter, and then using it in our plain text confirmation message.</p>
 
-<p>It's worth noting that not all drivers and databases support the <code>LastInsertId()</code> and <code>RowsAffected()</code> methods, and calling them may return an error. For example, pq doesn't support <code>LastInsertId()</code> &ndash; if you need that functionality you'll have to take an approach <a href="https://github.com/lib/pq/issues/24">like this one</a>.</p>
+<p>It's worth noting that not all drivers support the <code>LastInsertId()</code> and <code>RowsAffected()</code> methods, and calling them may return an error. For example, pq doesn't support <code>LastInsertId()</code> &ndash; if you need that functionality you'll have to take an approach <a href="https://github.com/lib/pq/issues/24">like this one</a>.</p>
 
 <p>Let's try out the <code>/books/create</code> route, passing our parameters in the POST body:</p>
 
@@ -435,7 +435,7 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 </pre></code></figure>
 
 <h2>Using DB.Prepare()</h2>
-<p>Something you might be wondering is: <em>Why aren't we using <a href="http://golang.org/pkg/database/sql/#DB.Prepare">DB.Prepare()</a>?</em></p>
+<p>Something you might be wondering is: <em>Why aren't we using DB.Prepare()?</em></p>
 
 <p>As I explained a bit earlier, we kinda are behind the scenes. All of <code>DB.Query()</code>, <code>DB.Exec()</code> and <code>DB.QueryRow()</code> set up a prepared statement on the database, run it with the parameters provided, and then close (or <em>deallocate</em>) the prepared statement.</p>
 
@@ -451,19 +451,17 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 
 <p>At the moment all our database access logic is mixed in with our HTTP handlers. It's probably a good idea to refactor this for easier maintainability and DRYness as our application grows.</p>
 
-<p>But this tutorial is already pretty long, so I'll explore some of the options for refactoring our code in the next post &ndash; Practical Persistence in Go: More SQL (<em>coming soon!</em>)</p>
+<p>But this tutorial is already pretty long, so I'll explore some of the options for refactoring our code in the next post &ndash; Practical Persistence in Go: Organising Database Access (<em>coming soon!</em>)</p>
 
 <h2>Additional tools</h2>
-
-<p>There a quite a few third-party packages that make working with SQL databases a bit easier.</p>
 
 <p>The <a href="https://github.com/jmoiron/sqlx">Sqlx</a> package by Jason Moiron provides some additions to the standard <code>database/sql</code> functionality, including support for named placeholder parameters and automatic marshalling of rows into structs.</p>
 
 <p>If you're looking for something more ORM-ish, you might like to consider <a href="https://github.com/jmoiron/modl">Modl</a> by the same author, or <a href="https://github.com/go-gorp/gorp">gorp</a> by James Cooper.</p>
 
-<p>The <a href="https://github.com/guregu/null">null</a> package by <a href="https://github.com/guregu">guregu</a> can help make managing nullable values easier, if that's something you need to do a lot of.</p>
+<p>The <a href="https://github.com/guregu/null">null</a> package by can help make managing nullable values easier, if that's something you need to do a lot of.</p>
 
-<p>Lastly, I found the tutorials at <a href="http://go-database-sql.org">go-database-sql.org</a> to be clear and helpful. Especially worth reading is the <a href="http://go-database-sql.org/surprises.html">surprises and limitations</a> section.</p></p>
+<p>Lastly, I found the tutorials at <a href="http://go-database-sql.org">go-database-sql.org</a> to be clear and helpful. Especially worth reading is the surprises and limitations section.</p>
 
 <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
 
