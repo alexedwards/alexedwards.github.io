@@ -217,7 +217,7 @@ func booksIndex(w http.ResponseWriter, r *http.Request) {
 
   rows, err := db.Query("SELECT * FROM books")
   if err != nil {
-    http.Error(w, err.Error(), 500)
+    http.Error(w, http.StatusText(500), 500)
     return
   }
   defer rows.Close()
@@ -227,7 +227,7 @@ func booksIndex(w http.ResponseWriter, r *http.Request) {
     bk := new(Book)
     err := rows.Scan(&bk.isbn, &bk.title, &bk.author, &bk.price)
     if err != nil {
-      http.Error(w, err.Error(), 500)
+      http.Error(w, http.StatusText(500), 500)
       return
     }
     bks = append(bks, bk)
@@ -302,7 +302,7 @@ func booksShow(w http.ResponseWriter, r *http.Request) {
     http.NotFound(w, r)
     return
   } else if err != nil {
-    http.Error(w, err.Error(), 500)
+    http.Error(w, http.StatusText(500), 500)
     return
   }
 
@@ -397,13 +397,13 @@ func booksCreate(w http.ResponseWriter, r *http.Request) {
 
   result, err := db.Exec("INSERT INTO books VALUES($1, $2, $3, $4)", isbn, title, author, price)
   if err != nil {
-    http.Error(w, err.Error(), 500)
+    http.Error(w, http.StatusText(500), 500)
     return
   }
 
   rowsAffected, err := result.RowsAffected()
   if err != nil {
-    http.Error(w, err.Error(), 500)
+    http.Error(w, http.StatusText(500), 500)
     return
   }
 
