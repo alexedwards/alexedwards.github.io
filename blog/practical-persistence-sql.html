@@ -461,7 +461,12 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 
 <p>Lastly, I found the tutorials at <a href="http://go-database-sql.org">go-database-sql.org</a> to be clear and helpful. Especially worth reading is the surprises and limitations section.</p>
 
-<p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+<form id="book-mailing-list">
+  <p>If you found this post useful you might like the book I'm writing: <em>Building real-world web applications in Go</em>.</p>
+  <p>Get the free sample chapter:</p>
+  <input type="email" name="email" placeholder="Your email address" required>
+  <button type="submit">Send me the sample chapter</button>
+</form>
 
 <p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
 
@@ -497,15 +502,14 @@ addthis_config.data_track_clickback = false;
 
   $(document).ready(function() {
     $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
 
-
-
-
-
-
-
-
-
+  $("form#book-mailing-list").submit(function(event) {
+    event.preventDefault();
+    var $form = $(this);
+    var $email = $form.find("input[name='email']");
+    $.post("http://www.listmark.net/book-mailing-list", {email: $email.val()});
+    $email.val("")
   });
 
 </script>

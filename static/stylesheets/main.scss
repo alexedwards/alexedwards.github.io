@@ -384,3 +384,15 @@ time {
   }
 }
 
+form#book-mailing-list {
+  margin-bottom: $pad;
+  background-color: #eee;
+  padding: $pad;
+  input {
+    padding: 10px;
+    width: 350px;
+  }
+  button {
+    padding: 10px;
+  }
+}
