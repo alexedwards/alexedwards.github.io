@@ -311,7 +311,13 @@ decoder.Decode(msg, r.Form)
 
 <p>Additionally, <a href="https://github.com/absoludity/goforms">Goforms</a> appears to be a promising idea, with a fairly slick Django-like approach to dealing with forms. However, the existing validation options are fairly limited and the library doesn't seem to be under active development at the moment. It's still worth a look though, especially if you're thinking of rolling something a bit more generic for your form handling.</p>
 
-<p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+<form id="book-mailing-list">
+  <p>If you found this post useful you might like the book I'm writing: <em>Building real-world web applications in Go</em>.</p>
+  <p>Get the free sample chapter:</p>
+  <p id='confirmation'></p>
+  <input type="email" name="email" placeholder="Your email address" required>
+  <button type="submit">Send me the sample chapter</button>
+</form>
 
 <p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
 
@@ -346,15 +352,17 @@ addthis_config.data_track_clickback = false;
 
   $(document).ready(function() {
     $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
 
-
-
-
-
-
-
-
-
+  $("form#book-mailing-list").submit(function(event) {
+    event.preventDefault();
+    var $form = $(this);
+    $form.find("p")
+    var $email = $form.find("input[name='email']");
+    $.post("http://www.listmark.net/book-mailing-list", {email: $email.val()});
+    $email.val("").blur()
+    $form.attr("novalidate", "novalidate");
+    $form.find("p#confirmation").html("<strong>Thanks!</strong> We'll send you the sample chapter as soon as it's ready.")
   });
 
 </script>

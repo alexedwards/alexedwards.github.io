@@ -464,6 +464,7 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 <form id="book-mailing-list">
   <p>If you found this post useful you might like the book I'm writing: <em>Building real-world web applications in Go</em>.</p>
   <p>Get the free sample chapter:</p>
+  <p id='confirmation'></p>
   <input type="email" name="email" placeholder="Your email address" required>
   <button type="submit">Send me the sample chapter</button>
 </form>
@@ -507,9 +508,12 @@ addthis_config.data_track_clickback = false;
   $("form#book-mailing-list").submit(function(event) {
     event.preventDefault();
     var $form = $(this);
+    $form.find("p")
     var $email = $form.find("input[name='email']");
     $.post("http://www.listmark.net/book-mailing-list", {email: $email.val()});
-    $email.val("")
+    $email.val("").blur()
+    $form.attr("novalidate", "novalidate");
+    $form.find("p#confirmation").html("<strong>Thanks!</strong> We'll send you the sample chapter as soon as it's ready.")
   });
 
 </script>
