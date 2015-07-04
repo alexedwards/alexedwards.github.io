@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en-gb">
 <head>
@@ -13,10 +12,9 @@
 <meta name="copyright" content="Copyright Alex Edwards 2015.">
 
 <link rel="icon" href="/static/images/favicon.ico">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono:400|PT+Serif:400,700,400italic" >
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
 <link rel="stylesheet" href="http://www.alexedwards.net/static/stylesheets/main.min.css">
 <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
-
 
 <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
 </head>
@@ -133,12 +131,12 @@ func main() {
 
 <p>Next we <strong>define a <code>Book</code> type</strong> &ndash; with the struct fields and their types aligning to our <code>books</code> table. For completeness I should point out that we've only been able to use the <code>string</code> and <code>float32</code> types safely because we set <code>NOT NULL</code> constraints on the columns in our table. If the table contained nullable fields we would need to use the <code>sql.NullString</code> and <code>sql.NullFloat64</code> types instead &ndash; see <a href="https://gist.github.com/alexedwards/dc3145c8e2e6d2fd6cd9">this Gist</a> for a working example. Generally it's easiest to avoid nullable fields altogether if you can, which is what we've done here.</p>
 
-<p>In the <code>main()</code> function we <strong>initialise a new <code>sql.DB</code> object</strong> by calling <code><a href="http://golang.org/pkg/database/sql/#Open">sql.Open()</a></code>. We pass in the name of our driver (in this case <code>&quot;postgres&quot;</code>) and the connection string (you'll need to check your driver documentation for the correct format). It's worth emphasising that the <code>sql.DB</code> object it returns is not a <em>database connection</em> &ndash; it's an abstraction representing a pool of underlying connections. You can change the maximum number of open and idle connections in the pool with the <code>db.SetMaxOpenConns()</code> and <code>db.SetMaxIdleConns()</code> methods respectively. A final thing to note is that <code>sql.DB</code> is safe for concurrent access, which is very convenient if you're using it in a web application (like we will shortly).</p>
+<p>In the <code>main()</code> function we <strong>initialise a new <code>sql.DB</code> object</strong> by calling <code>sql.Open()</code>. We pass in the name of our driver (in this case <code>&quot;postgres&quot;</code>) and the connection string (you'll need to check your driver documentation for the correct format). It's worth emphasising that the <code>sql.DB</code> object it returns is not a <em>database connection</em> &ndash; it's an abstraction representing a pool of underlying connections. You can change the maximum number of open and idle connections in the pool with the <code>db.SetMaxOpenConns()</code> and <code>db.SetMaxIdleConns()</code> methods respectively. A final thing to note is that <code>sql.DB</code> is safe for concurrent access, which is very convenient if you're using it in a web application (like we will shortly).</p>
 
 <p>From there we follow a standard pattern that you'll see often:</p>
 
 <ol>
-<li><p>We fetch a resultset from the <code>books</code> table using the <code><a href="http://golang.org/pkg/database/sql/#DB.Query">DB.Query()</a></code> method and assign it to a <code>rows</code> variable. Then we <code>defer rows.Close()</code> to ensure the resultset is properly closed before the parent function returns. <strong>Closing a resultset properly is really important</strong>. As long as a resultset is open it will keep the underlying database connection open &ndash; which in turn means the connection is not available to the pool. So if something goes wrong and the resultset isn't closed it can
+<li><p>We fetch a resultset from the <code>books</code> table using the <code>DB.Query()</code> method and assign it to a <code>rows</code> variable. Then we <code>defer rows.Close()</code> to ensure the resultset is properly closed before the parent function returns. <strong>Closing a resultset properly is really important</strong>. As long as a resultset is open it will keep the underlying database connection open &ndash; which in turn means the connection is not available to the pool. So if something goes wrong and the resultset isn't closed it can
  rapidly lead to all the connections in your pool being used up. Another gotcha (which caught me out when I first began) is that the defer statement should come <em>after</em> you check for an error from <code>DB.Query</code>. Otherwise, if <code>DB.Query()</code> returns an error, you'll get a panic trying to close a nil resultset.<p></li>
 
 <li><p>We then use <code>rows.Next()</code> to iterate through the rows in the resultset. This preps the first (and then each subsequent) row to be acted on by the <code>rows.Scan()</code> method. Note that if iteration over all of the rows completes then the resultset automatically closes itself and frees-up the  connection.</p></li>
@@ -246,7 +244,7 @@ func booksIndex(w http.ResponseWriter, r *http.Request) {
 <p>So how is this different?</p>
 
 <ul>
-<li><p>We use the <code>init()</code> function to set up our connection pool and assign it to the global variable <code>db</code>. We're using a global variable to store the connection pool because it's an easy way of making it available to our HTTP handlers &ndash; but it's by no means the only way. Because <code>sql.Open()</code> doesn't actually check a connection, we also call <code><a href="http://golang.org/pkg/database/sql/#DB.Ping">DB.Ping()</a></code> to make sure that everything works OK on startup.</p></li>
+<li><p>We use the <code>init()</code> function to set up our connection pool and assign it to the global variable <code>db</code>. We're using a global variable to store the connection pool because it's an easy way of making it available to our HTTP handlers &ndash; but it's by no means the only way. Because <code>sql.Open()</code> doesn't actually check a connection, we also call <code>DB.Ping()</code> to make sure that everything works OK on startup.</p></li>
 
 <li><p>In the <code>booksIndex</code> hander we return a <code>405 Method Not Allowed</code> response for any non-GET request. Then we have our data access logic. This is exactly the same as the earlier example, except that we're now returning proper HTTP errors instead of exiting the program. Lastly we write the books' details as plain text to the <code>http.ResponseWriter</code>.</p></li>
 </ul>
@@ -314,7 +312,7 @@ func booksShow(w http.ResponseWriter, r *http.Request) {
 
 <p>We then use the <code>Request.FormValue()</code> method to fetch the ISBN value from the request query string. This returns an empty string if there's no parameter found, so we check for that and issue a <code>400 Bad Request</code> response if it's missing.</p>
 
-<p>Now we get to the interesting bit: <code><a href="http://golang.org/pkg/database/sql/#DB.QueryRow">DB.QueryRow()</a></code>. This method is similar to <code>DB.Query</code>, except that it fetches a single row instead of multiple rows.<p>
+<p>Now we get to the interesting bit: <code>DB.QueryRow()</code>. This method is similar to <code>DB.Query</code>, except that it fetches a single row instead of multiple rows.<p>
 
 <p>Because we need to include untrusted input (the <code>isbn</code> variable) in our SQL query we take advantage of <strong>placeholder parameters</strong>, passing in the value of our placeholder as the second argument to <code>DB.QueryRow()</code> like so:</p>
 
@@ -351,7 +349,7 @@ Content-Type: text/plain; charset=utf-8
 
 <h2>Executing a statement</h2>
 
-<p>For our final <code>POST /books/create</code> route we'll make a new <code>booksCreate()</code> handler and use <code><a href="http://golang.org/pkg/database/sql/#DB.Exec">DB.Exec()</a></code> to execute a <code>INSERT</code> statement. You can take the same approach for an <code>UPDATE</code>, <code>DELETE</code>, or any other action that doesn't return rows.</p>
+<p>For our final <code>POST /books/create</code> route we'll make a new <code>booksCreate()</code> handler and use <code>DB.Exec()</code> to execute a <code>INSERT</code> statement. You can take the same approach for an <code>UPDATE</code>, <code>DELETE</code>, or any other action that doesn't return rows.</p>
 
 <p>Here's the code:</p>
 
