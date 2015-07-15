@@ -195,7 +195,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
   mux := http.NewServeMux()
 
-  // Convert the timeHandler function to a HandleFunc type
+  // Convert the timeHandler function to a HandlerFunc type
   th := http.HandlerFunc(timeHandler)
   // And add it to the ServeMux
   mux.Handle("/time", th)
