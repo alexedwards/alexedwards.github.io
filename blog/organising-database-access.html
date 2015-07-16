@@ -51,7 +51,7 @@
 
 <p>The first approach we'll look at is a common and straightforward one &ndash; putting the pointer to your database connection pool in a global variable.</p>
 
-<p>To keep code nice and DRY, you'll sometime see this combined with an initialisation function that allows the connection pool global to be set from other packages and tests.</p>
+<p>To keep code nice and DRY, you'll sometimes see this combined with an initialisation function that allows the connection pool global to be set from other packages and tests.</p>
 
 <p>I like concrete examples, so let's carry on working with the online bookstore database and code from my <a href="/blog/practical-persistence-sql">previous post</a>. We'll create a simple application with an MVC-like structure &ndash; with the HTTP handlers in <code>main</code> and a <code>models</code> package containing a global <code>DB</code> variable, <code>InitDB()</code> function, and our database logic.</p>
 
@@ -150,6 +150,19 @@ func AllBooks() ([]*Book, error) {
     }
     return bks, nil
 }
+</pre></code></figure>
+
+<p>If you run the application and make a request to <code>/books</code> you should get a response similar to:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000/books
+<samp>HTTP/1.1 200 OK
+Content-Length: 205
+Content-Type: text/plain; charset=utf-8
+
+978-1503261969, Emma, Jayne Austen, £9.44
+978-1505255607, The Time Machine, H. G. Wells, £5.99
+978-1503379640, The Prince, Niccolò Machiavelli, £6.99</samp>
 </pre></code></figure>
 
 <p>Using a global variable like this is potentially be a good fit if:</p>
