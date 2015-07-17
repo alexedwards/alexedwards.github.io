@@ -143,7 +143,7 @@
     978-1503379640, The Prince, Niccolò Machiavelli, £6.99</samp>
     </pre></code></figure>
 
-    <p>Using a global variable like this is potentially be a good fit if:</p>
+    <p>Using a global variable like this is potentially a good fit if:</p>
 
     <ul>
       <li>All your database logic is contained in the same package.</li>
@@ -153,7 +153,7 @@
 
     <p>For the example above using a global works just fine. But what happens in more complicated applications where database logic is spread over multiple packages?</p>
 
-    <p>One option is to have multiple <code>InitDB</code> calls, but this can quickly become cluttersome and I've personally found it a bit flaky. It's easy to forget to initialise a connection pool and get nil-pointer panics at runtime. A second option is to create a separate <code>config</code> package with an exported <code>DB</code> variable and <code>import "yourproject/config"</code> into every file that needs it. Just in case it isn't immediately understandable what I mean, I've included a simple example <a href="https://gist.github.com/alexedwards/8b4b0cd4495d7c3abadd">in this gist</a>.</p>
+    <p>One option is to have multiple <code>InitDB</code> calls, but that can quickly become cluttersome and I've personally found it a bit flaky (it's easy to forget to initialise a connection pool and get nil-pointer panics at runtime). A second option is to create a separate <code>config</code> package with an exported <code>DB</code> variable and <code>import "yourproject/config"</code> into every file that needs it. Just in case it isn't immediately understandable what I mean, I've included a simple example <a href="https://gist.github.com/alexedwards/8b4b0cd4495d7c3abadd">in this gist</a>.</p>
 
     <h2 id="dependency-injection">Dependency injection</h2>
 
@@ -334,7 +334,7 @@
 
     <p>The advantages of this are twofold: first it gives our code a really clean structure, but &ndash; more importantly &ndash; it also opens up the potential to mock our database for unit testing.</p>
 
-    <p>Let's amend the example to include a new <code>Datastore</code> interface, which implements exactly the same methods as our <code>DB</code> type.</p>
+    <p>Let's amend the example to include a new <code>Datastore</code> interface, which implements exactly the same methods as our new <code>DB</code> type.</p>
 
     <figure class="plain"><code class="go"><pre>
     type Datastore interface {
@@ -342,7 +342,7 @@
     }
     </pre></code></figure>
 
-    <p>We can then use this interface instead of the <code>DB</code> type throughout our application. Here's the updated example:</p>
+    <p>We can then use this interface instead of the direct <code>DB</code> type throughout our application. Here's the updated example:</p>
 
     <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
     package main
