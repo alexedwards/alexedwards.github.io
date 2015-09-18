@@ -17,7 +17,6 @@
 <link rel="stylesheet" href="/static/stylesheets/main.min.css">
 <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
 
-
 <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
 </head>
 <body>
@@ -35,11 +34,19 @@
 
 <div class="splash">
 <img src="/static/images/alex-edwards.jpg" alt="Alex Edwards" width="120" height="120">
-<p>Hi, I'm Alex Edwards. I'm the founder of <a href="https://www.listmark.net">Listmark</a>, developer of <a href="https://github.com/alexedwards/shift">Shift</a> and I manage the <a href="http://www.police.uk">Police.uk</a> service at the Home Office.</p>
+<p>Hi, I'm Alex Edwards. I'm the founder of <a href="https://www.listmark.net">Listmark</a>, developer of <a href="https://github.com/alexedwards/stack">Stack</a> and I manage the <a href="http://www.police.uk">Police.uk</a> service at the Home Office.</p>
 </div>
 
 <div class="copy">
-<p>I've spent the past five years working with the Government to improve online services and open data in the UK, and currently manage the police.uk and data.police.uk services. Outside my day job I've built a couple of small businesses, and enjoy supporting and continuing to grow those. I generally work with Go, Ruby, AWS, Git and Linux, and write a lot about building web applications with Go.</p>
+<p>I've spent the past six years working with the Government to improve online services and open data in the UK, and currently manage the police.uk and data.police.uk services. Outside my day job I've built a couple of <a href='#standalone-sites' class='expandable'>small businesses</a>, and enjoy supporting and continuing to grow those. I generally work with Go, Ruby, AWS, Git and Linux, and write a lot about building web applications with Go.</p>
+
+<div class='expandable copy' id='standalone-sites'>
+  <ul class="no-bullet">
+    <li><a href="http://www.canadacitieslist.info">List of Canadian towns and cities</a></li>
+    <li><a href="http://www.uktownslist.info">List of UK towns and cities</a></li>
+    <li><a href="http://www.postcodelist.co.uk">List of UK postcodes</a></li>
+  </ul>
+</div>
 
 <p>If you'd like to discuss something or need any advice, please shoot me an email. I'm pretty friendly.</p>
 </div>
@@ -59,8 +66,6 @@
   <li><a href="/blog/organising-database-access">Practical Persistence in Go: Organising Database Access</a></li>
   <li><a href="/blog/practical-persistence-sql">Practical Persistence in Go: SQL Databases</a></li>
   <li><a href="/blog/handler-chains-using-stack">Context-Aware Handler Chains in Go</a></li>
-  <!-- <li><a href="/blog/making-and-using-middleware">Making and Using HTTP Middleware</a></li> -->
-  <!-- <li><a href="/blog/simple-flash-messages-in-golang">Simple Flash Messages in Go</a></li> -->
 </ul>
 </div>
 
@@ -82,14 +87,14 @@
   $(document).ready(function() {
     $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
 
-
-
-
-
-
-
-
-
+    $('a.expandable').click(function(e) {
+      e.preventDefault();
+      source = $(this);
+      target = $(this).attr('href');
+      $(target).slideToggle('slow', function(){
+        source.blur();
+      });
+    });
   });
 
 </script>
