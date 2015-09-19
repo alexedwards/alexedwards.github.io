@@ -436,7 +436,7 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 
 <p>At the moment all our database access logic is mixed in with our HTTP handlers. It's probably a good idea to refactor this for easier maintainability and DRYness as our application grows.</p>
 
-<p>But this tutorial is already pretty long, so I'll explore some of the options for refactoring our code in the next post &ndash; Practical Persistence in Go: Organising Database Access (<em>coming soon!</em>)</p>
+<p>But this tutorial is already pretty long, so I'll explore some of the options for refactoring our code in the next post &ndash; <a href="http://www.alexedwards.net/blog/organising-database-access">Practical Persistence in Go: Organising Database Access</a></p>
 
 <h2>Additional tools</h2>
 
@@ -457,8 +457,6 @@ Book 978-1470184841 created successfully (1 row affected)</samp>
 </form>
 
 <p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
-
-<!-- <p>Q) Can use prepared statements from mutiple connections in the pool? Or try it with SetMaxIdleConns &lt; -1 should create a new connection each time.</p> -->
 
 <p class="subtle"><small>All code snippets in this post are made available to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
 
