@@ -432,19 +432,6 @@ Content-Type: text/plain; charset=utf-8
 Book 978-1470184841 created successfully (1 row affected)</samp>
 </pre></code></figure>
 
-<h2>Using DB.Prepare()</h2>
-<p>Something you might be wondering is: <em>Why aren't we using DB.Prepare()?</em></p>
-
-<p>As I explained a bit earlier, we kinda are behind the scenes. All of <code>DB.Query()</code>, <code>DB.Exec()</code> and <code>DB.QueryRow()</code> set up a prepared statement on the database, run it with the parameters provided, and then close (or <em>deallocate</em>) the prepared statement.</p>
-
-<p>But the downside of this is obvious: we have 3 round trips to the database with each HTTP request, whereas if we set up prepared statements with <code>DB.Prepare()</code> &ndash; possibly in the <code>init()</code> function &ndash; we could have only one round trip each time.</p>
-
-<p>But the trade-off isn't that simple. Prepared statements only last for the duration of the current database session. If the session ends, then the prepared statements must be recreated before being used again. So if there's database downtime or a restart you'll need to recreate the prepared statements.</p>
-
-<p>For a web application where latency is critical it might be worth the effort to setup monitoring for your database, and reinitialise the prepared statements after an outage. But for an application like this where latency isn't <em>that</em> important, using <code>DB.Query()</code> <em>et al</em> is clear and effective enough.</p>
-
-<p>There's a <a href="https://groups.google.com/forum/#!topic/golang-nuts/ISh22XXze-s">Google groups thread</a> which discusses this in more detail.</p>
-
 <h2>Refactoring</h2>
 
 <p>At the moment all our database access logic is mixed in with our HTTP handlers. It's probably a good idea to refactor this for easier maintainability and DRYness as our application grows.</p>
