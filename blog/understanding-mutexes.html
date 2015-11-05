@@ -129,7 +129,7 @@ func (c *currency) Display() string {
 
 <ul>
   <li>The same mutex variable can be used in multiple places throughout your code. So long as it's the same mutex (in our case <code>mu</code>) then <em>none</em> of the chunks of code protected by it can be executed at the same time.</li>
-  <li>Holding a mutex lock doesn't 'protect' a memory location from being read or updated. A non-mutex-locked line of code could still access it at any time and create a race condition. Therefore you need to be careful to make sure all points in your code which are potentially racy are protected.</li>
+  <li>Holding a mutex lock doesn't 'protect' a memory location from being read or updated. A non-mutex-locked line of code could still access it at any time and create a race condition. Therefore you need to be careful to make sure all points in your code which are potentially racy are protected by the same mutex.</li>
 </ul>
 
 <p>Let's tidy up the example a bit:</p>
