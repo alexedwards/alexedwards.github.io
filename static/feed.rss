@@ -4,7 +4,138 @@
   <title>Alex Edwards</title>
   <link>http://www.alexedwards.net/blog</link>
   <language>en-gb</language>
-  <lastBuildDate>Thu, 16 Jul 2015 23:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Tue, 30 Aug 2016 18:00:00 GMT</lastBuildDate>
+  <item>
+    <pubDate>Tue, 30 Aug 2016 18:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/scs-session-manager</link>
+    <guid>http://www.alexedwards.net/blog/scs-session-manager</guid>
+    <title>SCS: A session manager for Go 1.7+</title>
+    <description><![CDATA[
+    <p>I’ve just released <a href="https://github.com/alexedwards/scs">SCS</a>, a session management package for Go 1.7+.</p>
+
+    <p>Its design leverages Go’s new <code>context</code> package to automatically load and save session data via middleware.</p>
+
+    <p>Importantly, it also provides the security features that you need when using server-side session stores (like straightforward session token regeneration) and supports both absolute and inactivity timeouts. The session data is safe for concurrent use.</p>
+
+    <h2>A simple example</h2>
+
+    <p>SCS is broken up into small single-purpose packages for ease of use. You should install the <code>session</code> package and your choice of session storage engine from the following table:</p>
+
+    <table style="width: 100%">
+    <thead>
+    <tr>
+    <th style="text-align:left">Package</th>
+    <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr style="background: white">
+    <td style="text-align:left"><a href="https://godoc.org/github.com/alexedwards/scs/session">session</a></td>
+    <td>Provides session management middleware and helpers for <br>manipulating session data</td>
+    </tr>
+    <tr style="background: white">
+    <td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/memstore">engine/memstore</a></td>
+    <td>In-memory storage engine</td>
+    </tr>
+    <tr style="background: white">
+    <td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/cookiestore">engine/cookiestore</a></td>
+    <td>Encrypted-cookie based storage engine</td>
+    </tr>
+    <tr style="background: white">
+    <td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/pgstore">engine/pgstore</a></td>
+    <td>PostgreSQL based storage eninge</td>
+    </tr>
+    <tr style="background: white">
+    <td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/mysqlstore">engine/mysqlstore</a></td>
+    <td>MySQL based storage engine</td>
+    </tr>
+    <tr style="background: white">
+    <td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/redisstore">engine/redisstore</a></td>
+    <td>Redis based storage engine</td>
+    </tr>
+    </tbody>
+    </table>
+
+    <p>For example:</p>
+
+    <figure class="shell"><code><pre>
+    $ go get github.com/alexedwards/scs/session
+    $ go get github.com/alexedwards/scs/engine/memstore
+    </pre></code></figure>
+
+    <p>Usage is then simple:</p>
+
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+    package main
+
+    import (
+        &quot;io&quot;
+        &quot;net/http&quot;
+
+        &quot;github.com/alexedwards/scs/engine/memstore&quot;
+        &quot;github.com/alexedwards/scs/session&quot;
+    )
+
+    func main() {
+        // Create the session manager middleware, passing in a new storage
+        // engine instance as the first parameter.
+        sessionManager := session.Manage(memstore.New(0))
+
+        // Set up your HTTP handlers in the normal way.
+        mux := http.NewServeMux()
+        mux.HandleFunc(&quot;/put&quot;, putHandler)
+        mux.HandleFunc(&quot;/get&quot;, getHandler)
+
+        // Wrap your handlers with the session manager middleware.
+        http.ListenAndServe(&quot;:4000&quot;, sessionManager(mux))
+    }
+
+    func putHandler(w http.ResponseWriter, r *http.Request) {
+        // Use the PutString helper to add a new key and associated string value
+        // to the session data. Helpers for other types are included.
+        err := session.PutString(r, &quot;message&quot;, &quot;Hello from a session!&quot;)
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+        }
+    }
+
+    func getHandler(w http.ResponseWriter, r *http.Request) {
+        // Use the GetString helper to retrieve the value associated with the
+        // &quot;message&quot; key.
+        msg, err := session.GetString(r, &quot;message&quot;)
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
+        io.WriteString(w, msg)
+    }
+    </pre></code></figure>
+
+    <p>You should be able to verify that the session data is being across requests with curl:</p>
+
+    <figure class="shell"><code><pre>
+    $ curl -i -c cookies localhost:4000/put
+    <samp>HTTP/1.1 200 OK
+    Set-Cookie: scs.session.token=uts3FRcCMOIXpyx5uZx28Y54uUFRHxgtYhbgD4epeI4; Path=/; HttpOnly
+    Date: Tue, 30 Aug 2016 17:37:12 GMT
+    Content-Length: 0
+    Content-Type: text/plain; charset=utf-8</samp>
+
+    $ curl -i -b cookies localhost:4000/get
+    <samp>HTTP/1.1 200 OK
+    Date: Tue, 30 Aug 2016 17:37:21 GMT
+    Content-Length: 21
+    Content-Type: text/plain; charset=utf-8
+
+    Hello from a session!</samp>
+    </pre></code></figure>
+
+    <p>The complete <a href="https://godoc.org/github.com/alexedwards/scs">godocs are here</a>.</p>
+
+    <p>I’d love to hear any feedback &ndash; either drop me an email or <a href="https://github.com/alexedwards/scs/issues">open an issue</a> on Github.</p>
+
+    ]]></description>
+  </item>
   <item>
     <pubDate>Fri, 26 Feb 2016 19:00:00 GMT</pubDate>
     <link>http://www.alexedwards.net/blog/working-with-redis</link>
