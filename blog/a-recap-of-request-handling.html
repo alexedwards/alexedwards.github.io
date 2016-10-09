@@ -384,7 +384,7 @@ func main() {
     var $form = $(this);
     $form.find("p")
     var $email = $form.find("input[name='email']");
-    $.post("http://www.listmark.net/book-mailing-list", {email: $email.val()});
+    $.post("http://46.101.77.192/book-mailing-list", {email: $email.val()});
     $email.val("").blur()
     $form.attr("novalidate", "novalidate");
     $form.find("p#confirmation").html("<strong>Thanks!</strong> We'll send you the sample chapter as soon as it's ready.")
