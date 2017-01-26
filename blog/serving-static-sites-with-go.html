@@ -14,9 +14,6 @@
   {lang: 'en-GB'}
 </script>
 
-<a href="https://twitter.com/share" class="twitter-share-button" data-via="ajmedwards" data-hashtags="golang">Tweet</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>.">
-
 <link rel="icon" href="/static/images/favicon.ico">
 <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
 <link rel="stylesheet" href="/static/stylesheets/main.min.css">
@@ -39,6 +36,8 @@
 <article>
 
 <header><h1>Serving Static Sites with Go</h1> <span>24th August 2013</span></header>
+
+<p class="subtle">Last updated: 26th January 2017 (for Go 1.7)</p>
 
 <p>I've recently moved the site you're reading right now from a Sinatra application to an (almost) static one served by Go. While it's fresh in my head, here's an explanation of principles behind creating and serving static sites with Go.</p>
 
@@ -119,9 +118,13 @@ $ go run app.go
 
 <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
 ...
-fs := http.FileServer(http.Dir("static"))
-http.Handle("/static/", http.StripPrefix("/static/", fs))
-...
+func main() {
+  fs := http.FileServer(http.Dir("static"))
+  http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+  log.Println("Listening...")
+  http.ListenAndServe(":3000", nil)
+}
 </pre></code></figure>
 
 <p>Notice that because our <code>static</code> directory is set as the root of the FileSystem, we need to strip off the <code>/static/</code> prefix from the request path <em>before</em> searching the FileSystem for the given file. We do this using the <a href="http://golang.org/pkg/net/http/#StripPrefix">StripPrefix</a> function.</p>
@@ -172,7 +175,7 @@ import (
   "html/template"
   "log"
   "net/http"
-  "path"
+  "path/filepath"
 )
 
 func main() {
@@ -186,8 +189,8 @@ func main() {
 }
 
 func serveTemplate(w http.ResponseWriter, r *http.Request) {
-  lp := path.Join("templates", "layout.html")
-  fp := path.Join("templates", r.URL.Path)
+  lp := filepath.Join("templates", "layout.html")
+  fp := filepath.Join("templates", filepath.Clean(r.URL.Path))
 
   tmpl, _ := template.ParseFiles(lp, fp)
   tmpl.ExecuteTemplate(w, "layout", nil)
@@ -200,7 +203,11 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 
 <p>We've then specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate</code> function (if you were wondering, Go matches patterns based on length, with longer patterns take precedence over shorter ones).</p>
 
-<p>In the <code>serveTemplate</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="http://golang.org/pkg/path/#Join">Join</a>, which has the advantage of cleaning the path to help prevent directory traversal attacks.</p>
+<p>In the <code>serveTemplate</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="https://golang.org/pkg/path/filepath/#Join">filepath.Join</a>, which has the advantage joining paths using the correct separator for your OS.</p>
+
+<p>Importantly, because the URL path is untrusted user input, we use <a href="https://golang.org/pkg/path/filepath/#Clean">filepath.Clean</a> to sanitise the URL path before using it.</p>
+
+<p>(Note that even though filepath.Join automatically runs the <em>joined path</em> through filepath.Clean, to help prevent directory traversal attacks you need to manually sanitise any untrusted inputs <em>before</em> joining them.)</p>
 
 <p>We then use the <a href="http://golang.org/pkg/text/template/#Template.ParseFiles">ParseFiles</a> function to bundle the requested template and layout into a <em>template set</em>. Finally, we use the <a href="http://golang.org/pkg/text/template/#Template.ExecuteTemplate">ExecuteTemplate</a> function to render a named template in the set, in our case the <code>layout</code> template.</p>
 
@@ -229,7 +236,7 @@ import (
   "log"
   "net/http"
   "os"
-  "path"
+  "path/filepath"
 )
 
 func main() {
@@ -242,8 +249,8 @@ func main() {
 }
 
 func serveTemplate(w http.ResponseWriter, r *http.Request) {
-  lp := path.Join("templates", "layout.html")
-  fp := path.Join("templates", r.URL.Path)
+  lp := filepath.Join("templates", "layout.html")
+  fp := filepath.Join("templates", filepath.Clean(r.URL.Path))
 
   // Return a 404 if the template doesn't exist
   info, err := os.Stat(fp)
@@ -284,7 +291,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
   <button type="submit">Send me the sample chapter</button>
 </form>
 
-<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a> <br> Last updated: 9th July 2014 (for Go version 1.3)</p>
+<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
 
 <p class="subtle"><small>All code snippets in this post are made available to freely use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
 
