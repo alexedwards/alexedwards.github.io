@@ -4,7 +4,416 @@
   <title>Alex Edwards</title>
   <link>http://www.alexedwards.net/blog</link>
   <language>en-gb</language>
-  <lastBuildDate>Tue, 30 Aug 2016 18:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Sat, 05 Aug 2017 19:00:00 GMT</lastBuildDate>
+  <item>
+    <pubDate>Sat, 05 Aug 2017 19:00:00 GMT</pubDate>
+    <link>http://www.alexedwards.net/blog/validation-snippets-for-go</link>
+    <guid>http://www.alexedwards.net/blog/validation-snippets-for-go</guid>
+    <title>Validation Snippets for Go</title>
+    <description><![CDATA[
+    <p>Over the past few years I've built up a collection of snippets for validating inputs in Go. There's nothing new or groundbreaking here, but hopefully they might save you some time.</p>
+
+    <p>The snippets assume that the data to validate is stored as strings in <code>r.Form</code>, but the principles are the same no matter where the data has come from.</p>
+
+    <ol style="margin-left: 23px;">
+    <li><a href="#required-inputs">Required inputs</a></li>
+    <li><a href="#blank-text">Blank text</a></li>
+    <li><a href="#min-and-max-length-bytes">Min and max length (bytes)</a></li>
+    <li><a href="#min-and-max-length-number-of-characters">Min and max length (number of characters)</a></li>
+    <li><a href="#starts-with,-ends-with-and-contains">Starts with, ends with and contains</a></li>
+    <li><a href="#matches-regular-expression-pattern">Matches regular expression pattern</a></li>
+    <li><a href="#unicode-character-range">Unicode character range</a></li>
+    <li><a href="#email-validation">Email validation</a></li>
+    <li><a href="#url-validation">URL validation</a></li>
+    <li><a href="#integers">Integers</a></li>
+    <li><a href="#floats">Floats</a></li>
+    <li><a href="#date">Date</a></li>
+    <li><a href="#datetime-local">Datetime-local</a></li>
+    <li><a href="#radio,-select-and-datalist-one-in-set">Radio, Select and Datalist (one-in-set)</a></li>
+    <li><a href="#checkboxes-many-in-set">Checkboxes (many-in-set)</a></li>
+    <li><a href="#single-checkbox">Single checkbox</a></li>
+    </ol>
+
+    <h2 id="required-inputs">Required inputs</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that a value for the <code>"foo"</code> field has been submitted with:</p>
+
+    <figure class="plain"><code><pre>
+    if r.Form.Get("foo") == "" {
+        fmt.Println("error: foo is required")
+    }
+    </pre></code></figure>
+
+    <p>For checkbox and select inputs this will ensure that <em>at least one item</em> has been checked.</p>
+
+    <h2 id="blank-text">Blank text</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that a value for the <code>"foo"</code> field isn't blank (i.e. contains whitespace only) with the <code>strings.TrimSpace</code> function:</p>
+
+    <figure class="plain"><code><pre>
+    import "strings"
+    ···
+    if strings.TrimSpace(r.Form.Get("foo")) == "" {
+        fmt.Println("error: foo must not be blank")
+    }
+    </pre></code></figure>
+
+    <h2 id="min-and-max-length-bytes">Min and max length (bytes)</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field contains a certain number of bytes with the builtin <code>len</code> function:</p>
+
+    <figure class="plain"><code><pre>
+    l := len(r.Form.Get("foo"))
+    if l &lt; 5 || l &gt; 10 {
+        fmt.Println("error: foo must be between 5 and 10 bytes long")
+    }
+    </pre></code></figure>
+
+    <h2 id="min-and-max-length-number-of-characters">Min and max length (number of characters)</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field contains a certain number of <em>characters</em> with the <code>utf8.RuneCountInString</code> function. This is subtly different to checking the number of bytes. For example, the string <code>"Zoë"</code> contains 3 characters but is 4 bytes long because of the accented character.</p>
+
+    <figure class="plain"><code><pre>
+    import "unicode/utf8"
+    ···
+    l := utf8.RuneCountInString(r.Form.Get("foo"))
+    if l &lt; 5 || l &gt; 10 {
+        fmt.Println("error: foo must be between 5 and 10 characters long")
+    }
+    </pre></code></figure>
+
+    <h2 id="starts-with,-ends-with-and-contains">Starts with, ends with and contains</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field starts with, ends with, or contains a particular string using the functions in the <code>strings</code> package:</p>
+
+    <figure class="plain"><code><pre>
+    import "strings"
+    ···
+    // Check that the field value starts with 'abc'.
+    if !strings.HasPrefix(r.Form.Get("foo"), "abc") {
+        fmt.Println("error: foo does not start with 'abc'")
+    }
+
+    // Check that the field value ends with 'abc'.
+    if !strings.HasSuffix(r.Form.Get("foo"), "abc") {
+        fmt.Println("error: foo does not end with 'abc'")
+    }
+
+    // Check that the field value contains 'abc' anywhere in it.
+    if !strings.Contains(r.Form.Get("foo"), "abc") {
+        fmt.Println("error: foo does not contain 'abc'")
+    }
+    </pre></code></figure>
+
+
+    <h2 id="matches-regular-expression-pattern">Matches regular expression pattern</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field matches a particular regular expression using the <code>regexp</code> package. For example, to check that it matches the pattern <code>^[a-z]{4}\.[0-9]{2}$</code> (four lowercase letters followed by a period and two digits):</p>
+
+    <figure class="plain"><code><pre>
+    import "regexp"
+    ···
+    // Pre-compiling the regular expression and storing it in a variable is more efficient
+    // if you're going to use it multiple times. The regexp.MustCompile function will
+    // panic on failure.
+    var rxPat = regexp.MustCompile(`^[a-z]{4}.[0-9]{2}$`)
+
+    if !rxPat.MatchString(r.Form.Get("foo")) {
+        fmt.Println("error: foo does not match the required pattern")
+    }
+    </pre></code></figure>
+
+    <p>Note that because the dot character has a special meaning in regular expressions, we escaped it using the <code>\</code> character so it is interpreted as a literal period character instead. In the example above we also used a <a href="https://golang.org/ref/spec#String_literals">raw string</a> for the regular expression. If you use an <em>interpreted string</em> (i.e. a string surrounded by double quotes), you need to <em>escape the backslash</em> too because that's the escape character for interpreted strings. So you would need to write:</p>
+
+    <figure class="plain"><code><pre>
+    var rxPat = regexp.MustCompile("^[a-z]{4}\.[0-9]{2}$")
+    </pre></code></figure>
+
+    <p>If you're not familiar with regular expressions then <a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions">this guide</a> from Mozilla is a good explanation.</p>
+
+    <h2 id="unicode-character-range">Unicode character range</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="text" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field only contains characters in a certain unicode range using the <code>regexp</code> package. For example, to check that it contains only Cyrillic characters in the two <a href="http://jrgraphix.net/research/unicode_blocks.php">unicode blocks</a> 0400 - 04FF (Cyrillic) and 0500 - 052F (Cyrillic Supplementary):</p>
+
+    <figure class="plain"><code><pre>
+    import "regexp"
+    ···
+    // Use an interpreted string and the \u escape notation to create a regular
+    // expression matching the range of characters in the two unicode code blocks.
+    var rxCyrillic = regexp.MustCompile("^[\u0400-\u04FF\u0500-\u052F]+$")
+
+    if !rxCyrillic.MatchString(r.Form.Get("foo")) {
+        fmt.Println("error: foo must only contain Cyrillic characters")
+    }
+    </pre></code></figure>
+
+    <h2 id="email-validation">Email validation</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="email" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can sanity check that the <code>"foo"</code> field contains an email address using the <code>regexp</code> package. Choosing a regular expression to use for email validation is a contentious topic, but as a starting point I would suggest the pattern recommended by the <a href="https://www.w3.org/TR/2016/REC-html51-20161101/sec-forms.html#email-state-typeemail">W3C</a> and <a href="https://html.spec.whatwg.org/multipage/forms.html#valid-e-mail-address">Web Hypertext Application Technology Working Group</a>.</p>
+
+    <p>In addition, the email addresses have a <a href="http://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address">practical limit of 254 bytes</a>. Putting those together, a decent sanity check is:</p>
+
+    <figure class="plain"><code><pre>
+    import "regexp"
+    ···
+    var rxEmail = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
+    e := r.Form.Get("foo")
+    if len(e) > 254 || !rxEmail.MatchString(e) {
+        fmt.Println("error: foo is not a valid email address")
+    }
+    </pre></code></figure>
+
+    <p>Note that we have to use an interpreted string for the regular expression because it contains a backtick character (which means we can't use a <a href="https://golang.org/ref/spec#String_literals">raw string</a>).</p>
+
+    <h2 id="url-validation">URL validation</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="url" name="foo"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field contains a valid URL by first parsing it with the <code>url.Parse</code> function. This will take a URL string, break it into it's component pieces, and store it as a <a href="https://golang.org/pkg/net/url/#URL">url.URL</a> struct. You can then sanity check the component pieces as necessary.</p>
+
+    <p>For instance, to check that a URL is absolute (i.e has both a scheme and host) and that the scheme is either http or https:</p>
+
+    <figure class="plain"><code><pre>
+    import "net/url"
+    ···
+    // If there are any major problems with the format of the URL, url.Parse() will
+    // return an error.
+    u, err := url.Parse(r.Form.Get("foo"))
+    if err != nil {
+        fmt.Println("error: foo is not a valid URL")
+    } else if u.Scheme == "" || u.Host == "" {
+        fmt.Println("error: foo must be an absolute URL")
+    } else if u.Scheme != "http" &amp;&amp; u.Scheme != "https" {
+        fmt.Println("error: foo must begin with http or https")
+    }
+    </pre></code></figure>
+
+    <h2 id="integers">Integers</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="number" name="foo" min="0" max="100" step="5"&gt;
+    </pre></code></figure>
+
+    You can verify that the <code>"foo"</code> field contains an integer by parsing it with the <code>strconv.Atoi</code> function. You can then sanity check the integer as necessary.</p>
+
+    <p>For instance, to check that an integer is a multiple of 5 between 0 and 100:</p>
+
+    <figure class="plain"><code><pre>
+    import "strconv"
+    ···
+    n, err := strconv.Atoi(r.Form.Get("foo"))
+    if err != nil {
+        fmt.Println("error: foo must be an integer")
+    } else if n &lt; 0 || n &gt; 10  {
+        fmt.Printf("error: foo must be between 0 and 100")
+    } else if  n%5 != 0 {
+        fmt.Println("error: foo must be an multiple of 5")
+    }
+    </pre></code></figure>
+
+    <h2 id="floats">Floats</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="number" name="foo" min="0" max="1" step="0.01"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field contains an integer by parsing it with the <code>strconv.ParseFloat</code> function. You can then sanity check the float as necessary.</p>
+
+    <p>For instance, to check that an float is a between 0 and 1:</p>
+
+    <figure class="plain"><code><pre>
+    import "strconv"
+
+    n, err := strconv.ParseFloat(r.Form.Get("foo"), 64)
+    if err != nil {
+        fmt.Println("error: foo must be a float")
+    } else if n &lt; 0 || n > 1  {
+        fmt.Printf("error: foo must be between 0 and 1")
+    }
+    </pre></code></figure>
+
+    <h2 id="date">Date</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="date" name="foo" min="2017-01-01" max="2017-12-31"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field contains a valid date by parsing it with the <code>time.Parse</code> function. It will return an error if the date is not real: any day of month larger than 31 is rejected, as is February 29 in non-leap years, February 30, February 31, April 31, June 31, September 31, and November 31.</p>
+
+    <p>If you're not familiar with <code>time.Parse</code>, it converts strings with a given format into a time.Time object. You specify what the format is by passing the <em>reference time</em> (<code>Mon Jan 2 15:04:05 -0700 MST 2006</code>) as the first parameter, laid-out in the format you want. If you are expecting a date in the format <code>YYYY-MM-DD</code> then the reference time is <code>2006-01-02</code>.</p>
+
+    <p>You can then use the <a href="https://golang.org/pkg/time/#pkg-index">various functions</a> in the <code>time</code> package to sanity check the date as necessary.</p>
+
+    <p>For instance, to check that an date is valid and between 2017-01-01 and 2017-12-31:</p>
+
+    <figure class="plain"><code><pre>
+    import "time"
+    ···
+    d, err := time.Parse("2006-01-02", r.Form.Get("foo"))
+    if err != nil {
+        fmt.Printf("error: foo is not a valid date")
+    } else if d.Year() != 2017 {
+        fmt.Printf("error: foo is not between 2017-01-01 and 2017-12-31")
+    }
+    </pre></code></figure>
+
+    <h2 id="datetime-local">Datetime-local</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="datetime-local" name="foo" min="2017-01-01" max="2017-12-31"&gt;
+    </pre></code></figure>
+
+    <p>You can verify that the <code>"foo"</code> field contains a valid datetime for a specific location by parsing it with the <code>time.ParseInLocation</code> function. This will return an error if the date is not real: any day of month larger than 31 is rejected, as is February 29 in non-leap years, February 30, February 31, April 31, June 31, September 31, and November 31.</p>
+
+    <p>For instance, to check that an datetime for the "Europe/Vienna" timezone is valid and between 2017-01-01 00:00 and 2017-12-31 23:59:</p>
+
+    <figure class="plain"><code><pre>
+    import "time"
+    ···
+
+    // Load the users local time zone. This accepts a location name corresponding
+    // to a file in your IANA Time Zone database.
+    loc, err := time.LoadLocation("Europe/Vienna")
+    if err != nil {
+        ···
+    }
+
+    d, err := time.ParseInLocation("2006-01-02T15:04:05", r.Form.Get("foo"), loc)
+    if err != nil {
+        fmt.Printf("error: foo is not a valid datetime")
+    } else if d.Year() != 2017 {
+        fmt.Printf("error: foo is not between 2017-01-01 00:00:00 and 2017-12-31 23:59:00")
+    }
+    </pre></code></figure>
+
+    <p>The time zone database needed by <code>LoadLocation</code> may not be present on all systems, especially non-Unix systems. <code>LoadLocation</code> looks in the directory or uncompressed zip file named by the ZONEINFO environment variable, if any, then looks in known installation locations on Unix systems, and finally looks in <code>$GOROOT/lib/time/zoneinfo.zip</code>.</p>
+
+    <h2 id="radio,-select-and-datalist-one-in-set">Radio, Select and Datalist (one-in-a-set) validation</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="radio" name="foo" value="wibble"&gt; Wibble
+    &lt;input type="radio" name="foo" value="wobble"&gt; Wobble
+    &lt;input type="radio" name="foo" value="wubble"&gt; Wubble
+    </pre></code></figure>
+
+    <p>You can check that the submitted value for the <code>"foo"</code> field is one of a known set like this:</p>
+
+    <figure class="plain"><code><pre>
+    set := map[string]bool{"wibble": true, "wobble": true, "wubble": true}
+
+    if !set[r.Form.Get("foo")] {
+        fmt.Printf("error: foo not match 'wibble', 'wobble' or 'wubble'")
+    }
+    </pre></code></figure>
+
+    <h2 id="checkboxes-many-in-set">Checkboxes (many-in-a-set) validation</h2>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="checkbox" name="foo" value="wibble"&gt; Wibble
+    &lt;input type="checkbox" name="foo" value="wobble"&gt; Wobble
+    &lt;input type="checkbox" name="foo" value="wubble"&gt; Wubble
+    </pre></code></figure>
+
+    <p>To validate these, and make sure that <em>all values</em> sent by the form are either
+    <code>wibble</code>, <code>wobble</code> or <code>wubble</code>, we need to access the underlying form data directly and range over each value:</p>
+
+    <p>You can check that the submitted values for the <code>"foo"</code> field are part of a known set like this:</p>
+
+    <figure class="plain"><code><pre>
+    set := map[string]bool{"wibble": true, "wobble": true, "wubble": true}
+
+    for _, f := range r.Form["foo"] {
+        if !set[f] {
+            fmt.Printf("error: foo does not match 'wibble', 'wobble' or 'wubble'")
+            break
+        }
+    }
+    </pre></code></figure>
+
+    <h2 id="single-checkbox">Single checkboxes</h2>
+
+    <p>Sometimes you might have a single checkbox, and you want to verify that it has been checked. A common example is an "I accept the terms" checkbox on a form.</p>
+
+    <p>If you have the HTML form:</p>
+
+    <figure class="plain"><code><pre>
+    &lt;input type="checkbox" name="foo" value="checked"&gt; I accept the terms
+    </pre></code></figure>
+
+    <p>You can verify that it has been checked like this:</p>
+
+    <figure class="plain"><code><pre>
+    if r.Form.Get("foo") != "checked" {
+        fmt.Println("foo must be checked")
+    }
+    </pre></code></figure>
+    ]]></description>
+  </item>
   <item>
     <pubDate>Tue, 30 Aug 2016 18:00:00 GMT</pubDate>
     <link>http://www.alexedwards.net/blog/scs-session-manager</link>

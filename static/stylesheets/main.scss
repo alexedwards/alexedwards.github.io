@@ -95,6 +95,10 @@ h1 {
 }
 
 h2 {
+  font-size: 1.25em;
+}
+
+h3 {
   font-size: 1em;
 }
 
@@ -125,6 +129,14 @@ a:focus, a:active {
 
 ul > ul {
   margin-left: $pad;
+}
+
+ol ul li {
+  margin-left: $pad;
+}
+
+ol ul {
+  margin-bottom: 0;
 }
 
 mark {
@@ -343,7 +355,7 @@ article > header {
   }
 }
 
-article h2, .tags {
+article h2, article h3, .tags {
   @extend .break;
   margin-bottom: $pad;
 }
