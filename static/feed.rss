@@ -16,22 +16,22 @@
     <p>The snippets assume that the data to validate is stored as strings in <code>r.Form</code>, but the principles are the same no matter where the data has come from.</p>
 
     <ol style="margin-left: 23px;">
-    <li><a href="#required-inputs">Required inputs</a></li>
-    <li><a href="#blank-text">Blank text</a></li>
-    <li><a href="#min-and-max-length-bytes">Min and max length (bytes)</a></li>
-    <li><a href="#min-and-max-length-number-of-characters">Min and max length (number of characters)</a></li>
-    <li><a href="#starts-with,-ends-with-and-contains">Starts with, ends with and contains</a></li>
-    <li><a href="#matches-regular-expression-pattern">Matches regular expression pattern</a></li>
-    <li><a href="#unicode-character-range">Unicode character range</a></li>
-    <li><a href="#email-validation">Email validation</a></li>
-    <li><a href="#url-validation">URL validation</a></li>
-    <li><a href="#integers">Integers</a></li>
-    <li><a href="#floats">Floats</a></li>
-    <li><a href="#date">Date</a></li>
-    <li><a href="#datetime-local">Datetime-local</a></li>
-    <li><a href="#radio,-select-and-datalist-one-in-set">Radio, Select and Datalist (one-in-set)</a></li>
-    <li><a href="#checkboxes-many-in-set">Checkboxes (many-in-set)</a></li>
-    <li><a href="#single-checkbox">Single checkbox</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#required-inputs">Required inputs</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#blank-text">Blank text</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#min-and-max-length-bytes">Min and max length (bytes)</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#min-and-max-length-number-of-characters">Min and max length (number of characters)</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#starts-with,-ends-with-and-contains">Starts with, ends with and contains</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#matches-regular-expression-pattern">Matches regular expression pattern</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#unicode-character-range">Unicode character range</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#email-validation">Email validation</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#url-validation">URL validation</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#integers">Integers</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#floats">Floats</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#date">Date</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#datetime-local">Datetime-local</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#radio,-select-and-datalist-one-in-set">Radio, Select and Datalist (one-in-set)</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#checkboxes-many-in-set">Checkboxes (many-in-set)</a></li>
+    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#single-checkbox">Single checkbox</a></li>
     </ol>
 
     <h2 id="required-inputs">Required inputs</h2>
