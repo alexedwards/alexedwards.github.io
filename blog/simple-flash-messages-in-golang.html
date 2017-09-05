@@ -220,12 +220,9 @@ func get(w http.ResponseWriter, r *http.Request) {
 }
 </pre></code></figure>
 
-<form id="book-mailing-list">
-  <p>If you found this post useful you might like the book I'm writing: <em>Building real-world web applications in Go</em>.</p>
-  <p>Get the free sample chapter:</p>
-  <p id='confirmation'></p>
-  <input type="email" name="email" placeholder="Your email address" required>
-  <button type="submit">Send me the sample chapter</button>
+<form id="book-mailing-list" method="GET" action="https://gumroad.com/l/letsgo">
+  <strong>Found this post useful?</strong> My new book has a heap more information and step-by-step guidance on how to build a fast, secure and maintainable web application with Go. Check out <a href="https://gumroad.com/l/letsgo">the chapters and find out more</a>.<br><br>
+  <button>Let's Go: Learn to build professional web applications with Go</button>
 </form>
 
 <p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
