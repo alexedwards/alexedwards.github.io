@@ -5,25 +5,36 @@
 - Laymans guide to race conditions => Understanding Mutexes
 - JSON responses => Response Snippets
 - Form Validation in Go
+- Middleware (tutorial post) Before filters / Chaining handlers / Middleware
+- PostgreSQL (tutorial post)
+- Passing context in different ways
+- Redis
 
--> Middleware (tutorial post) Before filters / Chaining handlers / Middleware
--> Gzip (post and repository)
+TODO: Add SQL syntax highlighting
+
 -> Middleware list (post and repository)
--> PostgreSQL (tutorial post)
+-> Gzip (post and repository)
 -> Restful applications / controllers / custom routing (explain /user/f doesn't match /user/foo but /user/ does)
 
-* Redis
-* MongoDB
-* Cookies / Flash
+-> A pattern for middleware packages (Gorilla CRSF style)
+-> Sessions with request context
 
-* Passing context in different ways
+* Validation patterns
+* Rate limiting
+* MongoDB
+* Database-backed sessions
+* Cookies / Flash / Session
+* MVC pattern / application structure
+* Managing sessions in Go
+* Basic auth
+* Using checkboxes in forms (including re-adding checked attribute on error - use a sliceContains helper)
 * Testing web applications
 * Supercharging Go's FileServer (incl. neuteredDir, caching, pre-emptive map?) http://edgeguides.rubyonrails.org/asset_pipeline.html
-* MVC pattern / application structure
+* Building a message queue (like http://big-elephants.com/2013-09/building-a-message-queue-using-redis-in-go/)
 * Buffered outputs: https://github.com/goods/httpbuf/blob/master/httpbuf.go
 * Ajax content loading with Go, jQuery and HTML5 Pushstate (see https://gist.github.com/alexedwards/4619259)
 * URL shortner [video]
-* Wrapping your head around Go Templates
+* Wrapping your head around Go Templates (incl template caching?)
 * Optimising sites - Gzip, caching, etc
 * Resourses for learning Go - gobyexample, karl seguin, effective go, installing go, setting up workspace.
 * Building a Blog in Go - with BlackFriday
@@ -31,7 +42,6 @@
 * Revel review
 * Head requests http://golang.org/src/pkg/net/http/server.go?h=HEAD
 * HTTPS / securing applications
-* Rate limiting https://code.google.com/p/go-wiki/wiki/RateLimiting
 * Go's HTTP package: The unsexy bits
 * Websockets/Streaming application
 * Running Nginx and Go - FCGI
