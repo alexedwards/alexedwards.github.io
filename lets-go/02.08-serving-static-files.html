@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	<title>Serving Static Files - Let's Go (Sample)</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	html {height: calc(100% + 1px);}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Italic.ttf");
+	    font-style: italic;
+	}
+	@font-face {
+	    font-family: "PT Sans";
+	    src: url("./assets/fonts/PT_Sans-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono.ttf");
+	}
+	body {
+		background: #FEFEFE;;
+		color: #333333;
+		font-family: "PT Serif", serif;
+		font-size: 19.3167px;
+		line-height: 1.5;
+	}
+
+	.wrapper {
+		max-width: 855px;
+		margin: 0 auto;
+		padding-left: 25px;
+		padding-right: 25px;
+	}
+
+	.breadcrumbs {
+		float: left;
+		width: 70%;
+	}
+	.breadcrumbs-nav {
+		float: left;
+		width: 30%;
+		text-align: right;
+	}
+	header {
+		width: 100%;
+		height: 56;
+		border-bottom: 1px solid #e8eaed;
+		/*box-shadow: 0 3px 2px -2px rgba(200,200,200,.15);*/
+		color: #8c919b;
+		background: #FFFFFF;
+		line-height: 55px;
+		overflow: auto;
+		font-size: 15px;
+		/*position: fixed;*/
+		/*outline: solid 55px #ffffff;*/
+	}
+	article {
+		padding: 55px 0 55px;
+		overflow-y: scroll;
+	}
+	footer {
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		text-align: center;
+	}
+	article img {
+		max-width: 100%;
+	}
+	a {
+		color: rgb(24,99,161);
+		text-decoration: none;
+	}
+	a:hover {
+		text-decoration: underline;
+	}
+	dfn {
+		font-weight: bold;
+		font-style: normal;
+	}
+	h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+		margin-bottom: 28.9px;
+	}
+	h1 {
+		font-size: 2.5em;
+		font-weight: bold;
+		border-bottom: 1px solid #e8eaed;
+		padding-bottom: 0.33em;
+	}
+	h2 {
+		font-size: 1.75em;
+		font-weight: bold;
+		border-top: 1px solid #e8eaed;
+		padding-top: 28.9px;
+	}
+	h3 {
+		font-size: 1.25em;
+		font-weight: bold;
+	}
+	hr {
+		border:none;
+		height: 0;
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		padding-bottom: 28.9px;
+	}
+	.codeblock {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-radius: 2px;
+	}
+	.codeblock.sh {
+		background-color: #404040;
+		color: #FFFFFF;
+		overflow-x: auto;
+	}
+	.codeblock-title {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-bottom: none;
+		border-top-left-radius: 2px;
+		border-top-right-radius: 2px;
+	}
+	a code {
+		color: rgb(24,99,161) !important;
+	}
+	p code, li code {
+		color: rgb(216, 130, 0);
+		padding: 0.1em;
+		white-space: nowrap;
+		/*font-style: normal;*/
+	}
+	code, .codeblock, .codeblock-title, pre, samp, table {
+		font-family: "Fira Mono", monospace;
+		font-size: 15px;
+		overflow-y: auto;
+	}
+	article ol, article ol li, article ul, article ul li {
+		padding-left: 1em;
+	}
+	article ol li, article ul li {
+		padding-left: 0.5em;
+	}
+	article table {
+		width: 100%;
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		border-collapse: collapse;
+	}
+	td, th {
+		padding: 6px 12px;
+		border: solid 1px #E8E8E8;
+	}
+	td span {
+		color: grey; /*TODO*/
+	}
+	td code {
+	  white-space: nowrap;
+	}
+
+	.noborder {
+		border: none;
+		padding-bottom: 0;
+	}
+	.subtle {
+		color: #7A7663;
+	}
+	.small {
+		font-size: 15px;
+	}
+
+	.hll { background-color: #49483e }
+	.c { color: #7A7663 } /* Comment */
+	.err { color: #960050; background-color: #e8e8e8 }  /*Error*/
+	.k { color: #00a8c8} /* Keyword*/
+	.l { color: #ae81ff } /* Literal */
+	.n { color: #111111 } /* Name */
+	.o { color: #f92672 } /* Operator */
+	.p { color: #111111 } /* Punctuation */
+	.cm { color: #75715e } /* Comment.Multiline */
+	.cp { color: #75715e } /* Comment.Preproc */
+	.c1 { color: #75715e } /* Comment.Single */
+	.cs { color: #75715e } /* Comment.Special */
+	.ge { font-style: italic } /* Generic.Emph */
+	.gs { font-weight: bold } /* Generic.Strong */
+	.kc { color: #00a8c8 } /* Keyword.Constant */
+	.kd { color: #00a8c8 } /* Keyword.Declaration */
+	.kn { color: #f92672 } /* Keyword.Namespace */
+	.kp { color: #00a8c8 } /* Keyword.Pseudo */
+	.kr { color: #00a8c8 } /* Keyword.Reserved */
+	.kt { color: #00a8c8 } /* Keyword.Type */
+	.ld { color: #d88200 } /* Literal.Date */
+	.m { color: #ae81ff } /* Literal.Number */
+	.s { color: #d88200} /* Literal.String */
+	.na { color: #75af00 } /* Name.Attribute */
+	.nb { color: #111111 } /* Name.Builtin */
+	.nc { color: #75af00 } /* Name.Class */
+	.no { color: #00a8c8 } /* Name.Constant */
+	.nd { color: #75af00 } /* Name.Decorator */
+	.ni { color: #111111 } /* Name.Entity */
+	.ne { color: #75af00 } /* Name.Exception */
+	.nf { color: #75af00} /* Name.Function */
+	.nl { color: #111111 } /* Name.Label */
+	.nn { color: #111111} /* Name.Namespace */
+	.nx { color: #111111 } /* Name.Other */
+	.py { color: #111111 } /* Name.Property */
+	.nt { color: #f92672 } /* Name.Tag */
+	.nv { color: #111111 } /* Name.Variable */
+	.ow { color: #f92672 } /* Operator.Word */
+	.w { color: #111111 } /* Text.Whitespace */
+	.mf { color: #ae81ff } /* Literal.Number.Float */
+	.mh { color: #ae81ff } /* Literal.Number.Hex */
+	.mi { color: #ae81ff } /* Literal.Number.Integer */
+	.mo { color: #ae81ff } /* Literal.Number.Oct */
+	.sb { color: #d88200 } /* Literal.String.Backtick */
+	.sc { color: #d88200 } /* Literal.String.Char */
+	.sd { color: #d88200 } /* Literal.String.Doc */
+	.s2 { color: #d88200 } /* Literal.String.Double */
+	.se { color: #8045FF } /* Literal.String.Escape */
+	.sh { color: #d88200 } /* Literal.String.Heredoc */
+	.si { color: #d88200 } /* Literal.String.Interpol */
+	.sx { color: #d88200 } /* Literal.String.Other */
+	.sr { color: #d88200 } /* Literal.String.Regex */
+	.s1 { color: #d88200 } /* Literal.String.Single */
+	.ss { color: #d88200 } /* Literal.String.Symbol */
+	.bp { color: #111111 } /* Name.Builtin.Pseudo */
+	.vc { color: #111111 } /* Name.Variable.Class */
+	.vg { color: #111111 } /* Name.Variable.Global */
+	.vi { color: #111111 } /* Name.Variable.Instance */
+	.il { color: #ae81ff } /* Literal.Number.Integer.Long */
+
+	.sh samp {color: silver;}
+	.html .err { color: #333333; background-color:transparent; }
+	.html .plain span { color: #333333; background-color:transparent; }
+
+	nav#chapters li {
+		/*padding-left: 100px;*/
+		/*list-style-type: disc;*/
+		font-weight: bold;
+	}
+	nav#chapters li {
+		padding: 0.1125em 1em;
+	}
+	nav#chapters li.indent {
+		font-weight: normal;
+		list-style-type: circle;
+		margin-left: 2em;
+	}
+
+	@media only screen and (max-width: 855px) {
+		body {
+			font-size: 18px;
+		}
+		code, .codeblock, .codeblock-title, pre, samp, table {
+			font-size: 13px;
+		}
+		h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+			margin-bottom: 25px;
+		}
+		h1 {
+			font-size: 2em;
+			font-weight: bold;
+			border-bottom: 1px solid #e8eaed;
+			padding-bottom: 0.33em;
+		}
+	}
+	@media only screen and (max-width: 650px) {
+		header .pn #previous, header .pn #next, header #bc {
+			display: none;
+		}
+		.half {
+			width: 100%;
+		}
+	}
+
+	.cta {
+		background: #00AA8D;
+		/*height: 54px;*/
+		/*line-height: 54px;*/
+		padding-top: 14px;
+		padding-bottom: 14px;
+
+		color: white;
+		border-bottom: 2px solid #008975;
+		font-size: 15px;
+		font-weight: bold;
+		text-align: center;
+	}
+	.cta a {
+		color: white;
+		text-decoration: underline;
+	}
+	</style>
+</head>
+<body>
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<div class="wrapper">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				<span id="bc">
+				
+					
+						&rsaquo; <a href="02.00-foundations.html">Foundations</a>
+				 		&rsaquo; Serving Static Files
+					
+				
+	 		</div>
+	 		<div class="breadcrumbs-nav right pn">
+				
+				<span id="previous">
+					<a href="02.07-basic-html-templates.html" title="2.7. Basic HTML Templates">Previous</a>
+				&middot;
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+				<span id="next">
+				&middot;
+					<a href="02.09-the-http-handler-interface.html" title="2.9. The http.Handler Interface">Next</a>
+				</span>
+				
+			</div>
+ 		</div>
+	</header>
+	<article class="wrapper">
+	
+	
+<h1 name="02.08-serving-static-files">2.8. Serving Static Files</h1>
+
+<p>In this chapter we&#39;ll improve the look and feel of our homepage by adding to some static CSS and image files to our application.</p>
+
+<p>If you&#39;re following along, you can grab the relevant files and extract them into the <code>ui/static</code> folder we made earlier with the following commands:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
+<span class='prompt'>$</span> curl http://www.alexedwards.net/static/sb.v100.tar.gz | tar -xvz -C ./ui/static/
+</pre></div>
+<p>The contents of your <code>ui/static</code> folder should now look like this:</p>
+
+<p><img src="assets/img/02.08-01.png" alt="02.08-01.png"></p>
+
+<h3>The http.FileServer Handler</h3>
+
+<p>The key to serving these static files from our web application is the <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer()</code></a> function. This lets us create a <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> handler which serves files from a specific directory, like so:</p>
+<div class="codeblock go"><pre><span class="nx">fileServer</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">FileServer</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">Dir</span><span class="p">(</span><span class="s">&quot;./ui/static&quot;</span><span class="p">))</span>
+</pre></div>
+<p>Let’s add a new route so that all requests which begin with <code>&quot;/static/&quot;</code> are handled by the file server (note how <code>&quot;/static/&quot;</code> is a subtree path pattern):</p>
+
+<table><thead>
+<tr>
+<th style="text-align: left">URL Path</th>
+<th style="text-align: left">Handler</th>
+<th style="text-align: left">Action</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: left">/</td>
+<td style="text-align: left">Home</td>
+<td style="text-align: left">Display a &quot;Hello from Snippetbox&quot; message</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet<span>?id=1</span></td>
+<td style="text-align: left">ShowSnippet</td>
+<td style="text-align: left">Display a specific snippet</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet/new</td>
+<td style="text-align: left">NewSnippet</td>
+<td style="text-align: left">Display the new snippet form</td>
+</tr>
+<tr>
+<td style="text-align: left">/static/<span>...</span></td>
+<td style="text-align: left">http.FileServer</td>
+<td style="text-align: left">Serve a specific static file</td>
+</tr>
+</tbody></table>
+
+<p>When the <code>http.FileServer</code> handler receives a request, it will remove the leading slash from the URL path and then search the <code>./ui/static</code> directory for the corresponding file.</p>
+
+<p>So for this to work correctly we have to strip the leading <code>&quot;/static&quot;</code> from the URL path <em>before</em> passing it to <code>http.FileServer</code>, otherwise it will be looking for a file which doesn&#39;t exist and the user will receive a <code>404 Not Found</code> response. Fortunately Go includes a <a href="https://golang.org/pkg/net/http/#StripPrefix"><code>http.StripPrefix()</code></a> helper specifically for the task.</p>
+
+<p>Open up your <code>main.go</code> file and add the following code, so that the file ends up looking like this:</p>
+<div class="group"><div class="codeblock-title">cmd/web/main.go</div>
+<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&quot;log&quot;</span>
+    <span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/snippet&quot;</span><span class="p">,</span> <span class="nx">ShowSnippet</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/snippet/new&quot;</span><span class="p">,</span> <span class="nx">NewSnippet</span><span class="p">)</span>
+
+    <span class="c1">// Create a file server which serves files out of the &quot;./ui/static&quot; directory.</span>
+    <span class="c1">// As before, the path given to the http.Dir function is relative to our project</span>
+    <span class="c1">// repository root.</span>
+    <span class="nx">fileServer</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">FileServer</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">Dir</span><span class="p">(</span><span class="s">&quot;./ui/static&quot;</span><span class="p">))</span>
+
+    <span class="c1">// Use the mux.Handle() function to register the file server as the</span>
+    <span class="c1">// handler for all URL paths that start with &quot;/static/&quot;. For matching</span>
+    <span class="c1">// paths, we strip the &quot;/static&quot; prefix before the request reaches the file</span>
+    <span class="c1">// server.</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&quot;/static/&quot;</span><span class="p">,</span> <span class="nx">http</span><span class="p">.</span><span class="nx">StripPrefix</span><span class="p">(</span><span class="s">&quot;/static&quot;</span><span class="p">,</span> <span class="nx">fileServer</span><span class="p">))</span>
+
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+<p>Once that&#39;s complete, save the file and restart the application.</p>
+
+<p>Try taking a look at <a href="http://localhost:4000/static/"><code>http://localhost:4000/static/</code></a> in your browser and you should see a navigable directory listing of the <code>./ui/static</code> folder, a bit like this:</p>
+
+<p><img src="assets/img/02.08-02.png" alt="02.08-02.png"></p>
+
+<p>If you browse through, you should be able to view the individual files. For example, if you navigate to <a href="http://localhost:4000/static/css/main.css"><code>http://localhost:4000/static/css/main.css</code></a> you should see the CSS file appear in your browser, like so:</p>
+
+<p><img src="assets/img/02.08-03.png" alt="02.08-03.png"></p>
+
+<h3>Using the Static Files</h3>
+
+<p>With that done, we can now update our <code>ui/html/base.html</code> file to make use of these static files:</p>
+<div class="group"><div class="codeblock-title">ui/html/base.html</div>
+<div class="codeblock html"><pre>{{define &quot;base&quot;}}
+<span class="cp">&lt;!doctype html&gt;</span>
+<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">&quot;en&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;head&gt;</span>
+        <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">&quot;utf-8&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;title&gt;</span>{{template &quot;page-title&quot; .}} - Snippetbox<span class="nt">&lt;/title&gt;</span>
+        <span class="c">&lt;!-- Link to the CSS stylesheet and favicon --&gt;</span>
+        <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;/static/css/main.css&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;shortcut icon&quot;</span> <span class="na">href=</span><span class="s">&quot;/static/img/favicon.ico&quot;</span> <span class="na">type=</span><span class="s">&quot;image/x-icon&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;/head&gt;</span>
+    <span class="nt">&lt;body&gt;</span>
+        <span class="nt">&lt;header&gt;</span>
+            <span class="nt">&lt;h1&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;/&quot;</span><span class="nt">&gt;</span>Snippetbox<span class="nt">&lt;/a&gt;&lt;/h1&gt;</span>
+        <span class="nt">&lt;/header&gt;</span>
+        <span class="nt">&lt;nav&gt;</span>
+            <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;/&quot;</span><span class="nt">&gt;</span>Home<span class="nt">&lt;/a&gt;</span>
+            <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;/snippet/new&quot;</span><span class="nt">&gt;</span>New snippet<span class="nt">&lt;/a&gt;</span>
+        <span class="nt">&lt;/nav&gt;</span>
+        <span class="nt">&lt;section&gt;</span>
+            {{template &quot;page-body&quot; .}}
+        <span class="nt">&lt;/section&gt;</span>
+    <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+{{end}}
+</pre></div></div>
+<p>Make sure you save all your changes then visit <a href="http://localhost:4000/"><code>http://localhost:4000/</code></a>. If everything has worked correctly you should see a homepage which looks like this:</p>
+
+<p><img src="assets/img/02.08-04.png" alt="02.08-04.png"></p>
+
+<h2>Notes</h2>
+
+<h3>Features and Functions</h3>
+
+<p>Go&#39;s <code>http.FileServer</code> has a few really nice features that are worthy of a mention:</p>
+
+<ul>
+<li><p>It sanitizes all request paths by running them through the <a href="https://golang.org/pkg/path/#Clean"><code>path.Clean()</code></a> function before searching for a file. This removes any <code>.</code> and <code>..</code> elements from the URL path, which helps to stop directory traversal attacks.</p></li>
+<li><p><a href="https://benramsey.com/blog/2008/05/206-partial-content-and-range-requests">Range requests</a> are fully supported. This is great if your application is serving large files and you want to support resumable downloads. You can see this functionality in action if you use curl to request bytes 100-199 of our <code>logo.png</code> file, like so:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> curl -i -H "Range: bytes=100-199" http://localhost:4000/static/img/logo.png
+<samp>HTTP/1.1 206 Partial Content
+Accept-Ranges: bytes
+Content-Length: 100
+Content-Range: bytes 100-199/1075
+Content-Type: image/png
+Last-Modified: Thu, 04 May 2017 13:07:52 GMT
+Date: Sat, 19 Aug 2017 09:12:49 GMT
+
+h�j��ZbK�&�"b��dS�"V��M�PQ�S�T��x�PMC1���&�.(غ�   ����&�"^"� ZI</samp>
+</pre></div></li>
+<li><p>The <code>Last-Modified</code> and <code>If-Modified-Since</code> headers are transparently supported. If a file hasn’t changed since the user last requested it, then Go will send a <code>304 Not Modified</code> status code instead of the file itself.  This helps reduce latency and processing overhead for both the client and server</p></li>
+<li><p>The <code>Content-Type</code> is automatically set from the file extension using the <a href="https://golang.org/pkg/mime/#TypeByExtension"><code>mime.TypeByExtension()</code></a> function. You can add your own custom extensions and content types using the <a href="https://golang.org/pkg/mime/#AddExtensionType"><code>mime.AddExtensionType()</code></a> function if necessary.</p></li>
+</ul>
+
+<h3>Serving Single Files</h3>
+
+<p>Sometimes you might want to serve a single file from within a handler. For this there&#39;s the <a href="https://golang.org/pkg/net/http/#ServeFile"><code>http.ServeFile()</code></a> function:</p>
+<div class="codeblock go"><pre><span class="kd">func</span> <span class="nx">FooHandler</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">file</span> <span class="o">:=</span> <span class="nx">filepath</span><span class="p">.</span><span class="nx">Join</span><span class="p">(</span><span class="s">&quot;./ui/static&quot;</span><span class="p">,</span> <span class="s">&quot;foo.zip&quot;</span><span class="p">)</span>
+    <span class="nx">http</span><span class="p">.</span><span class="nx">ServeFile</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">,</span> <span class="nx">file</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+<p><strong>But be aware</strong>: <code>http.ServeFile()</code> does not automatically sanitize the file path. If you&#39;re constructing a file path from untrusted user input, you <strong>must</strong> sanitize the input with <a href="https://golang.org/pkg/path/filepath/#Clean"><code>filepath.Clean()</code></a> before using it to avoid directory traversal attacks.</p>
+
+	
+	
+	<footer>
+		
+		<span id="previous">
+			<a href="02.07-basic-html-templates.html" title="2.7. Basic HTML Templates">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+		&middot;
+		<span id="next">
+			<a href="02.09-the-http-handler-interface.html" title="2.9. The http.Handler Interface">Next</a>
+		</span>
+		
+	</footer>
+	</article>
+</body>
+</html>

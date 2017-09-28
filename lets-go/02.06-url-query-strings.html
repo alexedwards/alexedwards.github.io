@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	<title>URL Query Strings - Let's Go (Sample)</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	html {height: calc(100% + 1px);}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Italic.ttf");
+	    font-style: italic;
+	}
+	@font-face {
+	    font-family: "PT Sans";
+	    src: url("./assets/fonts/PT_Sans-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono.ttf");
+	}
+	body {
+		background: #FEFEFE;;
+		color: #333333;
+		font-family: "PT Serif", serif;
+		font-size: 19.3167px;
+		line-height: 1.5;
+	}
+
+	.wrapper {
+		max-width: 855px;
+		margin: 0 auto;
+		padding-left: 25px;
+		padding-right: 25px;
+	}
+
+	.breadcrumbs {
+		float: left;
+		width: 70%;
+	}
+	.breadcrumbs-nav {
+		float: left;
+		width: 30%;
+		text-align: right;
+	}
+	header {
+		width: 100%;
+		height: 56;
+		border-bottom: 1px solid #e8eaed;
+		/*box-shadow: 0 3px 2px -2px rgba(200,200,200,.15);*/
+		color: #8c919b;
+		background: #FFFFFF;
+		line-height: 55px;
+		overflow: auto;
+		font-size: 15px;
+		/*position: fixed;*/
+		/*outline: solid 55px #ffffff;*/
+	}
+	article {
+		padding: 55px 0 55px;
+		overflow-y: scroll;
+	}
+	footer {
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		text-align: center;
+	}
+	article img {
+		max-width: 100%;
+	}
+	a {
+		color: rgb(24,99,161);
+		text-decoration: none;
+	}
+	a:hover {
+		text-decoration: underline;
+	}
+	dfn {
+		font-weight: bold;
+		font-style: normal;
+	}
+	h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+		margin-bottom: 28.9px;
+	}
+	h1 {
+		font-size: 2.5em;
+		font-weight: bold;
+		border-bottom: 1px solid #e8eaed;
+		padding-bottom: 0.33em;
+	}
+	h2 {
+		font-size: 1.75em;
+		font-weight: bold;
+		border-top: 1px solid #e8eaed;
+		padding-top: 28.9px;
+	}
+	h3 {
+		font-size: 1.25em;
+		font-weight: bold;
+	}
+	hr {
+		border:none;
+		height: 0;
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		padding-bottom: 28.9px;
+	}
+	.codeblock {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-radius: 2px;
+	}
+	.codeblock.sh {
+		background-color: #404040;
+		color: #FFFFFF;
+		overflow-x: auto;
+	}
+	.codeblock-title {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-bottom: none;
+		border-top-left-radius: 2px;
+		border-top-right-radius: 2px;
+	}
+	a code {
+		color: rgb(24,99,161) !important;
+	}
+	p code, li code {
+		color: rgb(216, 130, 0);
+		padding: 0.1em;
+		white-space: nowrap;
+		/*font-style: normal;*/
+	}
+	code, .codeblock, .codeblock-title, pre, samp, table {
+		font-family: "Fira Mono", monospace;
+		font-size: 15px;
+		overflow-y: auto;
+	}
+	article ol, article ol li, article ul, article ul li {
+		padding-left: 1em;
+	}
+	article ol li, article ul li {
+		padding-left: 0.5em;
+	}
+	article table {
+		width: 100%;
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		border-collapse: collapse;
+	}
+	td, th {
+		padding: 6px 12px;
+		border: solid 1px #E8E8E8;
+	}
+	td span {
+		color: grey; /*TODO*/
+	}
+	td code {
+	  white-space: nowrap;
+	}
+
+	.noborder {
+		border: none;
+		padding-bottom: 0;
+	}
+	.subtle {
+		color: #7A7663;
+	}
+	.small {
+		font-size: 15px;
+	}
+
+	.hll { background-color: #49483e }
+	.c { color: #7A7663 } /* Comment */
+	.err { color: #960050; background-color: #e8e8e8 }  /*Error*/
+	.k { color: #00a8c8} /* Keyword*/
+	.l { color: #ae81ff } /* Literal */
+	.n { color: #111111 } /* Name */
+	.o { color: #f92672 } /* Operator */
+	.p { color: #111111 } /* Punctuation */
+	.cm { color: #75715e } /* Comment.Multiline */
+	.cp { color: #75715e } /* Comment.Preproc */
+	.c1 { color: #75715e } /* Comment.Single */
+	.cs { color: #75715e } /* Comment.Special */
+	.ge { font-style: italic } /* Generic.Emph */
+	.gs { font-weight: bold } /* Generic.Strong */
+	.kc { color: #00a8c8 } /* Keyword.Constant */
+	.kd { color: #00a8c8 } /* Keyword.Declaration */
+	.kn { color: #f92672 } /* Keyword.Namespace */
+	.kp { color: #00a8c8 } /* Keyword.Pseudo */
+	.kr { color: #00a8c8 } /* Keyword.Reserved */
+	.kt { color: #00a8c8 } /* Keyword.Type */
+	.ld { color: #d88200 } /* Literal.Date */
+	.m { color: #ae81ff } /* Literal.Number */
+	.s { color: #d88200} /* Literal.String */
+	.na { color: #75af00 } /* Name.Attribute */
+	.nb { color: #111111 } /* Name.Builtin */
+	.nc { color: #75af00 } /* Name.Class */
+	.no { color: #00a8c8 } /* Name.Constant */
+	.nd { color: #75af00 } /* Name.Decorator */
+	.ni { color: #111111 } /* Name.Entity */
+	.ne { color: #75af00 } /* Name.Exception */
+	.nf { color: #75af00} /* Name.Function */
+	.nl { color: #111111 } /* Name.Label */
+	.nn { color: #111111} /* Name.Namespace */
+	.nx { color: #111111 } /* Name.Other */
+	.py { color: #111111 } /* Name.Property */
+	.nt { color: #f92672 } /* Name.Tag */
+	.nv { color: #111111 } /* Name.Variable */
+	.ow { color: #f92672 } /* Operator.Word */
+	.w { color: #111111 } /* Text.Whitespace */
+	.mf { color: #ae81ff } /* Literal.Number.Float */
+	.mh { color: #ae81ff } /* Literal.Number.Hex */
+	.mi { color: #ae81ff } /* Literal.Number.Integer */
+	.mo { color: #ae81ff } /* Literal.Number.Oct */
+	.sb { color: #d88200 } /* Literal.String.Backtick */
+	.sc { color: #d88200 } /* Literal.String.Char */
+	.sd { color: #d88200 } /* Literal.String.Doc */
+	.s2 { color: #d88200 } /* Literal.String.Double */
+	.se { color: #8045FF } /* Literal.String.Escape */
+	.sh { color: #d88200 } /* Literal.String.Heredoc */
+	.si { color: #d88200 } /* Literal.String.Interpol */
+	.sx { color: #d88200 } /* Literal.String.Other */
+	.sr { color: #d88200 } /* Literal.String.Regex */
+	.s1 { color: #d88200 } /* Literal.String.Single */
+	.ss { color: #d88200 } /* Literal.String.Symbol */
+	.bp { color: #111111 } /* Name.Builtin.Pseudo */
+	.vc { color: #111111 } /* Name.Variable.Class */
+	.vg { color: #111111 } /* Name.Variable.Global */
+	.vi { color: #111111 } /* Name.Variable.Instance */
+	.il { color: #ae81ff } /* Literal.Number.Integer.Long */
+
+	.sh samp {color: silver;}
+	.html .err { color: #333333; background-color:transparent; }
+	.html .plain span { color: #333333; background-color:transparent; }
+
+	nav#chapters li {
+		/*padding-left: 100px;*/
+		/*list-style-type: disc;*/
+		font-weight: bold;
+	}
+	nav#chapters li {
+		padding: 0.1125em 1em;
+	}
+	nav#chapters li.indent {
+		font-weight: normal;
+		list-style-type: circle;
+		margin-left: 2em;
+	}
+
+	@media only screen and (max-width: 855px) {
+		body {
+			font-size: 18px;
+		}
+		code, .codeblock, .codeblock-title, pre, samp, table {
+			font-size: 13px;
+		}
+		h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+			margin-bottom: 25px;
+		}
+		h1 {
+			font-size: 2em;
+			font-weight: bold;
+			border-bottom: 1px solid #e8eaed;
+			padding-bottom: 0.33em;
+		}
+	}
+	@media only screen and (max-width: 650px) {
+		header .pn #previous, header .pn #next, header #bc {
+			display: none;
+		}
+		.half {
+			width: 100%;
+		}
+	}
+
+	.cta {
+		background: #00AA8D;
+		/*height: 54px;*/
+		/*line-height: 54px;*/
+		padding-top: 14px;
+		padding-bottom: 14px;
+
+		color: white;
+		border-bottom: 2px solid #008975;
+		font-size: 15px;
+		font-weight: bold;
+		text-align: center;
+	}
+	.cta a {
+		color: white;
+		text-decoration: underline;
+	}
+	</style>
+</head>
+<body>
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<div class="wrapper">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				<span id="bc">
+				
+					
+						&rsaquo; <a href="02.00-foundations.html">Foundations</a>
+				 		&rsaquo; URL Query Strings
+					
+				
+	 		</div>
+	 		<div class="breadcrumbs-nav right pn">
+				
+				<span id="previous">
+					<a href="02.05-routing-requests.html" title="2.5. Routing Requests">Previous</a>
+				&middot;
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+				<span id="next">
+				&middot;
+					<a href="02.07-basic-html-templates.html" title="2.7. Basic HTML Templates">Next</a>
+				</span>
+				
+			</div>
+ 		</div>
+	</header>
+	<article class="wrapper">
+	
+	
+<h1 name="02.06-url-query-strings">2.6. URL Query Strings</h1>
+
+<p>Let&#39;s add a bit of dynamic behavior to our application, so that the <code>&quot;/snippet&quot;</code> route
+accepts a <a href="https://en.wikipedia.org/wiki/Query_string">query string</a> parameter like so:</p>
+
+<table><thead>
+<tr>
+<th style="text-align: left">URL Path</th>
+<th style="text-align: left">Handler</th>
+<th style="text-align: left">Action</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: left">/</td>
+<td style="text-align: left">Home</td>
+<td style="text-align: left">Display a &quot;Hello from Snippetbox&quot; message</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet<span>?id=1</span></td>
+<td style="text-align: left">ShowSnippet</td>
+<td style="text-align: left">Display a specific snippet</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet/new</td>
+<td style="text-align: left">NewSnippet</td>
+<td style="text-align: left">Display the new snippet form</td>
+</tr>
+</tbody></table>
+
+<p>Ultimately, the <code>ShowSnippet</code> function will use the <code>id</code> parameter to determine exactly which text snippet to show the user.</p>
+
+<p>But for now, we&#39;ll just read the value of the <code>id</code> parameter and interpolate it with our placeholder response. To make this work we need our <code>ShowSnippet</code> handler function to do two things:</p>
+
+<ol>
+<li><p>First it needs to retrieve the value of the <code>id</code> parameter from the URL query string, which we can do using the <code>r.URL.Query().Get()</code> method.</p></li>
+<li><p>Because the <code>id</code> parameter is untrusted user input, we must validate the value to make sure it is sane and sensible. In this case we want to check that it contains a <a href="https://www.mathsisfun.com/definitions/natural-number.html">natural number</a>.</p></li>
+</ol>
+<div class="group"><div class="codeblock-title">cmd/web/handlers.go</div>
+<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&quot;fmt&quot;</span> <span class="c1">// New import</span>
+    <span class="s">&quot;net/http&quot;</span>
+    <span class="s">&quot;strconv&quot;</span> <span class="c1">// New import</span>
+<span class="p">)</span>
+
+<span class="err">···</span>
+
+<span class="kd">func</span> <span class="nx">ShowSnippet</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Extract the value of the id parameter from the query string and try to</span>
+    <span class="c1">// convert it to an integer using the strconv.Atoi() function. If it couldn&#39;t</span>
+    <span class="c1">// be converted to an integer, or the value is less than 1, we return a 404</span>
+    <span class="c1">// Not Found response.</span>
+    <span class="nx">id</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Query</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">||</span> <span class="nx">id</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nx">NotFound</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Use the fmt.Fprintf() function to interpolate the id value with our response</span>
+    <span class="c1">// and write it to the http.ResponseWriter.</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintf</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&quot;Display a specific snippet (ID %d)...&quot;</span><span class="p">,</span> <span class="nx">id</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="err">···</span>
+</pre></div></div>
+<p>I should mention that the <code>r.URL.Query().Get()</code> method always returns a <em>string</em> value for the parameter, or the empty string <code>&quot;&quot;</code> if no matching parameter exists. This is why we are able to pass it directly to the <a href="https://golang.org/pkg/strconv/#Atoi"><code>strconv.Atoi()</code></a> function.</p>
+
+<p>Restart the application, and try visiting a URL like <a href="http://localhost:4000/snippet?id=123"><code>http://localhost:4000/snippet?id=123</code></a>. You should get a response similar to this:</p>
+
+<p><img src="assets/img/02.06-01.png" alt="02.06-01.png"></p>
+
+<p>You might also like to try visiting some URLs which have invalid values for the <code>id</code> parameter, or no parameter at all. For instance:</p>
+
+<ul>
+<li><a href="http://localhost:4000/snippet"><code>http://localhost:4000/snippet</code></a></li>
+<li><a href="http://localhost:4000/snippet?id=-1"><code>http://localhost:4000/snippet?id=-1</code></a></li>
+<li><a href="http://localhost:4000/snippet?id=foo"><code>http://localhost:4000/snippet?id=foo</code></a></li>
+</ul>
+
+<p>For all these requests you should receive a <code>404 Not Found</code> response.</p>
+
+<h3>The io.Writer Interface</h3>
+
+<p>The code above introduced another new thing behind-the-scenes. If you take a look at the documentation for the <a href="https://golang.org/pkg/fmt/#Fprintf"><code>fmt.Fprintf()</code></a> function you&#39;ll notice that it takes an <a href="https://golang.org/pkg/io/#Writer"><code>io.Writer</code></a> as the first parameter:</p>
+<div class="codeblock go"><pre><span class="kd">func</span> <span class="nx">Fprintf</span><span class="p">(</span><span class="nx">w</span> <span class="nx">io</span><span class="p">.</span><span class="nx">Writer</span><span class="p">,</span> <span class="nx">format</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">a</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</pre></div>
+<p>But we passed it our <code>http.ResponseWriter</code> object instead, and it worked fine.</p>
+
+<p>We&#39;re able to do this because the <code>io.Writer</code> type is an <dfn>interface</dfn>, and our <code>http.ResponseWriter</code> object <em>satisfies the interface</em> because it has the <code>w.Write()</code> method.</p>
+
+<p>If you&#39;re new to Go the <a href="http://blog.teamtreehouse.com/go-interfaces-awesome">concept of interfaces</a> can be a bit confusing, but in practice, it simply means that anywhere you see an <code>io.Writer</code> parameter it&#39;s OK to use a <code>http.RespsonseWriter</code> too. Whatever is being written will subsequently be sent as the body of the HTTP response.</p>
+
+	
+	
+	<footer>
+		
+		<span id="previous">
+			<a href="02.05-routing-requests.html" title="2.5. Routing Requests">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+		&middot;
+		<span id="next">
+			<a href="02.07-basic-html-templates.html" title="2.7. Basic HTML Templates">Next</a>
+		</span>
+		
+	</footer>
+	</article>
+</body>
+</html>

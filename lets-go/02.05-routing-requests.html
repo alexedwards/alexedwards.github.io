@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	<title>Routing Requests - Let's Go (Sample)</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	html {height: calc(100% + 1px);}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Italic.ttf");
+	    font-style: italic;
+	}
+	@font-face {
+	    font-family: "PT Sans";
+	    src: url("./assets/fonts/PT_Sans-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono.ttf");
+	}
+	body {
+		background: #FEFEFE;;
+		color: #333333;
+		font-family: "PT Serif", serif;
+		font-size: 19.3167px;
+		line-height: 1.5;
+	}
+
+	.wrapper {
+		max-width: 855px;
+		margin: 0 auto;
+		padding-left: 25px;
+		padding-right: 25px;
+	}
+
+	.breadcrumbs {
+		float: left;
+		width: 70%;
+	}
+	.breadcrumbs-nav {
+		float: left;
+		width: 30%;
+		text-align: right;
+	}
+	header {
+		width: 100%;
+		height: 56;
+		border-bottom: 1px solid #e8eaed;
+		/*box-shadow: 0 3px 2px -2px rgba(200,200,200,.15);*/
+		color: #8c919b;
+		background: #FFFFFF;
+		line-height: 55px;
+		overflow: auto;
+		font-size: 15px;
+		/*position: fixed;*/
+		/*outline: solid 55px #ffffff;*/
+	}
+	article {
+		padding: 55px 0 55px;
+		overflow-y: scroll;
+	}
+	footer {
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		text-align: center;
+	}
+	article img {
+		max-width: 100%;
+	}
+	a {
+		color: rgb(24,99,161);
+		text-decoration: none;
+	}
+	a:hover {
+		text-decoration: underline;
+	}
+	dfn {
+		font-weight: bold;
+		font-style: normal;
+	}
+	h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+		margin-bottom: 28.9px;
+	}
+	h1 {
+		font-size: 2.5em;
+		font-weight: bold;
+		border-bottom: 1px solid #e8eaed;
+		padding-bottom: 0.33em;
+	}
+	h2 {
+		font-size: 1.75em;
+		font-weight: bold;
+		border-top: 1px solid #e8eaed;
+		padding-top: 28.9px;
+	}
+	h3 {
+		font-size: 1.25em;
+		font-weight: bold;
+	}
+	hr {
+		border:none;
+		height: 0;
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		padding-bottom: 28.9px;
+	}
+	.codeblock {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-radius: 2px;
+	}
+	.codeblock.sh {
+		background-color: #404040;
+		color: #FFFFFF;
+		overflow-x: auto;
+	}
+	.codeblock-title {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-bottom: none;
+		border-top-left-radius: 2px;
+		border-top-right-radius: 2px;
+	}
+	a code {
+		color: rgb(24,99,161) !important;
+	}
+	p code, li code {
+		color: rgb(216, 130, 0);
+		padding: 0.1em;
+		white-space: nowrap;
+		/*font-style: normal;*/
+	}
+	code, .codeblock, .codeblock-title, pre, samp, table {
+		font-family: "Fira Mono", monospace;
+		font-size: 15px;
+		overflow-y: auto;
+	}
+	article ol, article ol li, article ul, article ul li {
+		padding-left: 1em;
+	}
+	article ol li, article ul li {
+		padding-left: 0.5em;
+	}
+	article table {
+		width: 100%;
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		border-collapse: collapse;
+	}
+	td, th {
+		padding: 6px 12px;
+		border: solid 1px #E8E8E8;
+	}
+	td span {
+		color: grey; /*TODO*/
+	}
+	td code {
+	  white-space: nowrap;
+	}
+
+	.noborder {
+		border: none;
+		padding-bottom: 0;
+	}
+	.subtle {
+		color: #7A7663;
+	}
+	.small {
+		font-size: 15px;
+	}
+
+	.hll { background-color: #49483e }
+	.c { color: #7A7663 } /* Comment */
+	.err { color: #960050; background-color: #e8e8e8 }  /*Error*/
+	.k { color: #00a8c8} /* Keyword*/
+	.l { color: #ae81ff } /* Literal */
+	.n { color: #111111 } /* Name */
+	.o { color: #f92672 } /* Operator */
+	.p { color: #111111 } /* Punctuation */
+	.cm { color: #75715e } /* Comment.Multiline */
+	.cp { color: #75715e } /* Comment.Preproc */
+	.c1 { color: #75715e } /* Comment.Single */
+	.cs { color: #75715e } /* Comment.Special */
+	.ge { font-style: italic } /* Generic.Emph */
+	.gs { font-weight: bold } /* Generic.Strong */
+	.kc { color: #00a8c8 } /* Keyword.Constant */
+	.kd { color: #00a8c8 } /* Keyword.Declaration */
+	.kn { color: #f92672 } /* Keyword.Namespace */
+	.kp { color: #00a8c8 } /* Keyword.Pseudo */
+	.kr { color: #00a8c8 } /* Keyword.Reserved */
+	.kt { color: #00a8c8 } /* Keyword.Type */
+	.ld { color: #d88200 } /* Literal.Date */
+	.m { color: #ae81ff } /* Literal.Number */
+	.s { color: #d88200} /* Literal.String */
+	.na { color: #75af00 } /* Name.Attribute */
+	.nb { color: #111111 } /* Name.Builtin */
+	.nc { color: #75af00 } /* Name.Class */
+	.no { color: #00a8c8 } /* Name.Constant */
+	.nd { color: #75af00 } /* Name.Decorator */
+	.ni { color: #111111 } /* Name.Entity */
+	.ne { color: #75af00 } /* Name.Exception */
+	.nf { color: #75af00} /* Name.Function */
+	.nl { color: #111111 } /* Name.Label */
+	.nn { color: #111111} /* Name.Namespace */
+	.nx { color: #111111 } /* Name.Other */
+	.py { color: #111111 } /* Name.Property */
+	.nt { color: #f92672 } /* Name.Tag */
+	.nv { color: #111111 } /* Name.Variable */
+	.ow { color: #f92672 } /* Operator.Word */
+	.w { color: #111111 } /* Text.Whitespace */
+	.mf { color: #ae81ff } /* Literal.Number.Float */
+	.mh { color: #ae81ff } /* Literal.Number.Hex */
+	.mi { color: #ae81ff } /* Literal.Number.Integer */
+	.mo { color: #ae81ff } /* Literal.Number.Oct */
+	.sb { color: #d88200 } /* Literal.String.Backtick */
+	.sc { color: #d88200 } /* Literal.String.Char */
+	.sd { color: #d88200 } /* Literal.String.Doc */
+	.s2 { color: #d88200 } /* Literal.String.Double */
+	.se { color: #8045FF } /* Literal.String.Escape */
+	.sh { color: #d88200 } /* Literal.String.Heredoc */
+	.si { color: #d88200 } /* Literal.String.Interpol */
+	.sx { color: #d88200 } /* Literal.String.Other */
+	.sr { color: #d88200 } /* Literal.String.Regex */
+	.s1 { color: #d88200 } /* Literal.String.Single */
+	.ss { color: #d88200 } /* Literal.String.Symbol */
+	.bp { color: #111111 } /* Name.Builtin.Pseudo */
+	.vc { color: #111111 } /* Name.Variable.Class */
+	.vg { color: #111111 } /* Name.Variable.Global */
+	.vi { color: #111111 } /* Name.Variable.Instance */
+	.il { color: #ae81ff } /* Literal.Number.Integer.Long */
+
+	.sh samp {color: silver;}
+	.html .err { color: #333333; background-color:transparent; }
+	.html .plain span { color: #333333; background-color:transparent; }
+
+	nav#chapters li {
+		/*padding-left: 100px;*/
+		/*list-style-type: disc;*/
+		font-weight: bold;
+	}
+	nav#chapters li {
+		padding: 0.1125em 1em;
+	}
+	nav#chapters li.indent {
+		font-weight: normal;
+		list-style-type: circle;
+		margin-left: 2em;
+	}
+
+	@media only screen and (max-width: 855px) {
+		body {
+			font-size: 18px;
+		}
+		code, .codeblock, .codeblock-title, pre, samp, table {
+			font-size: 13px;
+		}
+		h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+			margin-bottom: 25px;
+		}
+		h1 {
+			font-size: 2em;
+			font-weight: bold;
+			border-bottom: 1px solid #e8eaed;
+			padding-bottom: 0.33em;
+		}
+	}
+	@media only screen and (max-width: 650px) {
+		header .pn #previous, header .pn #next, header #bc {
+			display: none;
+		}
+		.half {
+			width: 100%;
+		}
+	}
+
+	.cta {
+		background: #00AA8D;
+		/*height: 54px;*/
+		/*line-height: 54px;*/
+		padding-top: 14px;
+		padding-bottom: 14px;
+
+		color: white;
+		border-bottom: 2px solid #008975;
+		font-size: 15px;
+		font-weight: bold;
+		text-align: center;
+	}
+	.cta a {
+		color: white;
+		text-decoration: underline;
+	}
+	</style>
+</head>
+<body>
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<div class="wrapper">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				<span id="bc">
+				
+					
+						&rsaquo; <a href="02.00-foundations.html">Foundations</a>
+				 		&rsaquo; Routing Requests
+					
+				
+	 		</div>
+	 		<div class="breadcrumbs-nav right pn">
+				
+				<span id="previous">
+					<a href="02.04-project-structure.html" title="2.4. Project Structure">Previous</a>
+				&middot;
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+				<span id="next">
+				&middot;
+					<a href="02.06-url-query-strings.html" title="2.6. URL Query Strings">Next</a>
+				</span>
+				
+			</div>
+ 		</div>
+	</header>
+	<article class="wrapper">
+	
+	
+<h1 name="02.05-routing-requests">2.5. Routing Requests</h1>
+
+<p>Now let&#39;s concentrate on adding a couple of new routes to our Snippetbox web application, so that it looks like this:</p>
+
+<table><thead>
+<tr>
+<th style="text-align: left">URL Path</th>
+<th style="text-align: left">Handler</th>
+<th style="text-align: left">Action</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: left">/</td>
+<td style="text-align: left">Home</td>
+<td style="text-align: left">Display a &quot;Hello from Snippetbox&quot; message</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet</td>
+<td style="text-align: left">ShowSnippet</td>
+<td style="text-align: left">Display a specific snippet</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet/new</td>
+<td style="text-align: left">NewSnippet</td>
+<td style="text-align: left">Display the new snippet form</td>
+</tr>
+</tbody></table>
+
+<p>First, open up the <code>handlers.go</code> file and add a pair of placeholder functions for <code>ShowSnippet</code> and <code>NewSnippet</code>:</p>
+<div class="group"><div class="codeblock-title">cmd/web/handlers.go</div>
+<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">&quot;/&quot;</span> <span class="p">{</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nx">NotFound</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="p">}</span>
+
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Hello from Snippetbox&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">// Add a placeholder ShowSnippet handler function.</span>
+<span class="kd">func</span> <span class="nx">ShowSnippet</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Display a specific snippet...&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="c1">// Add a placeholder NewSnippet handler function.</span>
+<span class="kd">func</span> <span class="nx">NewSnippet</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Display the new snippet form...&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div></div>
+<p>And then register them with our serve mux, in exactly the same way as we did with the first route:</p>
+<div class="group"><div class="codeblock-title">cmd/web/main.go</div>
+<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&quot;log&quot;</span>
+    <span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// Register the two new routes with the serve mux. Again, notice how we use</span>
+    <span class="c1">// the http.HandlerFunc() adapter to convert the two functions to handlers?</span>
+    <span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/snippet&quot;</span><span class="p">,</span> <span class="nx">ShowSnippet</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/snippet/new&quot;</span><span class="p">,</span> <span class="nx">NewSnippet</span><span class="p">)</span>
+
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+<p>Make sure that both files are saved, and restart the web application:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> $HOME/go/src/snippetbox.org
+<span class='prompt'>$</span> go run cmd/web/*
+<samp>2017/08/17 18:32:04 Starting server on :4000</samp>
+</pre></div>
+<p>If you visit [the following links in your browser you should now get the appropriate response for each route, looking a bit like the screenshots below:</p>
+
+<ul>
+<li><a href="http://localhost:4000/snippet"><code>http://localhost:4000/snippet</code></a></li>
+<li><a href="http://localhost:4000/snippet/new"><code>http://localhost:4000/snippet/new</code></a></li>
+</ul>
+
+<p><img src="assets/img/02.05-01.png" alt="02.05-01.png"></p>
+
+<p><img src="assets/img/02.05-02.png" alt="02.05-02.png"></p>
+
+<h3>Fixed Paths and Subtrees</h3>
+
+<p>Our two new routes &ndash; <code>&quot;/snippet&quot;</code> and <code>&quot;/snippet/new&quot;</code> &ndash; are both examples of <dfn>fixed paths</dfn> because they don&#39;t end in a trailing slash. In Go&#39;s serve mux, fixed path patterns like these are only matched (and the corresponding handler called) when the request URL path <em>exactly</em> matches the fixed path.</p>
+
+<p>Go&#39;s serve mux also supports <dfn>subtree paths</dfn>, which do end with a trailing slash. An example of a subtree path is something like <code>&quot;/static/&quot;</code>. Subtree path patterns are matched (and the corresponding handler called) whenever the <em>start</em> of a request URL path matches the subtree path. If it helps your understanding, you can think of subtree paths as acting a bit like they have a wildcard at the end, like <code>&quot;/static/**&quot;</code>.</p>
+
+<p>This helps explain why our <code>&quot;/&quot;</code> pattern was acting like a catch-all. The pattern is a subtree path (because it ends in a trailing slash) so it essentially means <em>match a single slash, followed by anything (or nothing at all)</em>.</p>
+
+<p>I should also mention that Go&#39;s serve mux gives longer patterns precedence over shorter ones. If a serve mux contains multiple patterns which match a request, it will always dispatch the request to the handler with the longest pattern.</p>
+
+<h3>The Default Serve Mux</h3>
+
+<p>As an aside, you might have read or watched other tutorials which use the <a href="https://golang.org/pkg/net/http/#Handle"><code>http.Handle()</code></a> and <a href="https://golang.org/pkg/net/http/#HandleFunc"><code>http.HandleFunc()</code></a> functions to declare their routes.</p>
+
+<p>Both these functions register routes with the <dfn>default serve mux</dfn>. There&#39;s nothing special about the default serve mux. It&#39;s just regular serve mux like we&#39;ve already been using, which is initialized by default and stored in a <code>net/http</code> global variable. Here&#39;s the relevant line from the Go source code:</p>
+<div class="codeblock go"><pre><span class="kd">var</span> <span class="nx">DefaultServeMux</span> <span class="p">=</span> <span class="nx">NewServeMux</span><span class="p">()</span>
+</pre></div>
+<p>I&#39;ve avoided using this in our application because it poses a <strong>security risk</strong>.</p>
+
+<p>Because the default serve mux is stored in a global variable, any package is able to access it and register a route &ndash; including any third-party packages that your application imports. If one of those third-party packages is compromised, they could use the default serve mux to expose a malicious handler to the web.</p>
+
+<p>So as a rule of thumb it&#39;s a good idea to avoid the default serve mux. Use your own locally-scoped serve mux instead, like we have been so far.</p>
+
+<h2>Notes</h2>
+
+<h3>Third-Party Routers</h3>
+
+<p>The functionality that Go&#39;s serve mux provides is pretty basic. It doesn&#39;t support routing based on the request method, it doesn&#39;t support regexp-based patterns, and it doesn&#39;t support semantic URLs with variables in them. If you&#39;re coming from a background of using frameworks like Rails, Django or Laravel you might find this a bit restrictive... and surprising!</p>
+
+<p>But the reality is that Go&#39;s serve mux can still get you quite far, and for many applications it&#39;s perfectly sufficient. For the times that you need more, there&#39;s a huge choice of third-party routers that you can use. We&#39;ll take a look at these <a href="06.01-choosing-a-router.html">later in the book</a>.</p>
+
+<h3>Domain Matching</h3>
+
+<p>It&#39;s possible to include host names in your route patterns. For example, the route below will only match if the request host and path is exactly <code>www.example.org/foo</code>:</p>
+<div class="codeblock go"><pre><span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;www.example.org/foo&quot;</span><span class="p">,</span> <span class="nx">FooHandler</span><span class="p">)</span>
+</pre></div>
+	
+	
+	<footer>
+		
+		<span id="previous">
+			<a href="02.04-project-structure.html" title="2.4. Project Structure">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+		&middot;
+		<span id="next">
+			<a href="02.06-url-query-strings.html" title="2.6. URL Query Strings">Next</a>
+		</span>
+		
+	</footer>
+	</article>
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	<title>Customizing Responses - Let's Go (Sample)</title>
+	<style type="text/css">
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	html {height: calc(100% + 1px);}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "PT Serif";
+	    src: url("./assets/fonts/PT_Serif-Web-Italic.ttf");
+	    font-style: italic;
+	}
+	@font-face {
+	    font-family: "PT Sans";
+	    src: url("./assets/fonts/PT_Sans-Web-Regular.ttf");
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono-Bold.ttf");
+	    font-weight: bold;
+	}
+	@font-face {
+	    font-family: "Fira Mono";
+	    src: url("./assets/fonts/FiraMono.ttf");
+	}
+	body {
+		background: #FEFEFE;;
+		color: #333333;
+		font-family: "PT Serif", serif;
+		font-size: 19.3167px;
+		line-height: 1.5;
+	}
+
+	.wrapper {
+		max-width: 855px;
+		margin: 0 auto;
+		padding-left: 25px;
+		padding-right: 25px;
+	}
+
+	.breadcrumbs {
+		float: left;
+		width: 70%;
+	}
+	.breadcrumbs-nav {
+		float: left;
+		width: 30%;
+		text-align: right;
+	}
+	header {
+		width: 100%;
+		height: 56;
+		border-bottom: 1px solid #e8eaed;
+		/*box-shadow: 0 3px 2px -2px rgba(200,200,200,.15);*/
+		color: #8c919b;
+		background: #FFFFFF;
+		line-height: 55px;
+		overflow: auto;
+		font-size: 15px;
+		/*position: fixed;*/
+		/*outline: solid 55px #ffffff;*/
+	}
+	article {
+		padding: 55px 0 55px;
+		overflow-y: scroll;
+	}
+	footer {
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		text-align: center;
+	}
+	article img {
+		max-width: 100%;
+	}
+	a {
+		color: rgb(24,99,161);
+		text-decoration: none;
+	}
+	a:hover {
+		text-decoration: underline;
+	}
+	dfn {
+		font-weight: bold;
+		font-style: normal;
+	}
+	h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+		margin-bottom: 28.9px;
+	}
+	h1 {
+		font-size: 2.5em;
+		font-weight: bold;
+		border-bottom: 1px solid #e8eaed;
+		padding-bottom: 0.33em;
+	}
+	h2 {
+		font-size: 1.75em;
+		font-weight: bold;
+		border-top: 1px solid #e8eaed;
+		padding-top: 28.9px;
+	}
+	h3 {
+		font-size: 1.25em;
+		font-weight: bold;
+	}
+	hr {
+		border:none;
+		height: 0;
+		border-top: 1px solid #e8eaed;
+		padding-top: 1em;
+		padding-bottom: 28.9px;
+	}
+	.codeblock {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-radius: 2px;
+	}
+	.codeblock.sh {
+		background-color: #404040;
+		color: #FFFFFF;
+		overflow-x: auto;
+	}
+	.codeblock-title {
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		display: block;
+		padding: 1em;
+		border-bottom: none;
+		border-top-left-radius: 2px;
+		border-top-right-radius: 2px;
+	}
+	a code {
+		color: rgb(24,99,161) !important;
+	}
+	p code, li code {
+		color: rgb(216, 130, 0);
+		padding: 0.1em;
+		white-space: nowrap;
+		/*font-style: normal;*/
+	}
+	code, .codeblock, .codeblock-title, pre, samp, table {
+		font-family: "Fira Mono", monospace;
+		font-size: 15px;
+		overflow-y: auto;
+	}
+	article ol, article ol li, article ul, article ul li {
+		padding-left: 1em;
+	}
+	article ol li, article ul li {
+		padding-left: 0.5em;
+	}
+	article table {
+		width: 100%;
+		background-color: #FAFAFA;
+		border: solid 1px #E8E8E8;
+		border-collapse: collapse;
+	}
+	td, th {
+		padding: 6px 12px;
+		border: solid 1px #E8E8E8;
+	}
+	td span {
+		color: grey; /*TODO*/
+	}
+	td code {
+	  white-space: nowrap;
+	}
+
+	.noborder {
+		border: none;
+		padding-bottom: 0;
+	}
+	.subtle {
+		color: #7A7663;
+	}
+	.small {
+		font-size: 15px;
+	}
+
+	.hll { background-color: #49483e }
+	.c { color: #7A7663 } /* Comment */
+	.err { color: #960050; background-color: #e8e8e8 }  /*Error*/
+	.k { color: #00a8c8} /* Keyword*/
+	.l { color: #ae81ff } /* Literal */
+	.n { color: #111111 } /* Name */
+	.o { color: #f92672 } /* Operator */
+	.p { color: #111111 } /* Punctuation */
+	.cm { color: #75715e } /* Comment.Multiline */
+	.cp { color: #75715e } /* Comment.Preproc */
+	.c1 { color: #75715e } /* Comment.Single */
+	.cs { color: #75715e } /* Comment.Special */
+	.ge { font-style: italic } /* Generic.Emph */
+	.gs { font-weight: bold } /* Generic.Strong */
+	.kc { color: #00a8c8 } /* Keyword.Constant */
+	.kd { color: #00a8c8 } /* Keyword.Declaration */
+	.kn { color: #f92672 } /* Keyword.Namespace */
+	.kp { color: #00a8c8 } /* Keyword.Pseudo */
+	.kr { color: #00a8c8 } /* Keyword.Reserved */
+	.kt { color: #00a8c8 } /* Keyword.Type */
+	.ld { color: #d88200 } /* Literal.Date */
+	.m { color: #ae81ff } /* Literal.Number */
+	.s { color: #d88200} /* Literal.String */
+	.na { color: #75af00 } /* Name.Attribute */
+	.nb { color: #111111 } /* Name.Builtin */
+	.nc { color: #75af00 } /* Name.Class */
+	.no { color: #00a8c8 } /* Name.Constant */
+	.nd { color: #75af00 } /* Name.Decorator */
+	.ni { color: #111111 } /* Name.Entity */
+	.ne { color: #75af00 } /* Name.Exception */
+	.nf { color: #75af00} /* Name.Function */
+	.nl { color: #111111 } /* Name.Label */
+	.nn { color: #111111} /* Name.Namespace */
+	.nx { color: #111111 } /* Name.Other */
+	.py { color: #111111 } /* Name.Property */
+	.nt { color: #f92672 } /* Name.Tag */
+	.nv { color: #111111 } /* Name.Variable */
+	.ow { color: #f92672 } /* Operator.Word */
+	.w { color: #111111 } /* Text.Whitespace */
+	.mf { color: #ae81ff } /* Literal.Number.Float */
+	.mh { color: #ae81ff } /* Literal.Number.Hex */
+	.mi { color: #ae81ff } /* Literal.Number.Integer */
+	.mo { color: #ae81ff } /* Literal.Number.Oct */
+	.sb { color: #d88200 } /* Literal.String.Backtick */
+	.sc { color: #d88200 } /* Literal.String.Char */
+	.sd { color: #d88200 } /* Literal.String.Doc */
+	.s2 { color: #d88200 } /* Literal.String.Double */
+	.se { color: #8045FF } /* Literal.String.Escape */
+	.sh { color: #d88200 } /* Literal.String.Heredoc */
+	.si { color: #d88200 } /* Literal.String.Interpol */
+	.sx { color: #d88200 } /* Literal.String.Other */
+	.sr { color: #d88200 } /* Literal.String.Regex */
+	.s1 { color: #d88200 } /* Literal.String.Single */
+	.ss { color: #d88200 } /* Literal.String.Symbol */
+	.bp { color: #111111 } /* Name.Builtin.Pseudo */
+	.vc { color: #111111 } /* Name.Variable.Class */
+	.vg { color: #111111 } /* Name.Variable.Global */
+	.vi { color: #111111 } /* Name.Variable.Instance */
+	.il { color: #ae81ff } /* Literal.Number.Integer.Long */
+
+	.sh samp {color: silver;}
+	.html .err { color: #333333; background-color:transparent; }
+	.html .plain span { color: #333333; background-color:transparent; }
+
+	nav#chapters li {
+		/*padding-left: 100px;*/
+		/*list-style-type: disc;*/
+		font-weight: bold;
+	}
+	nav#chapters li {
+		padding: 0.1125em 1em;
+	}
+	nav#chapters li.indent {
+		font-weight: normal;
+		list-style-type: circle;
+		margin-left: 2em;
+	}
+
+	@media only screen and (max-width: 855px) {
+		body {
+			font-size: 18px;
+		}
+		code, .codeblock, .codeblock-title, pre, samp, table {
+			font-size: 13px;
+		}
+		h1, h2, h3, p, .codeblock, table, ol li:last-child, ul li:last-child {
+			margin-bottom: 25px;
+		}
+		h1 {
+			font-size: 2em;
+			font-weight: bold;
+			border-bottom: 1px solid #e8eaed;
+			padding-bottom: 0.33em;
+		}
+	}
+	@media only screen and (max-width: 650px) {
+		header .pn #previous, header .pn #next, header #bc {
+			display: none;
+		}
+		.half {
+			width: 100%;
+		}
+	}
+
+	.cta {
+		background: #00AA8D;
+		/*height: 54px;*/
+		/*line-height: 54px;*/
+		padding-top: 14px;
+		padding-bottom: 14px;
+
+		color: white;
+		border-bottom: 2px solid #008975;
+		font-size: 15px;
+		font-weight: bold;
+		text-align: center;
+	}
+	.cta a {
+		color: white;
+		text-decoration: underline;
+	}
+	</style>
+</head>
+<body>
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<div class="wrapper">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				<span id="bc">
+				
+					
+						&rsaquo; <a href="02.00-foundations.html">Foundations</a>
+				 		&rsaquo; Customizing Responses
+					
+				
+	 		</div>
+	 		<div class="breadcrumbs-nav right pn">
+				
+				<span id="previous">
+					<a href="02.02-a-basic-web-application.html" title="2.2. A Basic Web Application">Previous</a>
+				&middot;
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+				<span id="next">
+				&middot;
+					<a href="02.04-project-structure.html" title="2.4. Project Structure">Next</a>
+				</span>
+				
+			</div>
+ 		</div>
+	</header>
+	<article class="wrapper">
+	
+	
+<h1 name="02.03-customizing-responses">2.3. Customizing Responses</h1>
+
+<p>There are a few different ways to make a handler in Go, but the most common is to write your handlers as a function &ndash; just like we have with the <code>Home</code> function in the previous chapter:</p>
+<div class="codeblock go"><pre><span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Hello from Snippetbox&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+<p>Notice how this takes exactly two mandatory parameters?</p>
+
+<ul>
+<li><p>The <a href="https://golang.org/pkg/net/http/#ResponseWriter"><code>http.ResponseWriter</code></a> parameter provides methods for assembling a HTTP response and sending it to the user. So far we&#39;ve used its <code>w.Write()</code> method to send a byte slice containing <code>&quot;Hello from Snippetbox&quot;</code> as the response body.</p></li>
+<li><p>The <a href="https://golang.org/pkg/net/http/#Request"><code>*http.Request</code></a> parameter holds information about the current request, such as the HTTP method and the URL being requested. I&#39;ll show how to use this as we progress through the book.</p></li>
+</ul>
+
+<h3>Restricting the Root Path</h3>
+
+<p>As I mentioned in the previous chapter, there&#39;s one problem with our application: All requests that our application receives are being sent the same response, regardless of their URL path.</p>
+
+<p>Let&#39;s fix that and update our <code>Home</code> handler so it sends a <code>404 Not Found</code> response unless the URL path <em>exactly</em> matches <code>&quot;/&quot;</code>. To do this we&#39;ll need to use the <a href="https://golang.org/pkg/net/http/#ResponseWriter"><code>w.WriteHeader()</code></a> method to send the user a <code>404</code> HTTP status code, like so:</p>
+<div class="group"><div class="codeblock-title">main.go</div>
+<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&quot;log&quot;</span>
+    <span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Use r.URL.Path to check whether the request URL path exactly matches &quot;/&quot;.</span>
+    <span class="c1">// If it doesn&#39;t, use the w.WriteHeader() method to send a 404 status code and</span>
+    <span class="c1">// the w.Write() method to write a &quot;Not Found&quot; response body. Importantly, we</span>
+    <span class="c1">// then return from the function so that the subsequent code is not executed.</span>
+    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">&quot;/&quot;</span> <span class="p">{</span>
+        <span class="nx">w</span><span class="p">.</span><span class="nx">WriteHeader</span><span class="p">(</span><span class="mi">404</span><span class="p">)</span>
+        <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Not Found&quot;</span><span class="p">))</span>
+        <span class="k">return</span>
+    <span class="p">}</span>
+
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Hello from Snippetbox&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
+
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span><span class="nx">s</span>
+</pre></div></div>
+<p>Although this change looks pretty straightforward there are a couple of <code>w.WriteHeader()</code> nuances I should explain:</p>
+
+<ul>
+<li><p>If you don&#39;t call <code>w.WriteHeader()</code> explicitly then the first call to <code>w.Write()</code>will automatically send a <code>200 OK</code> status code to the user. So you always need to call <code>w.WriteHeader()</code> <em>before</em> any call to <code>w.Write()</code>.</p></li>
+<li><p>It&#39;s only possible to call <code>w.WriteHeader()</code> once per request, and once the status code has been sent to the user it can&#39;t be changed. If you try to call it a second time then Go will log an error message.</p></li>
+</ul>
+
+<p>Alright, save the file and restart the application. If you make a request to a URL like <a href="http://localhost:4000/foo/bar"><code>http://localhost:4000/foo/bar</code></a> you should now get a <code>404 Not Found</code> response like so:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> curl -i http://localhost:4000/foo/bar
+<samp>HTTP/1.1 404 Not Found
+Date: Wed, 16 Aug 2017 17:15:56 GMT
+Content-Length: 9
+Content-Type: text/plain; charset=utf-8
+
+Not Found</samp>
+</pre></div>
+<p>In contrast the root path should continue to work just like before:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> curl -i http://localhost:4000/
+<samp>HTTP/1.1 200 OK
+Date: Wed, 16 Aug 2017 17:15:58 GMT
+Content-Length: 21
+Content-Type: text/plain; charset=utf-8
+
+Hello from Snippetbox</samp>
+</pre></div>
+<h3>The NotFound Shortcut</h3>
+
+<p>We can shorten our <code>Home</code> function slightly by using the <a href="https://golang.org/pkg/net/http/#NotFound"><code>http.NotFound()</code></a> helper function. This is essentially a lightweight wrapper around the <code>w.WriteHeader()</code> and <code>w.Write()</code> methods that we&#39;ve just used.</p>
+<div class="group"><div class="codeblock-title">main.go</div>
+<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&quot;log&quot;</span>
+    <span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">&quot;/&quot;</span> <span class="p">{</span>
+        <span class="c1">// Use the http.NotFound() function to send a 404 Not Found response.</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nx">NotFound</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="p">}</span>
+
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Hello from Snippetbox&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
+
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+<p>In terms of functionality this is almost exactly the same. The biggest difference is that we&#39;re now passing <code>http.ResponseWriter</code> to <em>another function</em>, which sends a response to the user for us.</p>
+
+<p>The pattern of passing <code>http.ResponseWriter</code> to other functions is super-common in Go, and something we&#39;ll do a lot throughout this book. In practice, it&#39;s actually quite rare to use the <code>w.Write()</code> and <code>w.WriteHeader()</code> methods directly like we have been so far. But I wanted to introduce them upfront because they underpin the more advanced (and interesting!) ways to send responses.</p>
+
+	
+	
+	<footer>
+		
+		<span id="previous">
+			<a href="02.02-a-basic-web-application.html" title="2.2. A Basic Web Application">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+		&middot;
+		<span id="next">
+			<a href="02.04-project-structure.html" title="2.4. Project Structure">Next</a>
+		</span>
+		
+	</footer>
+	</article>
+</body>
+</html>
