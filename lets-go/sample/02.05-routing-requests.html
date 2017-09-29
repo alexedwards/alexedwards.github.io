@@ -294,11 +294,19 @@
 		}
 	}
 	@media only screen and (max-width: 650px) {
-		header .pn #previous, header .pn #next, header #bc {
+		header #bc {
 			display: none;
 		}
-		.half {
-			width: 100%;
+		.breadcrumbs {
+			width: 30%;
+		}
+		.breadcrumbs-nav {
+			width: 70%;
+		}
+	}
+	@media only screen and (max-width: 310px) {
+		.pn #previous, .pn #next {
+			display: none;
 		}
 	}
 
@@ -483,7 +491,7 @@
 
 <p>The functionality that Go&#39;s serve mux provides is pretty basic. It doesn&#39;t support routing based on the request method, it doesn&#39;t support regexp-based patterns, and it doesn&#39;t support semantic URLs with variables in them. If you&#39;re coming from a background of using frameworks like Rails, Django or Laravel you might find this a bit restrictive... and surprising!</p>
 
-<p>But the reality is that Go&#39;s serve mux can still get you quite far, and for many applications it&#39;s perfectly sufficient. For the times that you need more, there&#39;s a huge choice of third-party routers that you can use. We&#39;ll take a look at these <a href="06.01-choosing-a-router.html">later in the book</a>.</p>
+<p>But the reality is that Go&#39;s serve mux can still get you quite far, and for many applications it&#39;s perfectly sufficient. For the times that you need more, there&#39;s a huge choice of third-party routers that you can use. We&#39;ll take a look at these later in the book.</p>
 
 <h3>Domain Matching</h3>
 

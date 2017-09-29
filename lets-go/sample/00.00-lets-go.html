@@ -294,11 +294,19 @@
 		}
 	}
 	@media only screen and (max-width: 650px) {
-		header .pn #previous, header .pn #next, header #bc {
+		header #bc {
 			display: none;
 		}
-		.half {
-			width: 100%;
+		.breadcrumbs {
+			width: 30%;
+		}
+		.breadcrumbs-nav {
+			width: 70%;
+		}
+	}
+	@media only screen and (max-width: 310px) {
+		.pn #previous, .pn #next {
+			display: none;
 		}
 	}
 
@@ -350,7 +358,7 @@
 	</header>
 	<article class="wrapper">
 	
-	<p><img src="assets/img/cover.svg" alt="cover.svg" style="width: 100%"></p>
+	<p><img src="assets/img/cover.png" alt="cover.png" style="width: 100%"></p>
 
 <p>Let&#39;s Go teaches you step-by-step how to create fast, secure and maintainable web applications using the fantastic programming language <a href="https://golang.org/">Go</a>.</p>
 
