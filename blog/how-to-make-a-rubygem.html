@@ -1,44 +1,54 @@
-
 <!doctype html>
 <html lang="en-gb">
-<head>
-
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>How to make a Rubygem</title>
-
-<meta name="author" content="Alex Edwards">
-<meta name="copyright" content="<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<link rel="icon" href="/static/images/favicon.ico">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
-<link rel="stylesheet" href="/static/stylesheets/main.min.css">
-<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
-
-
-<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
-</head>
-<body>
-<header>
-<nav>
-  <a href="/">Alex Edwards</a>
-  <ul>
-    <li><a href="/blog">Blog</a></li>
-    <li><a href="/static/feed.rss">RSS</a></li>
-  </ul>
-</nav>
-</header>
-
-<article>
-
-<header> <h1>How to make a Rubygem</h1> <span>12th May 2013</span> </header>
-
-<p>This is the first of 3 tutorials about how to develop a Rubygem, from getting set up through to publication. In this post we&#39;ll cover the basics steps of building a gem and using it on your local machine.</p>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2017">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>How to make a Rubygem</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              How to make a Rubygem
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>How to make a Rubygem</h1>
+	<div class="metadata">
+		<span class="dates">
+			12th May 2013
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/ruby" rel="tag">ruby</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	<p>This is the first of 3 tutorials about how to develop a Rubygem, from getting set up through to publication. In this post we&#39;ll cover the basics steps of building a gem and using it on your local machine.</p>
 <p>Getting started is simple thanks to the tools baked into <a href="http://gembundler.com/">Bundler</a> and Git, both of which you&#39;ll need to install if you&#39;re following along.</p>
 
 <figure class="shell"><code><pre>
@@ -188,47 +198,36 @@ $ irb(main):002:0&gt; Listless.ul ['foo', 'bar', 'báz']
 <p>Hopefully this tutorial has de-mystified the basic process behind building a gem, and given you an understanding of the main components. In the <a href="/blog/how-to-make-a-rubygem-part-two">next post</a> we&#39;ll get our gem ready for publication, adding tests using RSpec and documenting it with YARD.</p>
 
 <p>You can find the full source code for this gem on <a href="https://github.com/alexedwards/listless">Github</a>.</p>
-
-<p class="tags">Filed under: <a href="/blog/category/ruby">ruby</a>, <a href="/blog/category/tutorial">tutorial</a></p>
-
-<p class="subtle"><small>All code snippets in this post are made available to freely use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
-
-<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<a href="https://twitter.com/share" class="twitter-share-button" data-via="ajmedwards" data-hashtags="golang">Tweet</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-
+	<footer>
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
+		<script src="https://apis.google.com/js/platform.js" async defer></script>
+		<g:plusone></g:plusone>
+	</footer>
 </article>
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://gumroad.com/l/letsgo"><img src="http://www.alexedwards.net/lets-go/sample/assets/img/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://gumroad.com/l/letsgo">Check it out!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-23830196-1']);
-  _gaq.push(['_trackPageview']);
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
   $(document).ready(function() {
-    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
-
-
-
-
-
-
-
-
-
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
-
 </script>
-</body>
+    </section>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
 </html>

@@ -1,43 +1,54 @@
-
 <!doctype html>
 <html lang="en-gb">
-<head>
-
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>SCS: A session manager for Go 1.7+</title>
-
-<meta name="author" content="Alex Edwards">
-<meta name="copyright" content="<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<link rel="icon" href="/static/images/favicon.ico">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
-<link rel="stylesheet" href="/static/stylesheets/main.min.css">
-<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
-
-<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
-</head>
-<body>
-<header>
-<nav>
-  <a href="/">Alex Edwards</a>
-  <ul>
-    <li><a href="/blog">Blog</a></li>
-    <li><a href="/static/feed.rss">RSS</a></li>
-  </ul>
-</nav>
-</header>
-
-<article>
-
-<header><h1>SCS: A session manager for Go 1.7+</h1> <span>30th August 2016</span></header>
-
-<p>I’ve just released SCS, a session management package for Go 1.7+. You can <a href="https://github.com/alexedwards/scs">view it on Github</a>.</p>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2017">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>SCS&#58; A session manager for Go 1.7+</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              SCS&#58; A session manager for Go 1.7+
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>SCS&#58; A session manager for Go 1.7+</h1>
+	<div class="metadata">
+		<span class="dates">
+			30th August 2016
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/open-source" rel="tag">open-source</a>
+		</span>
+		
+	</div>
+	<p>I’ve just released SCS, a session management package for Go 1.7+. You can <a href="https://github.com/alexedwards/scs">view it on Github</a>.</p>
 
 <p>Its design leverages Go’s new <code>context</code> package to automatically load and save session data via middleware.</p>
 
@@ -47,36 +58,36 @@
 
 <p>SCS is broken up into small single-purpose packages for ease of use. You should install the <code>session</code> package and your choice of session storage engine from the following table:</p>
 
-<table style="width: 100%">
+<table>
 <thead>
 <tr>
-<th style="text-align:left">Package</th>
+<th>Package</th>
 <th></th>
 </tr>
 </thead>
 <tbody>
-<tr style="background: white">
-<td style="text-align:left"><a href="https://godoc.org/github.com/alexedwards/scs/session">session</a></td>
+<tr>
+<td><a href="https://godoc.org/github.com/alexedwards/scs/session">session</a></td>
 <td>Provides session management middleware and helpers for <br>manipulating session data</td>
 </tr>
-<tr style="background: white">
-<td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/memstore">engine/memstore</a></td>
+<tr>
+<td><a href="https://github.com/alexedwards/scs/tree/master/engine/memstore">engine/memstore</a></td>
 <td>In-memory storage engine</td>
 </tr>
-<tr style="background: white">
-<td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/cookiestore">engine/cookiestore</a></td>
+<tr>
+<td><a href="https://github.com/alexedwards/scs/tree/master/engine/cookiestore">engine/cookiestore</a></td>
 <td>Encrypted-cookie based storage engine</td>
 </tr>
-<tr style="background: white">
-<td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/pgstore">engine/pgstore</a></td>
+<tr>
+<td><a href="https://github.com/alexedwards/scs/tree/master/engine/pgstore">engine/pgstore</a></td>
 <td>PostgreSQL based storage eninge</td>
 </tr>
-<tr style="background: white">
-<td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/mysqlstore">engine/mysqlstore</a></td>
+<tr>
+<td><a href="https://github.com/alexedwards/scs/tree/master/engine/mysqlstore">engine/mysqlstore</a></td>
 <td>MySQL based storage engine</td>
 </tr>
-<tr style="background: white">
-<td style="text-align:left"><a href="https://github.com/alexedwards/scs/tree/master/engine/redisstore">engine/redisstore</a></td>
+<tr>
+<td><a href="https://github.com/alexedwards/scs/tree/master/engine/redisstore">engine/redisstore</a></td>
 <td>Redis based storage engine</td>
 </tr>
 </tbody>
@@ -159,54 +170,36 @@ Hello from a session!</samp>
 <p>The complete <a href="https://godoc.org/github.com/alexedwards/scs">godocs are here</a>.</p>
 
 <p>I’d love to hear any feedback &ndash; either drop me an email or <a href="https://github.com/alexedwards/scs/issues">open an issue</a> on Github.</p>
-
-<form id="book-mailing-list" method="GET" action="http://www.alexedwards.net/lets-go/sample">
-  <strong>Found this post useful?</strong> My new book <em>Let's Go</em> has a heap more information and step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><br>
-  <button>Check out the free online sample</button> or <a href="https://gumroad.com/l/letsgo">get a copy of the complete book</a>
-</form>
-
-<p class="tags">Filed under: <a href="/blog/category/golang">golang</a></p>
-
-<p class="subtle"><small>All code snippets in this post are made available to freely use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
-
-<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<a href="https://twitter.com/share" class="twitter-share-button" data-via="ajmedwards" data-hashtags="golang">Tweet</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-
+	<footer>
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
+		<script src="https://apis.google.com/js/platform.js" async defer></script>
+		<g:plusone></g:plusone>
+	</footer>
 </article>
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://gumroad.com/l/letsgo"><img src="http://www.alexedwards.net/lets-go/sample/assets/img/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://gumroad.com/l/letsgo">Check it out!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-23830196-1']);
-  _gaq.push(['_trackPageview']);
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
   $(document).ready(function() {
-    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
-
-  // $("form#book-mailing-list").submit(function(event) {
-  //   event.preventDefault();
-  //   var $form = $(this);
-  //   $form.find("p")
-  //   var $email = $form.find("input[name='email']");
-  //   $.post("http://46.101.77.192/book-mailing-list", {email: $email.val()});
-  //   $email.val("").blur()
-  //   $form.attr("novalidate", "novalidate");
-  //   $form.find("p#confirmation").html("<strong>Thanks!</strong> We'll send you the sample chapter as soon as it's ready.")
-  // });
-
 </script>
-</body>
+    </section>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
 </html>

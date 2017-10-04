@@ -1,44 +1,56 @@
-
 <!doctype html>
 <html lang="en-gb">
-<head>
-
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>A Recap of Request Handling in Go</title>
-
-<meta name="author" content="Alex Edwards">
-<meta name="copyright" content="<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<link rel="icon" href="/static/images/favicon.ico">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
-<link rel="stylesheet" href="http://www.alexedwards.net/static/stylesheets/main.min.css">
-<link rel="alternate"  href="http://www.alexedwards.net/static/feed.rss" type="application/rss+xml">
-
-
-<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
-</head>
-<body>
-<header>
-<nav>
-  <a href="/">Alex Edwards</a>
-  <ul>
-    <li><a href="/blog">Blog</a></li>
-    <li><a href="/static/feed.rss">RSS</a></li>
-  </ul>
-</nav>
-</header>
-
-<article>
-
-<header><h1>A Recap of Request Handling in Go</h1> <span>12th September 2013</span></header>
-
-<p>Processing HTTP requests with Go is primarily about two things: ServeMuxes and Handlers.</p>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2017">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>A Recap of Request Handling in Go</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              A Recap of Request Handling in Go
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>A Recap of Request Handling in Go</h1>
+	<div class="metadata">
+		<span class="dates">
+			12th September 2013
+			
+			&middot; <em>Updated 6th October 2014</em>
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	<p>Processing HTTP requests with Go is primarily about two things: ServeMuxes and Handlers.</p>
 
 <p>A <a href="http://golang.org/pkg/net/http/#ServeMux">ServeMux</a> is essentially a HTTP request router (or <em>multiplexor</em>). It compares incoming requests against a list of predefined URL paths, and calls the associated handler for the path whenever a match is found.</p>
 
@@ -100,7 +112,7 @@ $ go run main.go
 
 <p>Let's create a custom handler which responds with the current local time in a given format:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 type timeHandler struct {
   format string
 }
@@ -154,7 +166,7 @@ func main() {
 
 <p>Notice too that we could easily reuse the <code>timeHandler</code> in multiple routes:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 func main() {
   mux := http.NewServeMux()
 
@@ -214,7 +226,7 @@ func main() {
 
 <p>This is what the <code>main()</code> function would have looked like if we'd used this shortcut instead:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 func main() {
   mux := http.NewServeMux()
 
@@ -269,7 +281,7 @@ func main() {
 
 <p>You might also see this same pattern written as:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 func timeHandler(format string) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     tm := time.Now().Format(format)
@@ -280,7 +292,7 @@ func timeHandler(format string) http.Handler {
 
 <p>Or using an implicit conversion to the HandlerFunc type on return:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 func timeHandler(format string) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
     tm := time.Now().Format(format)
@@ -337,53 +349,36 @@ func main() {
 }
 </pre></code></figure>
 
-<form id="book-mailing-list" method="GET" action="http://www.alexedwards.net/lets-go/sample">
-  <strong>Found this post useful?</strong> My new book <em>Let's Go</em> has a heap more information and step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><br>
-  <button>Check out the free online sample</button> or <a href="https://gumroad.com/l/letsgo">get a copy of the complete book</a>
-</form>
-
-<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a></p>
-
-<p class="subtle"><small>All code snippets in this post are made available to freely use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
-
-<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<a href="https://twitter.com/share" class="twitter-share-button" data-via="ajmedwards" data-hashtags="golang">Tweet</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-
+	<footer>
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
+		<script src="https://apis.google.com/js/platform.js" async defer></script>
+		<g:plusone></g:plusone>
+	</footer>
 </article>
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://gumroad.com/l/letsgo"><img src="http://www.alexedwards.net/lets-go/sample/assets/img/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://gumroad.com/l/letsgo">Check it out!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-23830196-1']);
-  _gaq.push(['_trackPageview']);
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
   $(document).ready(function() {
-    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
-
-  // $("form#book-mailing-list").submit(function(event) {
-  //   event.preventDefault();
-  //   var $form = $(this);
-  //   $form.find("p")
-  //   var $email = $form.find("input[name='email']");
-  //   $.post("http://46.101.77.192/book-mailing-list", {email: $email.val()});
-  //   $email.val("").blur()
-  //   $form.attr("novalidate", "novalidate");
-  //   $form.find("p#confirmation").html("<strong>Thanks!</strong> We'll send you the sample chapter as soon as it's ready.")
-  // });
-
 </script>
-</body>
+    </section>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
 </html>

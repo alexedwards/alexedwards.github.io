@@ -1,44 +1,54 @@
-
 <!doctype html>
 <html lang="en-gb">
-<head>
-
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Understanding Mutexes</title>
-
-<meta name="author" content="Alex Edwards">
-<meta name="copyright" content="<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<link rel="icon" href="/static/images/favicon.ico">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Mono|PT+Serif:400,700,400italic" >
-<link rel="stylesheet" href="/static/stylesheets/main.min.css">
-<link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
-
-
-<meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY" />
-</head>
-<body>
-<header>
-<nav>
-  <a href="/">Alex Edwards</a>
-  <ul>
-    <li><a href="/blog">Blog</a></li>
-    <li><a href="/static/feed.rss">RSS</a></li>
-  </ul>
-</nav>
-</header>
-
-<article>
-
-<header><h1>Understanding Mutexes</h1> <span>4th October 2013</span></header>
-
-<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own Goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2017">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>Understanding Mutexes</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate"  href="/static/feed.rss" type="application/rss+xml">
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              Understanding Mutexes
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>Understanding Mutexes</h1>
+	<div class="metadata">
+		<span class="dates">
+			4th October 2013
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own Goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
 
 <p>In case you're new to concurrent programming, I'll quickly explain the problem.</p>
 
@@ -46,7 +56,7 @@
 
 <p>As an illustration, here's an example where two Goroutines try to add money to a shared bank balance at the same time:</p>
 
-<table style="width: 100%; text-align: center">
+<table>
 <tr><th>Instruction</th><th>Goroutine 1</th><th>Goroutine 2</th><th>Bank Balance</th></tr>
 <tr><td>1</td><td>Read balance &lArr; &pound;50</td><td></td><td>&pound;50</td></tr>
 <tr><td>2</td><td></td><td>Read balance &lArr; &pound;50</td><td>&pound;50</td></tr>
@@ -68,7 +78,7 @@
 
 <p>Let's create some toy code to mimic the bank balance example:
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 import "strconv"
 
 var Balance = &amp;currency{50.00, "GBP"}
@@ -97,7 +107,7 @@ func (c *currency) Display() string {
 
 <p>In practice, it's more simple than it sounds:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 import (
   "strconv"
   "sync"
@@ -137,7 +147,7 @@ func (c *currency) Display() string {
 
 <p>Let's tidy up the example a bit:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 import (
   "strconv"
   "sync"
@@ -181,7 +191,7 @@ func (c *currency) Display() string {
 
 <p>Reader locks can be opened and closed with <code>RLock()</code> and <code>RUnlock()</code> like so:</p>
 
-<figure class="plain"><code><pre>
+<figure class="go"><code><pre>
 import (
   "strconv"
   "sync"
@@ -207,54 +217,36 @@ func (c *currency) Display() string {
   return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
 }
 </pre></code></figure>
-
-<form id="book-mailing-list" method="GET" action="http://www.alexedwards.net/lets-go/sample">
-  <strong>Found this post useful?</strong> My new book <em>Let's Go</em> has a heap more information and step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><br>
-  <button>Check out the free online sample</button> or <a href="https://gumroad.com/l/letsgo">get a copy of the complete book</a>
-</form>
-
-<p class="tags">Filed under: <a href="/blog/category/golang">golang</a>, <a href="/blog/category/tutorial">tutorial</a> <br> Last updated: 16th July 2014 (for Go version 1.3)</p>
-
-<p class="subtle"><small>All code snippets in this post are made available to freely use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</small></p>
-
-<div class="g-plusone"></div>
-<script src="https://apis.google.com/js/platform.js" async defer>
-  {lang: 'en-GB'}
-</script>
-
-<a href="https://twitter.com/share" class="twitter-share-button" data-via="ajmedwards" data-hashtags="golang">Tweet</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-
+	<footer>
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
+		<script src="https://apis.google.com/js/platform.js" async defer></script>
+		<g:plusone></g:plusone>
+	</footer>
 </article>
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://gumroad.com/l/letsgo"><img src="http://www.alexedwards.net/lets-go/sample/assets/img/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://gumroad.com/l/letsgo">Check it out!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-23830196-1']);
-  _gaq.push(['_trackPageview']);
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
   $(document).ready(function() {
-    $('figure.file code, figure.plain code').each(function(i, e) {hljs.highlightBlock(e)});
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
-
-  // $("form#book-mailing-list").submit(function(event) {
-  //   event.preventDefault();
-  //   var $form = $(this);
-  //   $form.find("p")
-  //   var $email = $form.find("input[name='email']");
-  //   $.post("http://46.101.77.192/book-mailing-list", {email: $email.val()});
-  //   $email.val("").blur()
-  //   $form.attr("novalidate", "novalidate");
-  //   $form.find("p#confirmation").html("<strong>Thanks!</strong> We'll send you the sample chapter as soon as it's ready.")
-  // });
-
 </script>
-</body>
+    </section>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
 </html>
