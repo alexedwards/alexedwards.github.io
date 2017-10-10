@@ -253,12 +253,12 @@ func profile(w http.ResponseWriter, r *http.Request) {
 <p>If you're likely to be validating a lot of parameter input with regular expressions in your application, then it probably makes sense to skip Pat and use Routes or Gorilla Mux instead, with the expressions built into your routing patterns.</p>
 
 <p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
-	<footer>
+	<div class="social">
 		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
 		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
 		<script src="https://apis.google.com/js/platform.js" async defer></script>
 		<g:plusone></g:plusone>
-	</footer>
+	</div>
 </article>
 <div class="sidebar">
 	<div class="lets-go clearfix">
@@ -274,6 +274,11 @@ func profile(w http.ResponseWriter, r *http.Request) {
   });
 </script>
     </section>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2017 &middot; Built using <a href="https://nanoc.ws">Nanoc</a></div>
+      </div>
+    </footer>
     <script type="text/javascript">
       var _gaq = _gaq || [];
       _gaq.push(['_setAccount', 'UA-23830196-1']);

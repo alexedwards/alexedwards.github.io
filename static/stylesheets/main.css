@@ -39,6 +39,7 @@ a:hover {
 
 section {
   padding: 4em 0;
+  min-height: calc(100vh - 77px - 77px); /*Sticky footer*/
 }
 
 .primary {
@@ -53,6 +54,12 @@ section {
   float: left;
   width: 320px;
   margin-left: 90px;
+}
+
+.half {
+  display: inline-block;
+  float: left;
+  width: 50%;
 }
 
 
@@ -90,6 +97,23 @@ header {
 
 .pages a {
   margin-left: 2em;
+}
+
+/* ===================================================== */
+
+footer {
+  padding: 1.5em 0;
+  border-top: solid 1px #E8E8E8;
+  background: #FAFAFA;
+  font-size: 0.889em;
+  color: #6A737D;
+  text-align: center;
+}
+
+footer span.copyright {
+  display: inline-block;
+  position: relative;
+  top: 0.1em;
 }
 
 /* ===================================================== */
@@ -177,18 +201,18 @@ article blockquote {
   margin-top: 1.5em;
 }
 
-article footer {
+article .social {
   color: #6A737D;
   font-size: 0.889em;
 }
 
-article footer .mit {
+article .social .mit {
   padding: 1em 0;
   border-top: solid 1px #E8E8E8;
   border-bottom: solid 1px #E8E8E8;
 }
 
-article footer .mit img {
+article .social .mit img {
   vertical-align: middle;
   position: relative;
   top: -1px;
@@ -496,6 +520,9 @@ td code {
       display: block;
       float: none;
       margin-bottom: 1em;
+    }
+    section {
+      min-height: calc(100vh - 65px - 65px); /*Sticky footer*/
     }
 }
 
