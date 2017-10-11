@@ -82,7 +82,7 @@
 	}
 	article {
 		padding: 55px 0 55px;
-		overflow-y: scroll;
+		/*overflow-y: scroll;*/
 	}
 	footer {
 		border-top: 1px solid #e8eaed;
@@ -417,7 +417,7 @@
     <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
     <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
     <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-<span class="p">}</span><span class="nx">s</span>
+<span class="p">}</span>
 </pre></div></div>
 <p>Although this change looks pretty straightforward there are a couple of <code>w.WriteHeader()</code> nuances I should explain:</p>
 
