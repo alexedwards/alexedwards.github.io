@@ -1,0 +1,38 @@
+html {
+  font-size: 15px;
+}
+
+h1, h2 {
+	page-break-before: always;
+	padding-bottom:
+}
+
+article h1, h2 {
+  padding: 0 0 15px 0;
+  margin-bottom: 30px;
+}
+
+article h3 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+article h4 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+code, .codeblock-title, pre, samp, td, th {
+  font-size: 9px;
+  overflow-x: hidden;
+}
+
+img[src="assets/img/cover.png"] {
+	width: 100%;
+	page-break-after: always;
+	display: block;
+}
+
+hr {
+	display: none;
+}
