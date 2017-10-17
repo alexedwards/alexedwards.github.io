@@ -1,162 +1,141 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="author" content="Alex Edwards">
-	<meta name="copyright" content="Copyright Alex Edwards 2017">
-	
-	<title> Project Structure - Let's Go (Sample)</title>
-	
-	<link rel="stylesheet" type="text/css" href="assets/css/global.css">
-	<link rel="stylesheet" type="text/css" href="assets/css/online.css">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Alex Edwards">
+  <meta name="copyright" content="Copyright Alex Edwards 2017">
+  <title>Project Structure - Let's Go (Sample)</title>
+  <link rel="stylesheet" type="text/css" href="assets/css/global.css">
+  <link rel="stylesheet" type="text/css" href="assets/css/html.css">
+  <script>
+            (function(h,o,t,j,a,r){
+                h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+                h._hjSettings={hjid:659192,hjsv:6};
+                a=o.getElementsByTagName('head')[0];
+                r=o.createElement('script');r.async=1;
+                r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+                a.appendChild(r);
+            })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+  </script>
 </head>
 <body>
-	
-	<div class="cta">
-		<div class="wrapper">
-		You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
-		</div>
-	</div>
-	
-	<header>
-		<nav class="wrapper clearfix">
-			<div class="breadcrumbs">
-				<a href="00.00-lets-go.html">Let's Go</a>
-				<span class="crumbs">
-					
-						
-							<span class="separator">&rsaquo;</span> <a href="02.00-foundations.html">Foundations</a>
-					 		<span class="separator">&rsaquo;</span>  Project Structure
-						
-					
-				</span>
-	 		</div>
-	 		<div class="menu">
-				
-				<span id="previous">
-					<a href="02.03-customizing-responses.html" title="2.3.  Customizing Responses">Previous</a>
-				<span class="separator">&middot;</span>
-				</span>
-				
-				<a href="00.01-contents.html" title="Contents">Contents</a>
-				
-				<span id="next">
-				<span class="separator">&middot;</span>
-					<a href="02.05-routing-requests.html" title="2.5.  Routing Requests">Next</a>
-				</span>
-				
-			</div>
- 		</div>
-	</header>
-	<section class="wrapper clearfix">
-		<article>
-		
-		
-<h2 name="02.04-project-structure">2.4. Project Structure</h2>
-
-<p>Before we add any more code to our <code>main.go</code> file it&#39;s a good time to think about the organization and structure for our project.</p>
-
-<p>There&#39;s no single right (or even recommended) way to structure your project in Go. This can be both a blessing and a curse. It means that you have freedom and flexibility over how you organize your code, but you can also spend a lot of time trying to decide what the best structure should be.</p>
-
-<p>For our project we&#39;ll use a <a href="https://github.com/thockin/go-build-template">popular</a> and <a href="https://peter.bourgon.org/go-best-practices-2016/#repository-structure">tried-and-tested</a> approach which should be a good fit for a wide range of applications.</p>
-
-<p>If you&#39;re following along, make sure that you&#39;re in the root of our project repository and run the following commands to generate an outline structure:</p>
-<div class="codeblock sh"><pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
+  <div class="cta">
+    <div class="wrapper">
+      You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
+    </div>
+  </div>
+  <header>
+    <nav class="wrapper clearfix">
+      <div class="breadcrumbs">
+        <a href="00.00-lets-go.html">Let's Go</a> <span class="crumbs"><span class="separator">›</span> <a href="02.00-foundations.html">Foundations</a> <span class="separator">›</span> Project Structure</span>
+      </div>
+      <div class="menu">
+        <span><a href="02.03-customizing-responses.html" title="2.3. Customizing Responses">Previous</a> <span class="separator">·</span></span> <a href="00.01-contents.html" title="Contents">Contents</a> <span><span class="separator">·</span> <a href="02.05-routing-requests.html" title="2.5. Routing Requests">Next</a></span>
+      </div>
+    </nav>
+  </header>
+  <section class="wrapper clearfix">
+    <article>
+      <h2 id="02.04-project-structure">2.4. Project Structure</h2>
+      <p>Before we add any more code to our <code>main.go</code> file it's a good time to think about the organization and structure for our project.</p>
+      <p>There's no single right (or even recommended) way to structure your project in Go. This can be both a blessing and a curse. It means that you have freedom and flexibility over how you organize your code, but you can also spend a lot of time trying to decide what the best structure should be.</p>
+      <p>For our project we'll use a <a href="https://github.com/thockin/go-build-template">popular</a> and <a href="https://peter.bourgon.org/go-best-practices-2016/#repository-structure">tried-and-tested</a> approach which should be a good fit for a wide range of applications.</p>
+      <p>If you're following along, make sure that you're in the root of our project repository and run the following commands to generate an outline structure:</p>
+      <div class="codeblock sh">
+        <pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
 <span class='prompt'>$</span> rm main.go
 <span class='prompt'>$</span> mkdir -p cmd/web pkg/models ui/html ui/static
 <span class='prompt'>$</span> touch cmd/web/main.go
 <span class='prompt'>$</span> touch cmd/web/handlers.go
-</pre></div>
-<p>Once that&#39;s done your project repository should look just like this:</p>
-
-<p><img src="assets/img/02.04-01.png" alt="02.04-01.png"></p>
-
-<p>So what will each of these directories do?</p>
-
-<ul>
-<li><p>The <code>cmd</code> directory will contain the source code for our <dfn>executable applications</dfn>. For now we&#39;re only making one application &ndash; the Snippetbox web application &ndash; which will live in the <code>cmd/web</code> directory.</p></li>
-<li><p>The <code>pkg</code> directory will contain the reusable <dfn>packages</dfn> that our executable applications will import (a package is like a library in other languages). For now we&#39;ve got one package directory, <code>models</code>, which will contain all the database models for our project.</p></li>
-<li><p>There&#39;s also a <code>ui</code> directory in our repository root, which will contain our HTML templates and static files (like CSS and images).</p></li>
-</ul>
-
-<p>A big benefit of this structure is that it scales nicely if your project grows to include multiple executable applications under the <code>cmd</code> directory. The <code>pkg</code> directory provides a sensible place to put shared, reusable, code (like database models) which can be easily imported by your different applications.</p>
-
-<p>During our project build all the Go code we write will live exclusively under either the <code>cmd</code> or <code>pkg</code> directories. Sticking to this rule will help keep our Go and non-Go assets cleanly separated.</p>
-
-<h3>Porting the Code</h3>
-
-<p>Let&#39;s quickly port the code we&#39;ve already written to the new structure.</p>
-<div class="group"><div class="codeblock-title">cmd/web/main.go</div>
-<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+</pre>
+      </div>
+      <p>Once that's done your project repository should look just like this:</p>
+      <p><img src="assets/img/02.04-01.png" alt="02.04-01.png"></p>
+      <p>So what will each of these directories do?</p>
+      <ul>
+        <li>
+          <p>The <code>cmd</code> directory will contain the source code for our <dfn>executable applications</dfn>. For now we're only making one application – the Snippetbox web application – which will live in the <code>cmd/web</code> directory.</p>
+        </li>
+        <li>
+          <p>The <code>pkg</code> directory will contain the reusable <dfn>packages</dfn> that our executable applications will import (a package is like a library in other languages). For now we've got one package directory, <code>models</code>, which will contain all the database models for our project.</p>
+        </li>
+        <li>
+          <p>There's also a <code>ui</code> directory in our repository root, which will contain our HTML templates and static files (like CSS and images).</p>
+        </li>
+      </ul>
+      <p>A big benefit of this structure is that it scales nicely if your project grows to include multiple executable applications under the <code>cmd</code> directory. The <code>pkg</code> directory provides a sensible place to put shared, reusable, code (like database models) which can be easily imported by your different applications.</p>
+      <p>During our project build all the Go code we write will live exclusively under either the <code>cmd</code> or <code>pkg</code> directories. Sticking to this rule will help keep our Go and non-Go assets cleanly separated.</p>
+      <h3>Porting the Code</h3>
+      <p>Let's quickly port the code we've already written to the new structure.</p>
+      <div class="group">
+        <div class="codeblock-title">
+          cmd/web/main.go
+        </div>
+        <div class="codeblock go">
+          <pre><span class="kn">package</span> <span class="nx">main</span>
 
 <span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&quot;log&quot;</span>
-    <span class="s">&quot;net/http&quot;</span>
+    <span class="s">"log"</span>
+    <span class="s">"net/http"</span>
 <span class="p">)</span>
 
 <span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
     <span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
-    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
 
-    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
-    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">"Starting server on :4000"</span><span class="p">)</span>
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">":4000"</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
     <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
 <span class="p">}</span>
-</pre></div></div><div class="group"><div class="codeblock-title">cmd/web/handlers.go</div>
-<div class="codeblock go"><pre><span class="kn">package</span> <span class="nx">main</span>
+</pre>
+        </div>
+      </div>
+      <div class="group">
+        <div class="codeblock-title">
+          cmd/web/handlers.go
+        </div>
+        <div class="codeblock go">
+          <pre><span class="kn">package</span> <span class="nx">main</span>
 
 <span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&quot;net/http&quot;</span>
+    <span class="s">"net/http"</span>
 <span class="p">)</span>
 
 <span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">&quot;/&quot;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">"/"</span> <span class="p">{</span>
         <span class="nx">http</span><span class="p">.</span><span class="nx">NotFound</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
         <span class="k">return</span>
     <span class="p">}</span>
 
-    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Hello from Snippetbox&quot;</span><span class="p">))</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">"Hello from Snippetbox"</span><span class="p">))</span>
 <span class="p">}</span>
-</pre></div></div>
-<p>To start our web application you&#39;ll now need to execute <code>go run</code> using a wildcard pattern so that it includes both the <code>main.go</code> and <code>handler.go</code> files:</p>
-<div class="codeblock sh"><pre><span class='prompt'>$</span> go run cmd/web/*
+</pre>
+        </div>
+      </div>
+      <p>To start our web application you'll now need to execute <code>go run</code> using a wildcard pattern so that it includes both the <code>main.go</code> and <code>handler.go</code> files:</p>
+      <div class="codeblock sh">
+        <pre><span class='prompt'>$</span> go run cmd/web/*
 <samp>2017/08/16 21:48:45 Starting server on :4000</samp>
-</pre></div>
-<p>As a side-note, it&#39;s important to emphasize that you can and should tailor your structure to fit to the project. The outline that we&#39;re using is a solid starting point, but as you gain experience with the language you&#39;ll get a feel for which patterns work well for you in different situations.</p>
-
-<p>The only firm advice I can give is <em>try hard not to over-complicate things</em>; add structure and complexity only when it&#39;s demonstrably needed.</p>
-
-		
-		</article>
-	</section>
-	<footer>
-		
-		<span id="previous">
-			<a href="02.03-customizing-responses.html" title="2.3.  Customizing Responses">Previous</a>
-		</span>
-		&middot;
-		
-		<a href="00.01-contents.html" title="Contents">Contents</a>
-		
-		&middot;
-		<span id="next">
-			<a href="02.05-routing-requests.html" title="2.5.  Routing Requests">Next</a>
-		</span>
-		
-	</footer>
-	
-		<script type="text/javascript">
-		var _gaq = _gaq || [];
-		_gaq.push(['_setAccount', 'UA-23830196-1']);
-		_gaq.push(['_trackPageview']);
-		(function() {
-		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-		})();
-		</script>
-	
+</pre>
+      </div>
+      <p>As a side-note, it's important to emphasize that you can and should tailor your structure to fit to the project. The outline that we're using is a solid starting point, but as you gain experience with the language you'll get a feel for which patterns work well for you in different situations.</p>
+      <p>The only firm advice I can give is <em>try hard not to over-complicate things</em>; add structure and complexity only when it's demonstrably needed.</p>
+    </article>
+  </section>
+  <footer>
+    <span><a href="02.03-customizing-responses.html" title="2.3. Customizing Responses">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.05-routing-requests.html" title="2.5. Routing Requests">Next</a></span>
+  </footer>
+  <script type="text/javascript">
+                var _gaq = _gaq || [];
+                _gaq.push(['_setAccount', 'UA-23830196-1']);
+                _gaq.push(['_trackPageview']);
+                (function() {
+                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+                })();
+  </script>
 </body>
 </html>
