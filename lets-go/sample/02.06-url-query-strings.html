@@ -37,7 +37,7 @@
     </nav>
   </header>
   <section class="wrapper clearfix">
-    <article>
+    <div class="article">
       <h2 id="02.06-url-query-strings">2.6. URL Query Strings</h2>
       <p>Let's add a bit of dynamic behavior to our application, so that the <code>"/snippet"</code> route accepts a <a href="https://en.wikipedia.org/wiki/Query_string">query string</a> parameter like so:</p>
       <table>
@@ -136,7 +136,7 @@
       <p>But we passed it our <code>http.ResponseWriter</code> object instead, and it worked fine.</p>
       <p>We're able to do this because the <code>io.Writer</code> type is an <dfn>interface</dfn>, and our <code>http.ResponseWriter</code> object <em>satisfies the interface</em> because it has the <code>w.Write()</code> method.</p>
       <p>If you're new to Go the <a href="http://blog.teamtreehouse.com/go-interfaces-awesome">concept of interfaces</a> can be a bit confusing, but in practice, it simply means that anywhere you see an <code>io.Writer</code> parameter it's OK to use a <code>http.RespsonseWriter</code> too. Whatever is being written will subsequently be sent as the body of the HTTP response.</p>
-    </article>
+    </div>
   </section>
   <footer>
     <span><a href="02.05-routing-requests.html" title="2.5. Routing Requests">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.07-basic-html-templates.html" title="2.7. Basic HTML Templates">Next</a></span>

@@ -37,7 +37,7 @@
     </nav>
   </header>
   <section class="wrapper clearfix">
-    <article>
+    <div class="article">
       <h2 id="02.08-serving-static-files">2.8. Serving Static Files</h2>
       <p>In this chapter we'll improve the look and feel of our homepage by adding to some static CSS and image files to our application.</p>
       <p>If you're following along, you can grab the relevant files and extract them into the <code>ui/static</code> folder we made earlier with the following commands:</p>
@@ -186,7 +186,7 @@ Content-Type: image/png
 Last-Modified: Thu, 04 May 2017 13:07:52 GMT
 Date: Sat, 19 Aug 2017 09:12:49 GMT
 
-h�j��ZbK�&amp;�"b��dS�"V��M�PQ�S�T��x�PMC1���&amp;�.(غ�   ����&amp;�"^"� ZI</samp>
+[binary data]</samp>
 </pre>
           </div>
         </li>
@@ -207,7 +207,7 @@ h�j��ZbK�&amp;�"b��dS�"V��M�PQ�S�T��x�PMC1��
 </pre>
       </div>
       <p><strong>But be aware</strong>: <code>http.ServeFile()</code> does not automatically sanitize the file path. If you're constructing a file path from untrusted user input, you <strong>must</strong> sanitize the input with <a href="https://golang.org/pkg/path/filepath/#Clean"><code>filepath.Clean()</code></a> before using it to avoid directory traversal attacks.</p>
-    </article>
+    </div>
   </section>
   <footer>
     <span><a href="02.07-basic-html-templates.html" title="2.7. Basic HTML Templates">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.09-the-http-handler-interface.html" title="2.9. The http.Handler Interface">Next</a></span>

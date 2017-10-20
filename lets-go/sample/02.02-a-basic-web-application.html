@@ -37,7 +37,7 @@
     </nav>
   </header>
   <section class="wrapper clearfix">
-    <article>
+    <div class="article">
       <h2 id="02.02-a-basic-web-application">2.2. A Basic Web Application</h2>
       <p>In this chapter we'll kick off our Snippetbox project and create a super-simple web application with one route, which sends a plain-text <code>"Hello from Snippetbox"</code> response to the user.</p>
       <p>There are three main components to making a web application in Go:</p>
@@ -118,7 +118,7 @@ Hello from Snippetbox</samp>
       <h4>Network Addresses</h4>
       <p>The TCP network address that you pass to <code>http.ListenAndServe()</code> should be in the format <code>"host:port"</code>. If you omit the host (like we did with <code>":4000"</code>) then the server will listen on all of your computer's available network interfaces. Generally you only need to specify a host in the address if your computer has multiple network interfaces and you want to listen on just one of them.</p>
       <p>Sometimes you might see network addresses written using named ports like <code>":http"</code> or <code>":http-alt"</code> instead of a number. If you use a named port then Go will attempt to look up the relevant port number from your <code>/etc/services</code> file when starting the server, and will return an error if a match can't be found.</p>
-    </article>
+    </div>
   </section>
   <footer>
     <span><a href="02.01-workspaces-and-repositories.html" title="2.1. Workspaces and Repositories">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.03-customizing-responses.html" title="2.3. Customizing Responses">Next</a></span>

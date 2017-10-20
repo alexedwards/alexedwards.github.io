@@ -37,7 +37,7 @@
     </nav>
   </header>
   <section class="wrapper clearfix">
-    <article>
+    <div class="article">
       <h2 id="02.03-customizing-responses">2.3. Customizing Responses</h2>
       <p>There are a few different ways to make a handler in Go, but the most common is to write your handlers as a function – just like we have with the <code>Home</code> function in the previous chapter:</p>
       <div class="codeblock go">
@@ -163,7 +163,7 @@ Hello from Snippetbox</samp>
       </div>
       <p>In terms of functionality this is almost exactly the same. The biggest difference is that we're now passing <code>http.ResponseWriter</code> to <em>another function</em>, which sends a response to the user for us.</p>
       <p>The pattern of passing <code>http.ResponseWriter</code> to other functions is super-common in Go, and something we'll do a lot throughout this book. In practice, it's actually quite rare to use the <code>w.Write()</code> and <code>w.WriteHeader()</code> methods directly like we have been so far. But I wanted to introduce them upfront because they underpin the more advanced (and interesting!) ways to send responses.</p>
-    </article>
+    </div>
   </section>
   <footer>
     <span><a href="02.02-a-basic-web-application.html" title="2.2. A Basic Web Application">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.04-project-structure.html" title="2.4. Project Structure">Next</a></span>

@@ -52,19 +52,19 @@ a:hover {
 
 /* ===================================================== */
 
-article img {
+.article img {
   max-width: 100%;
 }
 
-article p, article ul, article ol, article .codeblock, article table {
+.article p, .article ul, .article ol, .article .codeblock, .article table {
   margin-bottom: 1.5em;
 }
 
-article {
+.article {
 	font-size: 1em;
 }
 
-article h1, h2 {
+.article h1, h2 {
   font-size: 2.5em;
   font-weight: 800;
   padding: 0 0 calc(1em / 2.5) 0;
@@ -72,47 +72,47 @@ article h1, h2 {
   margin-bottom: calc(2em / 2.5);
 }
 
-article h3 {
+.article h3 {
   font-size: 1.5em;
   margin-top: calc(1em / 1.5 * 2);
   margin-bottom: calc(1em / 1.5);
 }
 
-article h4 {
+.article h4 {
   font-size: 1.32em;
   margin-top: calc(1em / 1.32 * 2);
   margin-bottom: calc(1em / 1.32);
   color: #6A737D;
 }
 
-article hr {
+.article hr {
 	border: none;
 	height: 0;
 	border-top: 1px solid #e8eaed;
 }
 
-article dfn {
+.article dfn {
   font-weight: bold;
   font-style: normal;
 }
 
-article ol, article ul {
+.article ol, .article ul {
   padding-left: 1em;
 }
 
-article ol li, article ul li {
+.article ol li, .article ul li {
   padding-left: 0.5em;
 }
 
-article li + li {
+.article li + li {
   margin-top: 0.25em;
 }
 
-article ul ul {
+.article ul ul {
   margin-top: 0.5em;
 }
 
-article blockquote {
+.article blockquote {
   font-style: italic;
   border-left: solid 9px #E8E8E8;
   padding-left: 1em;
@@ -144,7 +144,7 @@ code pre {
 
 /* ===================================================== */
 
-article table {
+.article table {
   width: 100%;
   background-color: #FAFAFA;
   border: solid 1px #E8E8E8;
@@ -263,6 +263,10 @@ td span {
 .il { color: #ae81ff } /* Literal.Number.Integer.Long */
 
 /* ===================================================== */
+
+nav#chapters ol {
+  list-style-type: disc;
+}
 
 nav#chapters li {
 	font-weight: bold;

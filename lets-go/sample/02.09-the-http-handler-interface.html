@@ -37,7 +37,7 @@
     </nav>
   </header>
   <section class="wrapper clearfix">
-    <article>
+    <div class="article">
       <h2 id="02.09-the-http-handler-interface">2.9. The http.Handler Interface</h2>
       <p>Before we go any further there's a little theory that we should cover. It's a bit complicated, so if you find this chapter hard-going don't worry. Carry on with the application build and circle back to it later once you're more familiar with Go.</p>
       <p>In the previous chapters I've thrown around the term <dfn>handler</dfn> without explaining what it truly means. Strictly speaking, what we mean by handler is <em>an object which satisfies the <a href="https://golang.org/pkg/net/http/#Handler"><code>http.Handler</code></a> interface</em>:</p>
@@ -101,7 +101,7 @@
       <p>Basically, you can think of a Go web application as a <em>chain of <code>ServeHTTP()</code> methods being called one after another</em>.</p>
       <h3>Requests Are Handled Concurrently</h3>
       <p>There is one more thing that's really important thing to point out: <em>All incoming HTTP requests are served in their own goroutine</em>. For busy servers, this means it's very likely that the code in or called by your handlers will be running concurrently. While this helps make Go blazingly fast, the downside is that you need to be aware of (and protect against) <a href="http://www.alexedwards.net/blog/understanding-mutexes">race conditions</a> when accessing shared resources from your handlers.</p>
-    </article>
+    </div>
   </section>
   <footer>
     <span><a href="02.08-serving-static-files.html" title="2.8. Serving Static Files">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="03.00-configuration-and-error-handling.html" title="3. Configuration and Error Handling">Next</a></span>
