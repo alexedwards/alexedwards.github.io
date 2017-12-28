@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2017">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>How to Rate Limit HTTP Requests</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="http://www.alexedwards.net/blog/how-to-rate-limit-http-requests"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog/">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              How to Rate Limit HTTP Requests
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>How to Rate Limit HTTP Requests</h1>
+	<div class="metadata">
+		<span class="dates">
+			28th December 2017
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	
+<p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
+
+<p>But if you want something simple and lightweight &ndash; or just want to learn &ndash; it's not too difficult to roll your own middleware to handle rate limiting. In this post I'll run through the essentials of how to do that.</p>
+
+<p>If you'd like to follow along, you'll need to install the <code><a href="https://godoc.org/golang.org/x/time/rate">x/time/rate</a></code> package. This provides a <a href="https://en.wikipedia.org/wiki/Token_bucket">token bucket</a> rate-limiter algorithm (which is also used by Tollbooth behind the scenes).</p>
+
+<figure class="shell"><code><pre>
+$ go get golang.org/x/time/rate
+</pre></code></figure>
+
+<p>Then create a demo directory containing two files: <code>limit.go</code> and <code>main.go</code>.</p>
+
+<figure class="shell"><code><pre>
+$ mkdir ratelimit-demo
+$ cd ratelimit-demo
+$ touch limit.go main.go
+</pre></code></figure>
+
+<p>Let's start by making a global rate limiter which acts on <em>all the requests</em> that a HTTP server receives.</p>
+
+<p>Open up the <code>limit.go</code> file and add the following code:</p>
+
+<figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
+package main
+
+import (
+    "net/http"
+
+    "golang.org/x/time/rate"
+)
+
+var limiter = rate.NewLimiter(2, 5)
+
+func limit(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if limiter.Allow() == false {
+            http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+
+<p>In this code we've used the <code>rate.NewLimiter()</code> function to initialize and return a new rate limiter. Its signature looks like this:</p>
+
+<figure class="plain"><code><pre>
+func NewLimiter(r Limit, b int) *Limiter
+</pre></code></figure>
+
+<p>From <a href="https://godoc.org/golang.org/x/time/rate#Limiter">the documentation</a>:</p>
+
+<p><blockquote>A Limiter controls how frequently events are allowed to happen. It implements a "token bucket" of size b, initially full and refilled at rate r tokens per second.</blockquote></p>
+
+<p>Or to describe it another way &ndash; the limiter permits you to consume an average of r tokens per second, with a maximum of b tokens in any single 'burst'. So in the code above our limiter allows 2 tokens to be consumed per second, with a maximum burst size of 5.</p>
+
+<p>In the <code>limit</code> middleware function we call the global limiter's <code>Allow()</code> method each time the middleware receives a HTTP request. If there are no tokens left in the bucket <code>Allow()</code> will return <code>false</code> and we send the user a <code>429 Too Many Requests</code> response. Otherwise, calling <code>Allow()</code> will consume exactly one token from the bucket and we pass on control to the next handler in the chain.</p>
+
+<p>It's important to note that the code behind the <code>Allow()</code> method is protected by a mutex and is safe for concurrent use.</p>
+
+<p>Let's put this to use. Open up the <code>main.go</code> file and setup a simple web server which uses the <code>limit</code> middleware like so:</p>
+
+<figure class="file"><figcaption>File: ratelimit-demo/main.go</figcaption><code><pre>
+package main
+
+import (
+    "net/http"
+)
+
+func main() {
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", okHandler)
+
+    // Wrap the servemux with the limit middleware.
+    http.ListenAndServe(":4000", limit(mux))
+}
+
+func okHandler(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("OK"))
+}
+</pre></code></figure>
+
+<p>Go ahead and run the application&hellip;</p>
+
+<figure class="shell"><code><pre>
+$ go run *.go
+</pre></code></figure>
+
+<p>And if you make enough requests in quick succession, you should eventually get a response which looks like this:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:4000
+<samp>HTTP/1.1 429 Too Many Requests
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Thu, 21 Dec 2017 19:25:52 GMT
+Content-Length: 18
+
+Too Many Requests</samp>
+</pre></code></figure>
+
+<h2>Rate limiting per user</h2>
+
+<p>While having a single, global, rate limiter is useful in some cases, another common scenario is implement a rate limiter <em>per user</em>, based on an identifier like IP address or API key. In this post we'll use IP address as the identifier.</p>
+
+<p>A conceptually straightforward way to do this is to create a <em>map of rate limiters</em>, using the identifier for each user as the map key. </p>
+
+<p>At this point you might think to reach for the new <code><a href="https://golang.org/pkg/sync/#Map">sync.Map</a></code> type that was introduced in Go 1.9. This essentially provides a concurrency-safe map, designed to be accessed from multiple goroutines without the risk of race conditions. But it comes with a note of caution:</p>
+
+<p><blockquote> It is optimized for use in concurrent loops with keys that are stable over time, and either few steady-state stores, or stores localized to one goroutine per key.<br><br>For use cases that do not share these attributes, it will likely have comparable or worse performance and worse type safety than an ordinary map paired with a read-write mutex.</blockquote></p>
+
+<p>In our particular use-case the map keys will be the IP address of users, and so new keys will be added to the map each time a new user visits our application. We'll also want to prevent undue memory consumption by removing old entries from the map when a user hasn't been seen for a long period of time.</p>
+
+<p>So in our case the map keys <em>won't be stable</em> and it's likely that an ordinary map protected by a mutex will perform better. (If you're not familiar with the idea of mutexes or how to use them in Go, then <a href="http://www.alexedwards.net/blog/understanding-mutexes">this post</a> has an explanation which you might want to read before continuing).</p>
+
+<p>Let's update the <code>limit.go</code> file to contain a basic implementation. I'll keep the code structure deliberately simple.</p>
+
+<figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
+package main
+
+import (
+    "net/http"
+    "sync"
+
+    "golang.org/x/time/rate"
+)
+
+// Create a map to hold the rate limiters for each visitor and a mutex.
+var visitors = make(map[string]*rate.Limiter)
+var mtx sync.Mutex
+
+// Create a new rate limiter and add it to the visitors map, using the
+// IP address as the key.
+func addVisitor(ip string) *rate.Limiter {
+    limiter := rate.NewLimiter(2, 5)
+    mtx.Lock()
+    visitors[ip] = limiter
+    mtx.Unlock()
+    return limiter
+}
+
+// Retrieve and return the rate limiter for the current visitor if it
+// already exists. Otherwise call the addVisitor function to add a
+// new entry to the map.
+func getVisitor(ip string) *rate.Limiter {
+    mtx.Lock()
+    limiter, exists := visitors[ip]
+    mtx.Unlock()
+    if !exists {
+        return addVisitor(ip)
+    }
+    return limiter
+}
+
+func limit(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Call the getVisitor function to retreive the rate limiter for
+        // the current user.
+        limiter := getVisitor(r.RemoteAddr)
+        if limiter.Allow() == false {
+            http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+
+<h2>Removing old entries from the map</h2>
+
+<p>There's one problem with this: as long as the application is running the <code>visitors</code> map will continue to grow unbounded.</p>
+
+<p>We can fix this fairly simply by recording the <em>last seen</em> time for each visitor and running a background goroutine to deletes old entries from the map (and therefore free up memory as we go).</p>
+
+<figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
+package main
+
+import (
+    "net/http"
+    "sync"
+    "time"
+
+    "golang.org/x/time/rate"
+)
+
+// Create a custom visitor struct which holds the rate limiter for each
+// visitor and the last time that the visitor was seen.
+type visitor struct {
+    limiter  *rate.Limiter
+    lastSeen time.Time
+}
+
+// Change the the map to hold values of the type visitor.
+var visitors = make(map[string]*visitor)
+var mtx sync.Mutex
+
+// Run a background goroutine to remove old entries from the visitors map.
+func init() {
+    go cleanupVisitors()
+}
+
+func addVisitor(ip string) *rate.Limiter {
+    limiter := rate.NewLimiter(2, 5)
+    mtx.Lock()
+    // Include the current time when creating a new visitor.
+    visitors[ip] = &visitor{limiter, time.Now()}
+    mtx.Unlock()
+    return limiter
+}
+
+func getVisitor(ip string) *rate.Limiter {
+    mtx.Lock()
+    v, exists := visitors[ip]
+    if !exists {
+        mtx.Unlock()
+        return addVisitor(ip)
+    }
+
+    // Update the last seen time for the visitor.
+    v.lastSeen = time.Now()
+    mtx.Unlock()
+    return v.limiter
+}
+
+// Every minute check the map for visitors that haven't been seen for
+// more than 3 minutes and delete the entries.
+func cleanupVisitors() {
+    for {
+        time.Sleep(time.Minute)
+        mtx.Lock()
+        for ip, v := range visitors {
+            if time.Now().Sub(v.lastSeen) > 3*time.Minute {
+                delete(visitors, ip)
+            }
+        }
+        mtx.Unlock()
+    }
+}
+
+func limit(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        limiter := getVisitor(r.RemoteAddr)
+        if limiter.Allow() == false {
+            http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+
+<h2>Some more improvements&hellip;</h2>
+
+<p>For simple applications this code will work fine as-is, but you may want to adapt it further depending on your needs. For example, it might make sense to:</p>
+
+<ul>
+    <li>Check the <code>X-Forwarded-For</code> or <code>X-Real-IP</code> headers for the IP address, if you are running your server behind a reverse proxy.</li>
+    <li>Port the code to a standalone package.</li>
+    <li>Make the rate limiter and cleanup settings configurable at runtime.</li>
+    <li>Remove the reliance on global variables, so that different rate limiters can be created with different settings.</li>
+    <li>Switch to a <code>sync.RWMutex</code> to help reduce contention on the map.</li>
+</ul>
+	<div class="social">
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
+		<script src="https://apis.google.com/js/platform.js" async defer></script>
+		<g:plusone></g:plusone>
+	</div>
+</article>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://gumroad.com/l/letsgo"><img src="http://www.alexedwards.net/lets-go/sample/assets/img/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://gumroad.com/l/letsgo">Check it out!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
+</script>
+    </section>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2017 &middot; Built using <a href="https://nanoc.ws">Nanoc</a></div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
