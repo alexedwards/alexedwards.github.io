@@ -1,116 +1,111 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="Alex Edwards">
-  <meta name="copyright" content="Copyright Alex Edwards 2017">
-  <title>Configuration and Error Handling - Let's Go (Sample)</title>
-  <link rel="stylesheet" type="text/css" href="assets/css/global.css">
-  <link rel="stylesheet" type="text/css" href="assets/css/html.css">
-  <script>
-            (function(h,o,t,j,a,r){
-                h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-                h._hjSettings={hjid:659192,hjsv:6};
-                a=o.getElementsByTagName('head')[0];
-                r=o.createElement('script');r.async=1;
-                r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-                a.appendChild(r);
-            })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-  </script>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	
+	<title>Configuration and Error Handling - Let's Go (Sample)</title>
+	
+	<link rel="stylesheet" type="text/css" href="assets/css/global.css">
+	<link rel="stylesheet" type="text/css" href="assets/css/html.css">
+	
+	<script>
+	    (function(h,o,t,j,a,r){
+	        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+	        h._hjSettings={hjid:659192,hjsv:6};
+	        a=o.getElementsByTagName('head')[0];
+	        r=o.createElement('script');r.async=1;
+	        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+	        a.appendChild(r);
+	    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+	</script>
+	
 </head>
 <body>
-  <div class="cta">
-    <div class="wrapper">
-      You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
-    </div>
-  </div>
-  <header>
-    <nav class="wrapper clearfix">
-      <div class="breadcrumbs">
-        <a href="00.00-lets-go.html">Let's Go</a> <span class="crumbs"><span class="separator">›</span> Configuration and Error Handling</span>
-      </div>
-      <div class="menu">
-        <span><a href="02.09-the-http-handler-interface.html" title="2.9. The http.Handler Interface">Previous</a> <span class="separator">·</span></span> <a href="00.01-contents.html" title="Contents">Contents</a>
-      </div>
-    </nav>
-  </header>
-  <section class="wrapper clearfix">
-    <div class="article">
-      <h1>Keep going...</h1>
-      <p>You've reached the end of the sample, but in the <a href="https://gumroad.com/l/letsgo">full version</a> of this book there's a huge amount of more information how to build a secure, fast and maintainable web application. Including:</p>
-      <ul>
-        <li>
-          <p>How to manage <strong>configuration settings</strong> for your application at runtime.</p>
-        </li>
-        <li>
-          <p>How to make <strong>dependencies</strong> available to your handlers in an extensible and type-safe way.</p>
-        </li>
-        <li>
-          <p>How to run <strong>SQL database queries</strong> from your application and avoid common errors that can lead to your server running out of resources.</p>
-        </li>
-        <li>
-          <p>How to use Go's templating actions and functions to display <strong>dynamic data in your HTML templates</strong>.</p>
-        </li>
-        <li>
-          <p>How to create and use <strong>your own custom templating functions</strong>.</p>
-        </li>
-        <li>
-          <p>How to gracefully handle <strong>template rendering errors</strong> at runtime.</p>
-        </li>
-        <li>
-          <p>How to use <strong>RESTful routing</strong> and <strong>semantic URLs</strong> to create a clear routing structure that follows HTTP best practices.</p>
-        </li>
-        <li>
-          <p>A user-friendly pattern for <strong>processing forms, validating data, and showing validation errors</strong>.</p>
-        </li>
-        <li>
-          <p>The correct steps to <strong>prevent common attacks</strong> including SQL injection, CSRF, XSS and Clickjacking.</p>
-        </li>
-        <li>
-          <p>How to <strong>securely use sessions</strong> to persist data between requests.</p>
-        </li>
-        <li>
-          <p>How to <strong>create and use middleware</strong> to perform common actions before or after your handlers.</p>
-        </li>
-        <li>
-          <p>How to <strong>log all the requests</strong> that your application receives.</p>
-        </li>
-        <li>
-          <p>How to <strong>set timeouts</strong> on your server to stop slow-client attacks in their tracks.</p>
-        </li>
-        <li>
-          <p>How to <strong>use HTTPS</strong> so that data is protected from eavesdropping while in transit, and <strong>configure the HTTPS settings</strong> to improve performance and security.</p>
-        </li>
-        <li>
-          <p>How to <strong>encrypt and store user passwords</strong> securely and safely in your database.</p>
-        </li>
-        <li>
-          <p>How to correctly implement <strong>user signup, login and logout</strong> functionality.</p>
-        </li>
-        <li>
-          <p>How to <strong>restrict access to logged in users</strong> for certain parts of your application.</p>
-        </li>
-        <li>
-          <p>And most importantly... <strong>How to put it all together in a clean, scalable and easy-to-maintain way.</strong></p>
-        </li>
-      </ul>
-      <p>Sound good to you? <a href="https://gumroad.com/l/letsgo">Get the full version of the book now!</a></p>
-    </div>
-  </section>
-  <footer>
-    <span><a href="02.09-the-http-handler-interface.html" title="2.9. The http.Handler Interface">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a>
-  </footer>
-  <script type="text/javascript">
-                var _gaq = _gaq || [];
-                _gaq.push(['_setAccount', 'UA-23830196-1']);
-                _gaq.push(['_trackPageview']);
-                (function() {
-                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-                })();
-  </script>
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://lets-go.alexedwards.net/">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<nav class="wrapper clearfix">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				
+					<span class="crumbs">
+							
+								<span class="separator">&rsaquo;</span> Configuration and Error Handling
+							
+					</span>
+				
+	 		</div>
+	 		<div class="menu">
+				
+				<span>
+					<a href="02.09-the-http-handler-interface.html" title="2.9.  The http.Handler Interface">Previous</a>
+					<span class="separator">&middot;</span>
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+			</div>
+ 		</nav>
+	</header>
+	<section class="wrapper clearfix">
+		<div class="article">
+		
+		<h1>Keep going...</h1>
+		<p>You've reached the end of the sample, but in the <a href="https://lets-go.alexedwards.net/">full version</a> of this book there's a huge amount of more information how to build a secure, fast and maintainable web application. Including:</p>
+		<ul>
+			<li><p>How to manage <strong>configuration settings</strong> for your application at runtime.</p></li>
+			<li><p>How to make <strong>dependencies</strong> available to your handlers in an extensible and type-safe way.</p></li>
+			<li><p>How to run <strong>SQL database queries</strong> from your application and avoid common errors that can lead to your server running out of resources.</p></li>
+			<li><p>How to use Go's templating actions and functions to display <strong>dynamic data in your HTML templates</strong>.</p></li>
+			<li><p>How to create and use <strong>your own custom templating functions</strong>.</p></li>
+			<li><p>How to gracefully handle <strong>template rendering errors</strong> at runtime.</p></li>
+			<li><p>How to use <strong>RESTful routing</strong> and <strong>semantic URLs</strong> to create a clear routing structure that follows HTTP best practices.</p></li>
+			<li><p>A user-friendly pattern for <strong>processing forms, validating data, and showing validation errors</strong>.</p></li>
+			<li><p>The correct steps to <strong>prevent common attacks</strong> including SQL injection, CSRF, XSS and Clickjacking.</p></li>
+			<li><p>How to <strong>securely use sessions</strong> to persist data between requests.</p></li>
+			<li><p>How to <strong>create and use middleware</strong> to perform common actions before or after your handlers.</li>
+			<li><p>How to <strong>log all the requests</strong> that your application receives.</li>
+			<li><p>How to <strong>set timeouts</strong> on your server to stop slow-client attacks in their tracks.</p></li>
+			<li><p>How to <strong>use HTTPS</strong> so that data is protected from eavesdropping while in transit, and <strong>configure the HTTPS settings</strong> to improve performance and security.</p></li>
+			<li><p>How to <strong>encrypt and store user passwords</strong> securely and safely in your database.</p></li>
+			<li><p>How to correctly implement <strong>user signup, login and logout</strong> functionality.</p></li>
+			<li><p>How to <strong>restrict access to logged in users</strong> for certain parts of your application.</p></li>
+			<li><p>And most importantly... <strong>How to put it all together in a clean, scalable and easy-to-maintain way.</strong></p></li>
+			</ul>
+			<p>Sound good to you? <a href="https://lets-go.alexedwards.net/">Get the full version of the book now!</a></p>
+		
+		</div>
+	</section>
+	<footer>
+		
+		<span>
+			<a href="02.09-the-http-handler-interface.html" title="2.9.  The http.Handler Interface">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+	</footer>
+	
+		<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-23830196-1']);
+		_gaq.push(['_trackPageview']);
+		(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+		</script>
+	
 </body>
 </html>

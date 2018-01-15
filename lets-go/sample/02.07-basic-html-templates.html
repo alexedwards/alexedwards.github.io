@@ -1,239 +1,246 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="Alex Edwards">
-  <meta name="copyright" content="Copyright Alex Edwards 2017">
-  <title>Basic HTML Templates - Let's Go (Sample)</title>
-  <link rel="stylesheet" type="text/css" href="assets/css/global.css">
-  <link rel="stylesheet" type="text/css" href="assets/css/html.css">
-  <script>
-            (function(h,o,t,j,a,r){
-                h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-                h._hjSettings={hjid:659192,hjsv:6};
-                a=o.getElementsByTagName('head')[0];
-                r=o.createElement('script');r.async=1;
-                r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-                a.appendChild(r);
-            })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-  </script>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	
+	<title> Basic HTML Templates - Let's Go (Sample)</title>
+	
+	<link rel="stylesheet" type="text/css" href="assets/css/global.css">
+	<link rel="stylesheet" type="text/css" href="assets/css/html.css">
+	
+	<script>
+	    (function(h,o,t,j,a,r){
+	        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+	        h._hjSettings={hjid:659192,hjsv:6};
+	        a=o.getElementsByTagName('head')[0];
+	        r=o.createElement('script');r.async=1;
+	        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+	        a.appendChild(r);
+	    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+	</script>
+	
 </head>
 <body>
-  <div class="cta">
-    <div class="wrapper">
-      You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
-    </div>
-  </div>
-  <header>
-    <nav class="wrapper clearfix">
-      <div class="breadcrumbs">
-        <a href="00.00-lets-go.html">Let's Go</a> <span class="crumbs"><span class="separator">›</span> <a href="02.00-foundations.html">Foundations</a> <span class="separator">›</span> Basic HTML Templates</span>
-      </div>
-      <div class="menu">
-        <span><a href="02.06-url-query-strings.html" title="2.6. URL Query Strings">Previous</a> <span class="separator">·</span></span> <a href="00.01-contents.html" title="Contents">Contents</a> <span><span class="separator">·</span> <a href="02.08-serving-static-files.html" title="2.8. Serving Static Files">Next</a></span>
-      </div>
-    </nav>
-  </header>
-  <section class="wrapper clearfix">
-    <div class="article">
-      <h2 id="02.07-basic-html-templates">2.7. Basic HTML Templates</h2>
-      <p>The next step in building our application is to make the <code>Home</code> function render a proper HTML homepage. Ultimately we're aiming to have it look a bit like this mockup:</p>
-      <p><img src="assets/img/02.07-01.png" alt="02.07-01.png"></p>
-      <p>To make this happen we'll use Go's <a href="https://golang.org/pkg/html/template/"><code>html/template</code></a> package, which provides a family of functions for safely parsing and rendering HTML templates.</p>
-      <p>Let's kick things off by adding two new files to the <code>ui/html</code> directory we made earlier:</p>
-      <ul>
-        <li>
-          <p>A <code>base.html</code> file with the outline HTML template for all our web pages .You might think of this as the 'layout' or 'master' template, if you’re coming from other languages.</p>
-        </li>
-        <li>
-          <p>A <code>home.page.html</code> file filled with our homepage-specific content.</p>
-        </li>
-      </ul>
-      <div class="codeblock sh">
-        <pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://lets-go.alexedwards.net/">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<nav class="wrapper clearfix">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				
+					<span class="crumbs">
+							
+								<span class="separator">&rsaquo;</span> <a href="02.00-foundations.html">Foundations</a>
+						 		<span class="separator">&rsaquo;</span>  Basic HTML Templates
+							
+					</span>
+				
+	 		</div>
+	 		<div class="menu">
+				
+				<span>
+					<a href="02.06-url-query-strings.html" title="2.6.  URL Query Strings">Previous</a>
+					<span class="separator">&middot;</span>
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+				<span>
+					<span class="separator">&middot;</span>
+					<a href="02.08-serving-static-files.html" title="2.8.  Serving Static Files">Next</a>
+				</span>
+				
+			</div>
+ 		</nav>
+	</header>
+	<section class="wrapper clearfix">
+		<div class="article">
+		
+		
+<h2 id="02.07-basic-html-templates">2.7. Basic HTML Templates</h2>
+<p>The next step in building our application is to make the <code>Home</code> function render a proper HTML homepage. Ultimately we&#39;re aiming to have it look a bit like this mockup:</p>
+<p><img src="assets/img/02.07-01.png" alt="02.07-01.png"></p>
+<p>To make this happen we&#39;ll use Go&#39;s <a href="https://golang.org/pkg/html/template/"><code>html/template</code></a> package, which provides a family of functions for safely parsing and rendering HTML templates.</p>
+<p>Let&#39;s kick things off by adding two new files to the <code>ui/html</code> directory we made earlier:</p>
+
+<ul>
+<li><p>A <code>base.html</code> file with the outline HTML template for all our web pages .You might think of this as the &#39;layout&#39; or &#39;master&#39; template, if you’re coming from other languages.</p></li>
+<li><p>A <code>home.page.html</code> file filled with our homepage-specific content.</p></li>
+</ul>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
 <span class='prompt'>$</span> touch ui/html/base.html
 <span class='prompt'>$</span> touch ui/html/home.page.html
-</pre>
-      </div>
-      <div class="group">
-        <div class="codeblock-title">
-          ui/html/base.html
-        </div>
-        <div class="codeblock html">
-          <pre>{{define "base"}}
+</pre></div><div class="group"><div class="codeblock-title">ui/html/base.html</div>
+<div class="codeblock html"><pre><span></span>{{define &quot;base&quot;}}
 <span class="cp">&lt;!doctype html&gt;</span>
-<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;head&gt;</span>
-        <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;title&gt;</span>{{template "page-title" .}} - Snippetbox<span class="nt">&lt;/title&gt;</span>
-    <span class="nt">&lt;/head&gt;</span>
-    <span class="nt">&lt;body&gt;</span>
-        <span class="nt">&lt;header&gt;</span>
-            <span class="nt">&lt;h1&gt;&lt;a</span> <span class="na">href=</span><span class="s">"/"</span><span class="nt">&gt;</span>Snippetbox<span class="nt">&lt;/a&gt;&lt;/h1&gt;</span>
-        <span class="nt">&lt;/header&gt;</span>
-        <span class="nt">&lt;nav&gt;</span>
-            <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"/"</span><span class="nt">&gt;</span>Home<span class="nt">&lt;/a&gt;</span>
-            <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"/snippet/new"</span><span class="nt">&gt;</span>New snippet<span class="nt">&lt;/a&gt;</span>
-        <span class="nt">&lt;/nav&gt;</span>
-        <span class="nt">&lt;section&gt;</span>
-            {{template "page-body" .}}
-        <span class="nt">&lt;/section&gt;</span>
-    <span class="nt">&lt;/body&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
+<span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;en&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>{{template &quot;page-title&quot; .}} - Snippetbox<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">header</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="p">&gt;</span>Snippetbox<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">header</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">nav</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="p">&gt;</span>Home<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/snippet/new&quot;</span><span class="p">&gt;</span>New snippet<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">nav</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">section</span><span class="p">&gt;</span>
+            {{template &quot;page-body&quot; .}}
+        <span class="p">&lt;/</span><span class="nt">section</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
 {{end}}
-</pre>
-        </div>
-      </div>
-      <div class="group">
-        <div class="codeblock-title">
-          ui/html/home.page.html
-        </div>
-        <div class="codeblock html">
-          <pre>{{define "page-title"}}Home{{end}}
+</pre></div></div><div class="group"><div class="codeblock-title">ui/html/home.page.html</div>
+<div class="codeblock html"><pre><span></span>{{define &quot;page-title&quot;}}Home{{end}}
 
-{{define "page-body"}}
-<span class="nt">&lt;h2&gt;</span>Latest Snippets<span class="nt">&lt;/h2&gt;</span>
-<span class="nt">&lt;p&gt;</span>There's nothing to see here yet!<span class="nt">&lt;/p&gt;</span>
+{{define &quot;page-body&quot;}}
+<span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Latest Snippets<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>There&#39;s nothing to see here yet!<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 {{end}}
-</pre>
-        </div>
-      </div>
-      <p>Hopefully this feels familiar if you've used templates in other languages before. The two files are simply regular HTML, with some extra <dfn>actions</dfn> in double curly braces.</p>
-      <p>We use the <code>{{define}}</code> and <code>{{end}}</code> actions to surround chunks of HTML and define distinct <dfn>named templates</dfn>. In our case we've defined three named templates: <code>base</code>, <code>page-title</code> and <code>page-body</code>. It's perfectly valid for a single file to contain multiple templates, like we have in the <code>home.page.html</code> file.</p>
-      <p>The <code>{{template}}</code> action is used to embed (or <dfn>nest</dfn>) one template in another. In our case the <code>base</code> template uses it to embed the <code>page-title</code> and <code>page-body</code> templates. If you're wondering, the dot at the end of the <code>{{template}}</code> action represents any dynamic data that you want to pass to the embedded template. We'll talk more about this later in the book.</p>
-      <p>Now for the exciting part. Let's update our <code>Home</code> function to combine these three templates into a <dfn>template set</dfn>, and then render the combined result as an HTTP response.</p>
-      <div class="group">
-        <div class="codeblock-title">
-          cmd/web/handlers.go
-        </div>
-        <div class="codeblock go">
-          <pre><span class="kn">package</span> <span class="nx">main</span>
+</pre></div></div><p>Hopefully this feels familiar if you&#39;ve used templates in other languages before.  The two files are simply regular HTML, with some extra <dfn>actions</dfn> in double curly braces.</p>
+<p>We use the <code>{{define}}</code> and <code>{{end}}</code> actions to surround chunks of HTML and define distinct <dfn>named templates</dfn>. In our case we&#39;ve defined three named templates: <code>base</code>, <code>page-title</code> and <code>page-body</code>. It&#39;s perfectly valid for a single file to contain multiple templates, like we have in the <code>home.page.html</code> file.</p>
+<p>The <code>{{template}}</code> action is used to embed (or <dfn>nest</dfn>) one template in another. In our case the <code>base</code> template uses it to embed the <code>page-title</code> and <code>page-body</code> templates. If you&#39;re wondering, the dot at the end of the <code>{{template}}</code> action represents any dynamic data that you want to pass to the embedded template. We&#39;ll talk more about this later in the book.</p>
+<p>Now for the exciting part. Let&#39;s update our <code>Home</code> function to combine these three templates into a <dfn>template set</dfn>, and then render the combined result as an HTTP response.</p>
+<div class="group"><div class="codeblock-title">cmd/web/handlers.go</div>
+<div class="codeblock go"><pre><span></span><span class="kn">package</span> <span class="nx">main</span>
 
 <span class="kn">import</span> <span class="p">(</span>
-    <span class="s">"fmt"</span>
-    <span class="s">"html/template"</span> <span class="c1">// New import</span>
-    <span class="s">"log"</span>           <span class="c1">// New import</span>
-    <span class="s">"net/http"</span>
-    <span class="s">"strconv"</span>
+    <span class="s">&quot;fmt&quot;</span>
+    <span class="s">&quot;html/template&quot;</span> <span class="c1">// New import</span>
+    <span class="s">&quot;log&quot;</span>           <span class="c1">// New import</span>
+    <span class="s">&quot;net/http&quot;</span>
+    <span class="s">&quot;strconv&quot;</span>
 <span class="p">)</span>
 
 <span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">"/"</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">&quot;/&quot;</span> <span class="p">{</span>
         <span class="nx">http</span><span class="p">.</span><span class="nx">NotFound</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
         <span class="k">return</span>
     <span class="p">}</span>
 
     <span class="c1">// Initialize a slice containing the paths to the two files.</span>
     <span class="nx">files</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
-        <span class="s">"./ui/html/base.html"</span><span class="p">,</span>
-        <span class="s">"./ui/html/home.page.html"</span><span class="p">,</span>
+        <span class="s">&quot;./ui/html/base.html&quot;</span><span class="p">,</span>
+        <span class="s">&quot;./ui/html/home.page.html&quot;</span><span class="p">,</span>
     <span class="p">}</span>
 
     <span class="c1">// Use the template.ParseFiles() function to read the files and store the</span>
     <span class="c1">// templates in a template set (notice that we can pass the slice of file paths</span>
-    <span class="c1">// as a variadic parameter). If there's an error, we log the detailed error</span>
+    <span class="c1">// as a variadic parameter). If there&#39;s an error, we log the detailed error</span>
     <span class="c1">// message and use the http.Error() function to send a generic 500 Internal</span>
     <span class="c1">// Server Error response.</span>
     <span class="nx">ts</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">template</span><span class="p">.</span><span class="nx">ParseFiles</span><span class="p">(</span><span class="nx">files</span><span class="o">...</span><span class="p">)</span>
     <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
         <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">Error</span><span class="p">())</span>
-        <span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">"Internal Server Error"</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&quot;Internal Server Error&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
         <span class="k">return</span>
     <span class="p">}</span>
 
     <span class="c1">// Our template set contains three named templates: base, page-title and</span>
     <span class="c1">// page-body (note that every template in your template set must have a</span>
-    <span class="c1">// unique name). We use the ExecuteTemplate() method to execute the "base"</span>
+    <span class="c1">// unique name). We use the ExecuteTemplate() method to execute the &quot;base&quot;</span>
     <span class="c1">// template and write its content to our http.RespsonseWriter. The last</span>
     <span class="c1">// parameter to ExecuteTemplate() represents any dynamic data that we want to</span>
-    <span class="c1">// pass in, which for now we'll leave as nil.</span>
-    <span class="nx">err</span> <span class="p">=</span> <span class="nx">ts</span><span class="p">.</span><span class="nx">ExecuteTemplate</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">"base"</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="c1">// pass in, which for now we&#39;ll leave as nil.</span>
+    <span class="nx">err</span> <span class="p">=</span> <span class="nx">ts</span><span class="p">.</span><span class="nx">ExecuteTemplate</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&quot;base&quot;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
     <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
         <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">Error</span><span class="p">())</span>
-        <span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">"Internal Server Error"</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&quot;Internal Server Error&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
     <span class="p">}</span>
 <span class="p">}</span>
 
 <span class="err">···</span>
-</pre>
-        </div>
-      </div>
-      <p>There's a couple of things to discuss here.</p>
-      <ul>
-        <li>
-          <p>We've started using the <a href="https://golang.org/pkg/net/http/#Error"><code>http.Error()</code></a> function to send a response to the user if something goes wrong when rendering the templates. The <code>http.Error()</code> function is a shortcut – a bit like <code>http.NotFound()</code> – which sends a response to the user with a specific status code and plain-text message.</p>
-        </li>
-        <li>
-          <p>The file paths that you pass to <a href="https://golang.org/pkg/html/template/#ParseFiles"><code>template.ParseFiles()</code></a> must be relative to your current working directory, or absolute paths. In the code above I’ve made them relative to the root of the project repository.</p>
-        </li>
-      </ul>
-      <p>So with that said, make sure you're in the root of our project repository and start the application:</p>
-      <div class="codeblock sh">
-        <pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
+</pre></div></div><p>There&#39;s a couple of things to discuss here.</p>
+
+<ul>
+<li><p>We&#39;ve started using the <a href="https://golang.org/pkg/net/http/#Error"><code>http.Error()</code></a> function to send a response to the user if something goes wrong when rendering the templates. The <code>http.Error()</code> function is a shortcut – a bit like <code>http.NotFound()</code> – which sends a response to the user with a specific status code and plain-text message.</p></li>
+<li><p>The file paths that you pass to <a href="https://golang.org/pkg/html/template/#ParseFiles"><code>template.ParseFiles()</code></a> must be relative to your current working directory, or absolute paths. In the code above I’ve made them relative to the root of the project repository.</p></li>
+</ul>
+<p>So with that said, make sure you&#39;re in the root of our project repository and start the application:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> cd $HOME/go/src/snippetbox.org
 <span class='prompt'>$</span> go run cmd/web/*
 <samp>2017/08/18 18:02:08 Starting server on :4000</samp>
-</pre>
-      </div>
-      <p>Open up <a href="http://localhost:4000/"><code>http://localhost:4000/</code></a> in your web browser and you should see that the HTML homepage is starting to take shape nicely.</p>
-      <p><img src="assets/img/02.07-02.png" alt="02.07-02.png"></p>
-      <hr>
-      <h3>Notes</h3>
-      <h4>The Block Action</h4>
-      <p>Go's <code>html/template</code> package also provides a <code>{{block}}...{{end}}</code> action for embedding templates in each other. This is similar to the <code>{{template}}</code> action, except you can specify some default content if the template being embedded <em>doesn't exist in the current template set</em>.</p>
-      <p>In the context of a web application, this is particularly handy when you want to provide some default content (like a sidebar of footer) that individual pages can override on a case-by-case basis if they need to.</p>
-      <p>Syntactically you use it like this:</p>
-      <div class="codeblock html">
-        <pre>{{define "base"}}
-    <span class="nt">&lt;h1&gt;</span>An example template<span class="nt">&lt;/h1&gt;</span>
-    {{block "sidebar" .}}
-        <span class="nt">&lt;p&gt;</span>My default sidebar content<span class="nt">&lt;/p&gt;</span>
+</pre></div><p>Open up <a href="http://localhost:4000/"><code>http://localhost:4000/</code></a> in your web browser and you should see that the HTML homepage is starting to take shape nicely.</p>
+<p><img src="assets/img/02.07-02.png" alt="02.07-02.png"></p>
+<hr>
+<h3>Notes</h3>
+
+<h4>The Block Action</h4>
+<p>Go&#39;s <code>html/template</code> package also provides a <code>{{block}}...{{end}}</code> action for embedding templates in each other. This is similar to the <code>{{template}}</code> action, except you can specify some default content if the template being embedded <em>doesn&#39;t exist in the current template set</em>.</p>
+<p>In the context of a web application, this is particularly handy when you want to provide some default content (like a sidebar of footer) that individual pages can override on a case-by-case basis if they need to.</p>
+<p>Syntactically you use it like this:</p>
+<div class="codeblock html"><pre><span></span>{{define &quot;base&quot;}}
+    <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>An example template<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+    {{block &quot;sidebar&quot; .}}
+        <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>My default sidebar content<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
     {{end}}
 {{end}}
-</pre>
-      </div>
-      <p>You can also, if you wish, not specify any default content between the <code>{{block}}</code> and <code>{{end}}</code> actions. In that case, if the embedded template doesn't exist in the template set then nothing will be rendered at all.</p>
-      <h4>Removing Whitespace</h4>
-      <p>If you <em>view source</em> of the homepage in your browser, you'll see that there is whitespace where the action tags are. In most cases this won't cause any problems and you shouldn't worry about it. But if it's important to you, you can remove the whitespace by pre/post-fixing your actions with the hyphen character.</p>
-      <div class="codeblock html">
-        <pre>{{- define "base" -}}
+</pre></div><p>You can also, if you wish, not specify any default content between the <code>{{block}}</code> and <code>{{end}}</code> actions. In that case, if the embedded template doesn&#39;t exist in the template set then nothing will be rendered at all.</p>
+
+<h4>Removing Whitespace</h4>
+<p>If you <em>view source</em> of the homepage in your browser, you&#39;ll see that there is whitespace where the action tags are. In most cases this won&#39;t cause any problems and you shouldn&#39;t worry about it. But if it&#39;s important to you, you can remove the whitespace by pre/post-fixing your actions with the hyphen character.</p>
+<div class="codeblock html"><pre><span></span>{{- define &quot;base&quot; -}}
 <span class="cp">&lt;!doctype html&gt;</span>
-<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;head&gt;</span>
-        <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">"utf-8"</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;title&gt;</span>{{template "page-title" .}} - Snippetbox<span class="nt">&lt;/title&gt;</span>
-    <span class="nt">&lt;/head&gt;</span>
-    <span class="nt">&lt;body&gt;</span>
-        <span class="nt">&lt;header&gt;</span>
-            <span class="nt">&lt;h1&gt;&lt;a</span> <span class="na">href=</span><span class="s">"/"</span><span class="nt">&gt;</span>Snippetbox<span class="nt">&lt;/a&gt;&lt;/h1&gt;</span>
-        <span class="nt">&lt;/header&gt;</span>
-        <span class="nt">&lt;nav&gt;</span>
-            <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"/"</span><span class="nt">&gt;</span>Home<span class="nt">&lt;/a&gt;</span>
-            <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"/snippet/new"</span><span class="nt">&gt;</span>New snippet<span class="nt">&lt;/a&gt;</span>
-        <span class="nt">&lt;/nav&gt;</span>
-        <span class="nt">&lt;section&gt;</span>
-            {{- template "page-body" . -}}
-        <span class="nt">&lt;/section&gt;</span>
-    <span class="nt">&lt;/body&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
+<span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;en&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>{{template &quot;page-title&quot; .}} - Snippetbox<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">header</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="p">&gt;</span>Snippetbox<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">header</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">nav</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/&quot;</span><span class="p">&gt;</span>Home<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/snippet/new&quot;</span><span class="p">&gt;</span>New snippet<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">nav</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">section</span><span class="p">&gt;</span>
+            {{- template &quot;page-body&quot; . -}}
+        <span class="p">&lt;/</span><span class="nt">section</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
 {{- end -}}
-</pre>
-      </div>
-    </div>
-  </section>
-  <footer>
-    <span><a href="02.06-url-query-strings.html" title="2.6. URL Query Strings">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.08-serving-static-files.html" title="2.8. Serving Static Files">Next</a></span>
-  </footer>
-  <script type="text/javascript">
-                var _gaq = _gaq || [];
-                _gaq.push(['_setAccount', 'UA-23830196-1']);
-                _gaq.push(['_trackPageview']);
-                (function() {
-                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-                })();
-  </script>
+</pre></div>
+		
+		</div>
+	</section>
+	<footer>
+		
+		<span>
+			<a href="02.06-url-query-strings.html" title="2.6.  URL Query Strings">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+		&middot;
+		<span>
+			<a href="02.08-serving-static-files.html" title="2.8.  Serving Static Files">Next</a>
+		</span>
+		
+	</footer>
+	
+		<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-23830196-1']);
+		_gaq.push(['_trackPageview']);
+		(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+		</script>
+	
 </body>
 </html>

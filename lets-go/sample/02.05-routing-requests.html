@@ -1,191 +1,211 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="Alex Edwards">
-  <meta name="copyright" content="Copyright Alex Edwards 2017">
-  <title>Routing Requests - Let's Go (Sample)</title>
-  <link rel="stylesheet" type="text/css" href="assets/css/global.css">
-  <link rel="stylesheet" type="text/css" href="assets/css/html.css">
-  <script>
-            (function(h,o,t,j,a,r){
-                h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-                h._hjSettings={hjid:659192,hjsv:6};
-                a=o.getElementsByTagName('head')[0];
-                r=o.createElement('script');r.async=1;
-                r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-                a.appendChild(r);
-            })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-  </script>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Alex Edwards">
+	<meta name="copyright" content="Copyright Alex Edwards 2017">
+	
+	<title> Routing Requests - Let's Go (Sample)</title>
+	
+	<link rel="stylesheet" type="text/css" href="assets/css/global.css">
+	<link rel="stylesheet" type="text/css" href="assets/css/html.css">
+	
+	<script>
+	    (function(h,o,t,j,a,r){
+	        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+	        h._hjSettings={hjid:659192,hjsv:6};
+	        a=o.getElementsByTagName('head')[0];
+	        r=o.createElement('script');r.async=1;
+	        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+	        a.appendChild(r);
+	    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+	</script>
+	
 </head>
 <body>
-  <div class="cta">
-    <div class="wrapper">
-      You're reading a sample of this book. <a href="https://gumroad.com/l/letsgo">Grab the full version here.</a>
-    </div>
-  </div>
-  <header>
-    <nav class="wrapper clearfix">
-      <div class="breadcrumbs">
-        <a href="00.00-lets-go.html">Let's Go</a> <span class="crumbs"><span class="separator">›</span> <a href="02.00-foundations.html">Foundations</a> <span class="separator">›</span> Routing Requests</span>
-      </div>
-      <div class="menu">
-        <span><a href="02.04-project-structure.html" title="2.4. Project Structure">Previous</a> <span class="separator">·</span></span> <a href="00.01-contents.html" title="Contents">Contents</a> <span><span class="separator">·</span> <a href="02.06-url-query-strings.html" title="2.6. URL Query Strings">Next</a></span>
-      </div>
-    </nav>
-  </header>
-  <section class="wrapper clearfix">
-    <div class="article">
-      <h2 id="02.05-routing-requests">2.5. Routing Requests</h2>
-      <p>Now let's concentrate on adding a couple of new routes to our Snippetbox web application, so that it looks like this:</p>
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align: left">URL Path</th>
-            <th style="text-align: left">Handler</th>
-            <th style="text-align: left">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="text-align: left">/</td>
-            <td style="text-align: left">Home</td>
-            <td style="text-align: left">Display a "Hello from Snippetbox" message</td>
-          </tr>
-          <tr>
-            <td style="text-align: left">/snippet</td>
-            <td style="text-align: left">ShowSnippet</td>
-            <td style="text-align: left">Display a specific snippet</td>
-          </tr>
-          <tr>
-            <td style="text-align: left">/snippet/new</td>
-            <td style="text-align: left">NewSnippet</td>
-            <td style="text-align: left">Display the new snippet form</td>
-          </tr>
-        </tbody>
-      </table>
-      <p>First, open up the <code>handlers.go</code> file and add a pair of placeholder functions for <code>ShowSnippet</code> and <code>NewSnippet</code>:</p>
-      <div class="group">
-        <div class="codeblock-title">
-          cmd/web/handlers.go
-        </div>
-        <div class="codeblock go">
-          <pre><span class="kn">package</span> <span class="nx">main</span>
+	
+	<div class="cta">
+		<div class="wrapper">
+		You're reading a sample of this book. <a href="https://lets-go.alexedwards.net/">Grab the full version here.</a>
+		</div>
+	</div>
+	
+	<header>
+		<nav class="wrapper clearfix">
+			<div class="breadcrumbs">
+				<a href="00.00-lets-go.html">Let's Go</a>
+				
+					<span class="crumbs">
+							
+								<span class="separator">&rsaquo;</span> <a href="02.00-foundations.html">Foundations</a>
+						 		<span class="separator">&rsaquo;</span>  Routing Requests
+							
+					</span>
+				
+	 		</div>
+	 		<div class="menu">
+				
+				<span>
+					<a href="02.04-project-structure.html" title="2.4.  Project Structure">Previous</a>
+					<span class="separator">&middot;</span>
+				</span>
+				
+				<a href="00.01-contents.html" title="Contents">Contents</a>
+				
+				<span>
+					<span class="separator">&middot;</span>
+					<a href="02.06-url-query-strings.html" title="2.6.  URL Query Strings">Next</a>
+				</span>
+				
+			</div>
+ 		</nav>
+	</header>
+	<section class="wrapper clearfix">
+		<div class="article">
+		
+		
+<h2 id="02.05-routing-requests">2.5. Routing Requests</h2>
+<p>Now let&#39;s concentrate on adding a couple of new routes to our Snippetbox web application, so that it looks like this:</p>
+
+<table><thead>
+<tr>
+<th style="text-align: left">URL Path</th>
+<th style="text-align: left">Handler</th>
+<th style="text-align: left">Action</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: left">/</td>
+<td style="text-align: left">Home</td>
+<td style="text-align: left">Display a &quot;Hello from Snippetbox&quot; message</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet</td>
+<td style="text-align: left">ShowSnippet</td>
+<td style="text-align: left">Display a specific snippet</td>
+</tr>
+<tr>
+<td style="text-align: left">/snippet/new</td>
+<td style="text-align: left">NewSnippet</td>
+<td style="text-align: left">Display the new snippet form</td>
+</tr>
+</tbody></table>
+<p>First, open up the <code>handlers.go</code> file and add a pair of placeholder functions for <code>ShowSnippet</code> and <code>NewSnippet</code>:</p>
+<div class="group"><div class="codeblock-title">cmd/web/handlers.go</div>
+<div class="codeblock go"><pre><span></span><span class="kn">package</span> <span class="nx">main</span>
 
 <span class="kn">import</span> <span class="p">(</span>
-    <span class="s">"net/http"</span>
+    <span class="s">&quot;net/http&quot;</span>
 <span class="p">)</span>
 
 <span class="kd">func</span> <span class="nx">Home</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">"/"</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span> <span class="o">!=</span> <span class="s">&quot;/&quot;</span> <span class="p">{</span>
         <span class="nx">http</span><span class="p">.</span><span class="nx">NotFound</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span>
         <span class="k">return</span>
     <span class="p">}</span>
 
-    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">"Hello from Snippetbox"</span><span class="p">))</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Hello from Snippetbox&quot;</span><span class="p">))</span>
 <span class="p">}</span>
 
 <span class="c1">// Add a placeholder ShowSnippet handler function.</span>
 <span class="kd">func</span> <span class="nx">ShowSnippet</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">"Display a specific snippet..."</span><span class="p">))</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Display a specific snippet...&quot;</span><span class="p">))</span>
 <span class="p">}</span>
 
 <span class="c1">// Add a placeholder NewSnippet handler function.</span>
 <span class="kd">func</span> <span class="nx">NewSnippet</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">"Display the new snippet form..."</span><span class="p">))</span>
+    <span class="nx">w</span><span class="p">.</span><span class="nx">Write</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&quot;Display the new snippet form...&quot;</span><span class="p">))</span>
 <span class="p">}</span>
-</pre>
-        </div>
-      </div>
-      <p>And then register them with our serve mux, in exactly the same way as we did with the first route:</p>
-      <div class="group">
-        <div class="codeblock-title">
-          cmd/web/main.go
-        </div>
-        <div class="codeblock go">
-          <pre><span class="kn">package</span> <span class="nx">main</span>
+</pre></div></div><p>And then register them with our serve mux, in exactly the same way as we did with the first route:</p>
+<div class="group"><div class="codeblock-title">cmd/web/main.go</div>
+<div class="codeblock go"><pre><span></span><span class="kn">package</span> <span class="nx">main</span>
 
 <span class="kn">import</span> <span class="p">(</span>
-    <span class="s">"log"</span>
-    <span class="s">"net/http"</span>
+    <span class="s">&quot;log&quot;</span>
+    <span class="s">&quot;net/http&quot;</span>
 <span class="p">)</span>
 
 <span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
     <span class="c1">// Register the two new routes with the serve mux. Again, notice how we use</span>
     <span class="c1">// the http.HandlerFunc() adapter to convert the two functions to handlers?</span>
     <span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
-    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">"/"</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
-    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">"/snippet"</span><span class="p">,</span> <span class="nx">ShowSnippet</span><span class="p">)</span>
-    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">"/snippet/new"</span><span class="p">,</span> <span class="nx">NewSnippet</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/&quot;</span><span class="p">,</span> <span class="nx">Home</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/snippet&quot;</span><span class="p">,</span> <span class="nx">ShowSnippet</span><span class="p">)</span>
+    <span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/snippet/new&quot;</span><span class="p">,</span> <span class="nx">NewSnippet</span><span class="p">)</span>
 
-    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">"Starting server on :4000"</span><span class="p">)</span>
-    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">":4000"</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Starting server on :4000&quot;</span><span class="p">)</span>
+    <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;:4000&quot;</span><span class="p">,</span> <span class="nx">mux</span><span class="p">)</span>
     <span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
 <span class="p">}</span>
-</pre>
-        </div>
-      </div>
-      <p>Make sure that both files are saved, and restart the web application:</p>
-      <div class="codeblock sh">
-        <pre><span class='prompt'>$</span> $HOME/go/src/snippetbox.org
+</pre></div></div><p>Make sure that both files are saved, and restart the web application:</p>
+<div class="codeblock sh"><pre><span class='prompt'>$</span> $HOME/go/src/snippetbox.org
 <span class='prompt'>$</span> go run cmd/web/*
 <samp>2017/08/17 18:32:04 Starting server on :4000</samp>
-</pre>
-      </div>
-      <p>If you visit the following links in your browser you should now get the appropriate response for each route, looking a bit like the screenshots below:</p>
-      <ul>
-        <li>
-          <a href="http://localhost:4000/snippet"><code>http://localhost:4000/snippet</code></a>
-        </li>
-        <li>
-          <a href="http://localhost:4000/snippet/new"><code>http://localhost:4000/snippet/new</code></a>
-        </li>
-      </ul>
-      <p><img src="assets/img/02.05-01.png" alt="02.05-01.png"></p>
-      <p><img src="assets/img/02.05-02.png" alt="02.05-02.png"></p>
-      <h3>Fixed Paths and Subtrees</h3>
-      <p>Our two new routes – <code>"/snippet"</code> and <code>"/snippet/new"</code> – are both examples of <dfn>fixed paths</dfn> because they don't end in a trailing slash. In Go's serve mux, fixed path patterns like these are only matched (and the corresponding handler called) when the request URL path <em>exactly</em> matches the fixed path.</p>
-      <p>Go's serve mux also supports <dfn>subtree paths</dfn>, which do end with a trailing slash. An example of a subtree path is something like <code>"/static/"</code>. Subtree path patterns are matched (and the corresponding handler called) whenever the <em>start</em> of a request URL path matches the subtree path. If it helps your understanding, you can think of subtree paths as acting a bit like they have a wildcard at the end, like <code>"/static/**"</code>.</p>
-      <p>This helps explain why our <code>"/"</code> pattern was acting like a catch-all. The pattern is a subtree path (because it ends in a trailing slash) so it essentially means <em>match a single slash, followed by anything (or nothing at all)</em>.</p>
-      <p>I should also mention that Go's serve mux gives longer patterns precedence over shorter ones. If a serve mux contains multiple patterns which match a request, it will always dispatch the request to the handler with the longest pattern.</p>
-      <h3>The Default Serve Mux</h3>
-      <p>As an aside, you might have read or watched other tutorials which use the <a href="https://golang.org/pkg/net/http/#Handle"><code>http.Handle()</code></a> and <a href="https://golang.org/pkg/net/http/#HandleFunc"><code>http.HandleFunc()</code></a> functions to declare their routes.</p>
-      <p>Both these functions register routes with the <dfn>default serve mux</dfn>. There's nothing special about the default serve mux. It's just regular serve mux like we've already been using, which is initialized by default and stored in a <code>net/http</code> global variable. Here's the relevant line from the Go source code:</p>
-      <div class="codeblock go">
-        <pre><span class="kd">var</span> <span class="nx">DefaultServeMux</span> <span class="p">=</span> <span class="nx">NewServeMux</span><span class="p">()</span>
-</pre>
-      </div>
-      <p>I've avoided using this in our application because it poses a <strong>security risk</strong>.</p>
-      <p>Because the default serve mux is stored in a global variable, any package is able to access it and register a route – including any third-party packages that your application imports. If one of those third-party packages is compromised, they could use the default serve mux to expose a malicious handler to the web.</p>
-      <p>So as a rule of thumb it's a good idea to avoid the default serve mux. Use your own locally-scoped serve mux instead, like we have been so far.</p>
-      <hr>
-      <h3>Notes</h3>
-      <h4>Third-Party Routers</h4>
-      <p>The functionality that Go's serve mux provides is pretty basic. It doesn't support routing based on the request method, it doesn't support regexp-based patterns, and it doesn't support semantic URLs with variables in them. If you're coming from a background of using frameworks like Rails, Django or Laravel you might find this a bit restrictive... and surprising!</p>
-      <p>But the reality is that Go's serve mux can still get you quite far, and for many applications it's perfectly sufficient. For the times that you need more, there's a huge choice of third-party routers that you can use. We'll take a look at these later in the book.</p>
-      <h4>Domain Matching</h4>
-      <p>It's possible to include host names in your route patterns. For example, the route below will only match if the request host and path is exactly <code>www.example.org/foo</code>:</p>
-      <div class="codeblock go">
-        <pre><span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
-<span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">"www.example.org/foo"</span><span class="p">,</span> <span class="nx">FooHandler</span><span class="p">)</span>
-</pre>
-      </div>
-    </div>
-  </section>
-  <footer>
-    <span><a href="02.04-project-structure.html" title="2.4. Project Structure">Previous</a></span> · <a href="00.01-contents.html" title="Contents">Contents</a> · <span><a href="02.06-url-query-strings.html" title="2.6. URL Query Strings">Next</a></span>
-  </footer>
-  <script type="text/javascript">
-                var _gaq = _gaq || [];
-                _gaq.push(['_setAccount', 'UA-23830196-1']);
-                _gaq.push(['_trackPageview']);
-                (function() {
-                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-                })();
-  </script>
+</pre></div><p>If you visit the following links in your browser you should now get the appropriate response for each route, looking a bit like the screenshots below:</p>
+
+<ul>
+<li><a href="http://localhost:4000/snippet"><code>http://localhost:4000/snippet</code></a></li>
+<li><a href="http://localhost:4000/snippet/new"><code>http://localhost:4000/snippet/new</code></a></li>
+</ul>
+<p><img src="assets/img/02.05-01.png" alt="02.05-01.png"></p>
+<p><img src="assets/img/02.05-02.png" alt="02.05-02.png"></p>
+
+<h3>Fixed Paths and Subtrees</h3>
+<p>Our two new routes – <code>&quot;/snippet&quot;</code> and <code>&quot;/snippet/new&quot;</code> – are both examples of <dfn>fixed paths</dfn> because they don&#39;t end in a trailing slash. In Go&#39;s serve mux, fixed path patterns like these are only matched (and the corresponding handler called) when the request URL path <em>exactly</em> matches the fixed path.</p>
+<p>Go&#39;s serve mux also supports <dfn>subtree paths</dfn>, which do end with a trailing slash. An example of a subtree path is something like <code>&quot;/static/&quot;</code>. Subtree path patterns are matched (and the corresponding handler called) whenever the <em>start</em> of a request URL path matches the subtree path. If it helps your understanding, you can think of subtree paths as acting a bit like they have a wildcard at the end, like <code>&quot;/static/**&quot;</code>.</p>
+<p>This helps explain why our <code>&quot;/&quot;</code> pattern was acting like a catch-all. The pattern is a subtree path (because it ends in a trailing slash) so it essentially means <em>match a single slash, followed by anything (or nothing at all)</em>.</p>
+<p>I should also mention that Go&#39;s serve mux gives longer patterns precedence over shorter ones. If a serve mux contains multiple patterns which match a request, it will always dispatch the request to the handler with the longest pattern.</p>
+
+<h3>The Default Serve Mux</h3>
+<p>As an aside, you might have read or watched other tutorials which use the <a href="https://golang.org/pkg/net/http/#Handle"><code>http.Handle()</code></a> and <a href="https://golang.org/pkg/net/http/#HandleFunc"><code>http.HandleFunc()</code></a> functions to declare their routes.</p>
+<p>Both these functions register routes with the <dfn>default serve mux</dfn>. There&#39;s nothing special about the default serve mux. It&#39;s just regular serve mux like we&#39;ve already been using, which is initialized by default and stored in a <code>net/http</code> global variable. Here&#39;s the relevant line from the Go source code:</p>
+<div class="codeblock go"><pre><span></span><span class="kd">var</span> <span class="nx">DefaultServeMux</span> <span class="p">=</span> <span class="nx">NewServeMux</span><span class="p">()</span>
+</pre></div><p>I&#39;ve avoided using this in our application because it poses a <strong>security risk</strong>.</p>
+<p>Because the default serve mux is stored in a global variable, any package is able to access it and register a route – including any third-party packages that your application imports. If one of those third-party packages is compromised, they could use the default serve mux to expose a malicious handler to the web.</p>
+<p>So as a rule of thumb it&#39;s a good idea to avoid the default serve mux. Use your own locally-scoped serve mux instead, like we have been so far.</p>
+<hr>
+<h3>Notes</h3>
+
+<h4>Third-Party Routers</h4>
+<p>The functionality that Go&#39;s serve mux provides is pretty basic. It doesn&#39;t support routing based on the request method, it doesn&#39;t support regexp-based patterns, and it doesn&#39;t support semantic URLs with variables in them. If you&#39;re coming from a background of using frameworks like Rails, Django or Laravel you might find this a bit restrictive... and surprising!</p>
+<p>But the reality is that Go&#39;s serve mux can still get you quite far, and for many applications it&#39;s perfectly sufficient. For the times that you need more, there&#39;s a huge choice of third-party routers that you can use. We&#39;ll take a look at these later in the book.</p>
+
+<h4>Domain Matching</h4>
+<p>It&#39;s possible to include host names in your route patterns. For example, the route below will only match if the request host and path is exactly <code>www.example.org/foo</code>:</p>
+<div class="codeblock go"><pre><span></span><span class="nx">mux</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;www.example.org/foo&quot;</span><span class="p">,</span> <span class="nx">FooHandler</span><span class="p">)</span>
+</pre></div>
+		
+		</div>
+	</section>
+	<footer>
+		
+		<span>
+			<a href="02.04-project-structure.html" title="2.4.  Project Structure">Previous</a>
+		</span>
+		&middot;
+		
+		<a href="00.01-contents.html" title="Contents">Contents</a>
+		
+		&middot;
+		<span>
+			<a href="02.06-url-query-strings.html" title="2.6.  URL Query Strings">Next</a>
+		</span>
+		
+	</footer>
+	
+		<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-23830196-1']);
+		_gaq.push(['_trackPageview']);
+		(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+		</script>
+	
 </body>
 </html>
