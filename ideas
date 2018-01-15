@@ -1,3 +1,19 @@
+PATTERN
+-------
+
+Brainstorm -> Outline -> Code -> Write -> Edit
+
+Brainstorming: What is the post about? What does it prove or illustrate? Why is it important to write it? What's unique about my angle? What are the main elements of the post? What are the gotchas? What are the condraditions? What are the extensions? What could be the title of the post?
+
+TODO
+----
+
+> Disable directory listings in Go
+> Configuring sql.DB for performance and robustness
+
+DONE
+-----
+
 - Serving Static Sites in Go
 - Gorilla vs Pat vs Regex: A router showdown
 - A Recap of Request Handling in Go
@@ -9,18 +25,17 @@
 - PostgreSQL (tutorial post)
 - Passing context in different ways
 - Redis
+- Rate limiting
+- Validation patterns
 
-TODO: Add SQL syntax highlighting
+IDEAS
+-----
 
--> Middleware list (post and repository)
--> Gzip (post and repository)
--> Restful applications / controllers / custom routing (explain /user/f doesn't match /user/foo but /user/ does)
-
--> A pattern for middleware packages (Gorilla CRSF style)
--> Sessions with request context
-
-* Validation patterns
-* Rate limiting
+* Middleware list (post and repository)
+* Gzip (post and repository)
+* Restful applications / controllers / custom routing (explain /user/f doesn't match /user/foo but /user/ does)
+* A pattern for middleware packages (Gorilla CRSF style)
+* Sessions with request context
 * MongoDB
 * Database-backed sessions
 * Cookies / Flash / Session
@@ -65,11 +80,3 @@ Some useful links:
 http://talks.golang.org/2012/concurrency.slide
 </ul>
 
-process
--------
-
-1. do in real life
-2. add code
-3. speak parts
-4. edit - shortern sentences. cut cruft. don't be afraid to order the reader. spellcheck.
-5. publicise
