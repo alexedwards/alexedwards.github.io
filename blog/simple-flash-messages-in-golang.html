@@ -44,6 +44,8 @@
 		<span class="dates">
 			19th November 2013
 			
+			&middot; <strong>Updated 22nd January 2018</strong>
+			
 		</span>
 		
 		<span class="tags">
@@ -189,15 +191,16 @@ No flash messages</samp>
 
 <h2>Additional Tools</h2>
 
-<p>If you don't want to roll your own helpers for flash messages, or need them to be 'signed' to prevent tampering, then the <a href="http://www.gorillatoolkit.org/pkg/sessions">Gorilla Sessions</a> package is a good option. Here's the previous example implemented with Gorilla instead:</p>
+<p>If you don't want to roll your own helpers for flash messages then the <a href="http://www.gorillatoolkit.org/pkg/sessions">Gorilla Sessions</a> package is a good option. This stores session data in a signed (and optionally encrypted) cookie, which stops the data from being tampered with. Here's the previous example implemented with Gorilla instead:</p>
 
-<figure class="plain"><code><pre>
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
   "fmt"
-  "github.com/gorilla/sessions"
   "net/http"
+
+  "github.com/gorilla/sessions"
 )
 
 func main() {

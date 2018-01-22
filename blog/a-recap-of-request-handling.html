@@ -44,7 +44,7 @@
 		<span class="dates">
 			12th September 2013
 			
-			&middot; <em>Updated 6th October 2014</em>
+			&middot; <strong>Updated 21st January 2018</strong>
 			
 		</span>
 		
@@ -57,11 +57,11 @@
 
 <p>A <a href="http://golang.org/pkg/net/http/#ServeMux">ServeMux</a> is essentially a HTTP request router (or <em>multiplexor</em>). It compares incoming requests against a list of predefined URL paths, and calls the associated handler for the path whenever a match is found.</p>
 
-<p>Handlers are responsible for writing response headers and bodies. Almost any object can be a handler, so long as it satisfies the <a href="http://golang.org/pkg/net/http/#Handler">http.Handler interface</a>. In lay terms, that simply means it must have a <code>ServeHTTP</code> method with the following signature:</p>
+<p>Handlers are responsible for writing response headers and bodies. Almost any object can be a handler, so long as it satisfies the <a href="http://golang.org/pkg/net/http/#Handler"><code>http.Handler</code> interface</a>. In lay terms, that simply means it must have a <code>ServeHTTP</code> method with the following signature:</p>
 
 <p><code>ServeHTTP(http.ResponseWriter, *http.Request)</code></p>
 
-<p>Go's HTTP package ships with a few functions to generate common handlers, such as <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a>,  <a href="http://golang.org/pkg/net/http/#NotFoundHandler">NotFoundHandler</a> and <a href="http://golang.org/pkg/net/http/#RedirectHandler">RedirectHandler</a>. Let's begin with a simple but contrived example:</p>
+<p>Go's HTTP package ships with a few functions to generate common handlers, such as <a href="http://golang.org/pkg/net/http/#FileServer"><code>FileServer</code></a>,  <a href="http://golang.org/pkg/net/http/#NotFoundHandler"><code>NotFoundHandler</code></a> and <a href="http://golang.org/pkg/net/http/#RedirectHandler"><code>RedirectHandler</code></a>. Let's begin with a simple but contrived example:</p>
 
 <figure class="shell"><code><pre>
 $ mkdir handler-example
@@ -90,10 +90,10 @@ func main() {
 <p>Let's step through this quickly:</p>
 
 <ul>
-  <li>In the <code>main</code> function we use the <a href="http://golang.org/pkg/net/http/#NewServeMux">http.NewServeMux</a> function to create an empty ServeMux.
-  <li>We then use the <a href="http://golang.org/pkg/net/http/#RedirectHandler">http.RedirectHandler</a> function to create a new handler. This handler 307 redirects all requests it receives to <code>http://example.org</code>.</li>
-  <li>Next we use the <a href="http://golang.org/pkg/net/http/#ServeMux.Handle">ServeMux.Handle</a> function to register this with our new ServeMux, so it acts as the handler for all incoming requests with the URL path <code>/foo</code>.</li>
-  <li>Finally we create a new server and start listening for incoming requests with the <a href="http://golang.org/pkg/net/http/#ListenAndServe">http.ListenAndServe</a> function, passing in our ServeMux for it to match requests against.</li>
+  <li>In the <code>main</code> function we use the <a href="http://golang.org/pkg/net/http/#NewServeMux"><code>http.NewServeMux</code></a> function to create an empty ServeMux.
+  <li>We then use the <a href="http://golang.org/pkg/net/http/#RedirectHandler"><code>http.RedirectHandler</code></a> function to create a new handler. This handler 307 redirects all requests it receives to <code>http://example.org</code>.</li>
+  <li>Next we use the <a href="http://golang.org/pkg/net/http/#ServeMux.Handle"><code>mux.Handle</code></a> function to register this with our new ServeMux, so it acts as the handler for all incoming requests with the URL path <code>/foo</code>.</li>
+  <li>Finally we create a new server and start listening for incoming requests with the <a href="http://golang.org/pkg/net/http/#ListenAndServe"><code>http.ListenAndServe</code></a> function, passing in our ServeMux for it to match requests against.</li>
 </ul>
 
 <p>Go ahead and run the application:</p>
@@ -103,11 +103,11 @@ $ go run main.go
 <samp>Listening...</samp>
 </pre></code></figure>
 
-<p>And visit <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> in your browser. You should find that your request gets successfully redirected.</p>
+<p>And visit <a href="http://localhost:3000/foo"><code>http://localhost:3000/foo</code></a> in your browser. You should find that your request gets successfully redirected.</p>
 
 <p>The eagle-eyed of you might have noticed something interesting: The signature for the ListenAndServe function is <code>ListenAndServe(addr string, handler Handler)</code>, but we passed a ServeMux as the second parameter.</p>
 
-<p>We were able to do this because ServeMux also <a href="http://golang.org/pkg/net/http/#ServeMux.ServeHTTP">has a ServeHTTP method</a>, meaning that it too satisfies the Handler interface.</p>
+<p>We were able to do this because the ServeMux type also <a href="http://golang.org/pkg/net/http/#ServeMux.ServeHTTP">has a <code>ServeHTTP</code> method</a>, meaning that it too satisfies the Handler interface.</p>
 
 <p>For me it simplifies things to think of a ServeMux as <em>just being a special kind of handler</em>, which instead of providing a response itself passes the request on to a second handler. This isn't as much of a leap as it first sounds &ndash; chaining handlers together is fairly commonplace in Go.</p>
 
@@ -165,7 +165,7 @@ func main() {
 
 <p>Now when we run the application, the ServeMux will pass any request for <code>/time</code> straight on to our <code>timeHandler.ServeHTTP</code> method.</p>
 
-<p>Go ahead and give it a try: <a href="http://localhost:3000/time">http://localhost:3000/time</a>.</p>
+<p>Go ahead and give it a try: <a href="http://localhost:3000/time"><code>http://localhost:3000/time</code></a>.</p>
 
 <p>Notice too that we could easily reuse the <code>timeHandler</code> in multiple routes:</p>
 
@@ -188,11 +188,11 @@ func main() {
 
 <h2>Functions as Handlers</h2>
 
-<p>For simple cases (like the example above) defining new custom types and ServeHTTP methods feels a bit verbose. Let's look at an alternative approach, where we leverage Go's <a href="http://golang.org/pkg/net/http/#HandlerFunc">http.HandlerFunc</a> type to coerce a normal function into satisfying the Handler interface.</p>
+<p>For simple cases (like the example above) defining new custom types and ServeHTTP methods feels a bit verbose. Let's look at an alternative approach, where we leverage Go's <a href="http://golang.org/pkg/net/http/#HandlerFunc"><code>http.HandlerFunc</code></a> type to coerce a normal function into satisfying the Handler interface.</p>
 
-<p>Any function which has the signature <code>func(http.ResponseWriter, *http.Request)</code> can be converted into a HandlerFunc type. This is useful because HandleFunc objects come with an inbuilt ServeHTTP method which &ndash; rather cleverly and conveniently &ndash; executes the content of the original function.</p>
+<p>Any function which has the signature <code>func(http.ResponseWriter, *http.Request)</code> can be converted into a HandlerFunc type. This is useful because HandleFunc objects come with an inbuilt <code>ServeHTTP</code> method which &ndash; rather cleverly and conveniently &ndash; executes the content of the original function.</p>
 
-<p>If that sounds confusing, try taking a look at the <a href="http://golang.org/src/pkg/net/http/server.go?s=35455:35502#L1221">relevant source code</a>. You'll see that it's a very succinct way of making a function satisfy the Handler interface.</p>
+<p>If that sounds confusing, try taking a look at the <a href="https://golang.org/src/net/http/server.go?s=57023:57070#L1904">relevant source code</a>. You'll see that it's a very succinct way of making a function satisfy the Handler interface.</p>
 
 <p>Let's reproduce the timeHandler application using this technique:</p>
 
@@ -225,7 +225,7 @@ func main() {
 
 
 
-<p>In fact, converting a function to a HandlerFunc type and then adding it to a ServeMux like this is so common that Go provides a shortcut: the <a href="http://golang.org/pkg/net/http/#ServeMux.HandleFunc">ServeMux.HandleFunc</a> method.</p>
+<p>In fact, converting a function to a HandlerFunc type and then adding it to a ServeMux like this is so common that Go provides a shortcut: the <a href="http://golang.org/pkg/net/http/#ServeMux.HandleFunc"><code>mux.HandleFunc</code></a> method.</p>
 
 <p>This is what the <code>main()</code> function would have looked like if we'd used this shortcut instead:</p>
 
@@ -304,8 +304,6 @@ func timeHandler(format string) http.HandlerFunc {
 }
 </pre></code></figure>
 
-
-
 <h2>The DefaultServeMux</h2>
 
 <p>You've probably seen DefaultServeMux mentioned in lots of places, from the simplest Hello World examples to the Go source code.</p>
@@ -313,6 +311,12 @@ func timeHandler(format string) http.HandlerFunc {
 <p>It took me a long time to realise it isn't anything special. The DefaultServeMux is just a  plain ol' ServeMux like we've already been using, which gets instantiated by default when the HTTP package is used. Here's the relevant line from the Go source:</p>
 
 <p><code>var DefaultServeMux = NewServeMux()</code></p>
+
+<p>Generally you shouldn't use the DefaultServeMux because <strong>it poses a security risk</strong>.</p>
+
+<p>Because the DefaultServeMux is stored in a global variable, any package is able to access it and register a route &ndash; including any third-party packages that your application imports. If one of those third-party packages is compromised, they could use the DefaultServeMux to expose a malicious handler to the web.</p>
+
+<p>So as a rule of thumb it's a good idea to avoid the DefaultServeMux, and instead use your own locally-scoped ServeMux, like we have been so far. But if you did decide to use it...</p>
 
 <p>The HTTP package provides a couple of shortcuts for working with the DefaultServeMux: <a href="http://golang.org/pkg/net/http/#Handle">http.Handle</a> and <a href="http://golang.org/pkg/net/http/#HandleFunc">http.HandleFunc</a>. These do exactly the same as their namesake functions we've already looked at, with the difference that they add handlers to the DefaultServeMux instead of one that you've created. </p>
 

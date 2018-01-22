@@ -44,6 +44,8 @@
 		<span class="dates">
 			4th October 2013
 			
+			&middot; <strong>Updated 22nd January 2018</strong>
+			
 		</span>
 		
 		<span class="tags">
@@ -84,7 +86,7 @@
 <figure class="go"><code><pre>
 import "strconv"
 
-var Balance = &amp;currency{50.00, "GBP"}
+var Balance = &amp;currency{amount: 50.00, code: "GBP"}
 
 type currency struct {
   amount float64
@@ -117,7 +119,7 @@ import (
 )
 
 var mu = &sync.Mutex{}
-var Balance = &currency{50.00, "GBP"}
+var Balance = &amp;currency{amount: 50.00, code: "GBP"}
 
 type currency struct {
   amount float64
@@ -159,30 +161,28 @@ import (
 var Balance = &amp;currency{amount: 50.00, code: "GBP"}
 
 type currency struct {
-  sync.Mutex
   amount float64
   code   string
+  mu     sync.Mutex
 }
 
 func (c *currency) Add(i float64) {
-  c.Lock()
+  c.mu.Lock()
   c.amount += i
-  c.Unlock()
+  c.mu.Unlock()
 }
 
 func (c *currency) Display() string {
-  c.Lock()
-  defer c.Unlock()
+  c.mu.Lock()
+  defer c.mu.Unlock()
   return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
 }
 </pre></code></figure>
 
 <p>So what's changed here?</p>
 
-<p>Because our mutex is only being used in the context of a <code>currency</code> object, it makes sense to anonymously embed it in the <code>currency</code> struct (an idea borrowed from Andrew Gerrard's excellent <a href="http://nf.wh3rd.net/10things/#1">
+<p>Because our mutex is only being used in the context of a <code>currency</code> object, it makes sense to embed it in the <code>currency</code> struct (an idea borrowed from Andrew Gerrard's excellent <a href="http://nf.wh3rd.net/10things/#1">
 10 things you (probably) don't know about Go</a> slideshow). If you look at a larger codebase with lots of mutexes, like Go's <a href="http://golang.org/src/pkg/net/http/server.go">HTTP Server</a>, you can see how this approach helps to keep locking rules nice and clear.</p>
-
-
 
 <p>We've also made use of the <a href="http://golang.org/doc/effective_go.html#defer">defer</a> statement, which ensures that the mutex gets unlocked immediately before the function executing it returns. This is common practice for functions that contain multiple return statements, or where the return statement itself is racy like in our example.</p>
 
@@ -203,20 +203,20 @@ import (
 var Balance = &amp;currency{amount: 50.00, code: "GBP"}
 
 type currency struct {
-  sync.RWMutex
   amount float64
   code   string
+  mu     sync.RWMutex
 }
 
 func (c *currency) Add(i float64) {
-  c.Lock()
+  c.mu.Lock()
   c.amount += i
-  c.Unlock()
+  c.mu.Unlock()
 }
 
 func (c *currency) Display() string {
-  c.RLock()
-  defer c.RUnlock()
+  c.mu.RLock()
+  defer c.mu.RUnlock()
   return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
 }
 </pre></code></figure>

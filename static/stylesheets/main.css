@@ -54,6 +54,7 @@ section {
   float: left;
   width: 320px;
   margin-left: 90px;
+  /*background: red;*/
 }
 
 .half {
@@ -252,8 +253,9 @@ code, figcaption, pre, samp, td, th, .tags a {
 }
 
 a code {
-  color: #1863A1; !important;
+  color: #1863A1 !important;
 }
+
 
 p code, li code {
   color: rgb(216, 130, 0);
@@ -362,9 +364,7 @@ td code {
 
 .contact {
   border-top: solid 1px #E8E8E8;
-  border-bottom: solid 1px #E8E8E8;
-  font-size: 0.889em;
-  padding: 1.5em 0 1.3em;
+  padding-top: 1.5em;
 }
 
 .contact img {
@@ -380,6 +380,7 @@ td code {
 
 .recent ol {
   list-style-type: none;
+  margin-left: 0.9em;
 }
 
 .recent li {
@@ -389,6 +390,10 @@ td code {
 .recent li:before {
   content: "\203A";
   margin:0 8px 0 -14px;
+}
+
+.recent h3 {
+  margin: 1em 0 0.5em;
 }
 
 /* ===================================================== */

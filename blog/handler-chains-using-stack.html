@@ -51,7 +51,9 @@
 		</span>
 		
 	</div>
-	<p>I've written a package for chaining context-aware handlers in Go, called Stack (<a href="https://github.com/alexedwards/stack">view it on Github</a>). It was heavily inspired by <a href="https://github.com/justinas/alice">Alice</a>.</p>
+	<p><em>Note: As of Go 1.7+ the <a href="https://golang.org/pkg/context/">context</a> package is now part of Go's standard library and you should use that to pass data between your handlers. Joe Shaw has made a <a href="https://joeshaw.org/revisiting-context-and-http-handler-for-go-17/">good tutorial here</a>. If you're using a Go version &lt; 1.7 then the information below may still be useful.</em></p>
+
+<p>I've written a package for chaining context-aware handlers in Go, called Stack (<a href="https://github.com/alexedwards/stack">view it on Github</a>). It was heavily inspired by <a href="https://github.com/justinas/alice">Alice</a>.</p>
 
 <h2>What do you mean by 'context-aware'?</h2>
 

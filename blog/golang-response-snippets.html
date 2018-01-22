@@ -44,6 +44,8 @@
 		<span class="dates">
 			19th October 2013
 			
+			&middot; <strong>Updated 22nd January 2018</strong>
+			
 		</span>
 		
 		<span class="tags">
@@ -233,6 +235,8 @@ func foo(w http.ResponseWriter, r *http.Request) {
   http.ServeFile(w, r, fp)
 }
 </pre></code></figure>
+
+<p><strong>Important:</strong> <code>http.ServeFile()</code> does not automatically sanitize the file path. So if you're constructing a file path from untrusted user input, you must sanitize the input with <code>filepath.Clean()</code> before using it to avoid directory traversal attacks.</p>
 
 <figure class="shell"><code><pre>
 $ curl -I localhost:3000
