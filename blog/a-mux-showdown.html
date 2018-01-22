@@ -51,7 +51,9 @@
 		</span>
 		
 	</div>
-	<p>One of the first things I missed when learning Go was being able to route HTTP requests to handlers based on the <em>pattern</em> of a URL path, like you can with web frameworks like Sinatra and Django.</p>
+	<p><em>Note: Since I wrote this post a <a href="https://github.com/avelino/awesome-go#routers">huge choice of new routers</a> have become available and the information below is a bit outdated. But that said, Gorilla Mux remains one of the most feature-complete routers available and (although it's no longer actively maintained) Pat is still a solid and simple option. In terms of newer routers, <a href="https://github.com/julienschmidt/httprouter">httprouter</a> is popular and very fast but has an awkward API. <a href="https://github.com/go-zoo/bone">Bone</a> looks promising.</em></p>
+
+<p>One of the first things I missed when learning Go was being able to route HTTP requests to handlers based on the <em>pattern</em> of a URL path, like you can with web frameworks like Sinatra and Django.</p>
 
 <p>Although Go's <a href="http://golang.org/pkg/net/http/#NewServeMux">ServeMux</a> does a great job at routing incoming requests, it only works for fixed URL paths. To support pretty URLs with variable parameters we either need to roll a custom router (or <em>HTTP request multiplexer</em> in Go terminology), or look to a third-party package.</p>
 

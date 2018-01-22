@@ -44,6 +44,8 @@
 		<span class="dates">
 			16th July 2015
 			
+			&middot; <strong>Updated 22nd January 2018</strong>
+			
 		</span>
 		
 		<span class="tags">
@@ -524,9 +526,9 @@ func TestBooksIndex(t *testing.T) {
 
 <h2 id="request-scoped-context">Request-scoped context</h2>
 
-<p>Finally let's look at using request-scoped context to store and pass around the database connection pool. Specifically, we'll make use of the <a href="https://godoc.org/golang.org/x/net/context">x/net/context</a> package.</p>
+<p>Finally let's look at using request-scoped context to store and pass around the database connection pool. Specifically, we'll make use of the <a href="https://golang.org/pkg/context/">context</a> package.</p>
 
-<p>Personally I'm not a fan of storing application-level variables in request-scoped context &ndash; it feels clunky and burdensome to me. The x/net/context documentation kinda advises against it too:</p>
+<p>Personally I'm not a fan of storing application-level variables in request-scoped context &ndash; it feels clunky and burdensome to me. The context package documentation kinda advises against it too:</p>
 
 <blockquote>
 <p>Use context Values only for request-scoped data that transits processes and APIs, not for passing optional parameters to functions.</p>
@@ -534,62 +536,60 @@ func TestBooksIndex(t *testing.T) {
 
 <p>That said, people <em>do</em> use this approach. And if your project consists of a sprawling set of packages &ndash; and using a global config is out of the question &ndash; it's quite an attractive proposition.</p>
 
-<p>Let's adapt the bookstore example one last time, passing <code>context.Context</code> to our handlers using the pattern suggested in this <a href="https://joeshaw.org/net-context-and-http-handler/#custom-context-handler-types">excellent article</a> by Joe Shaw.</p>
+<p>Let's adapt the bookstore example one last time, passing the database connection pool object to our handlers by injecting it via some <code>ContextInjector</code> middleware.</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
 package main
 
 import (
-  "bookstore/models"
-  "fmt"
-  "golang.org/x/net/context"
-  "log"
-  "net/http"
+    "bookstore/models"
+    "context"
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
 )
 
-type ContextHandler interface {
-  ServeHTTPContext(context.Context, http.ResponseWriter, *http.Request)
+type ContextInjector struct {
+    ctx context.Context
+    h   http.Handler
 }
 
-type ContextHandlerFunc func(context.Context, http.ResponseWriter, *http.Request)
-
-func (h ContextHandlerFunc) ServeHTTPContext(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
-  h(ctx, rw, req)
-}
-
-type ContextAdapter struct {
-  ctx     context.Context
-  handler ContextHandler
-}
-
-func (ca *ContextAdapter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-  ca.handler.ServeHTTPContext(ca.ctx, rw, req)
+func (ci *ContextInjector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    ci.h.ServeHTTP(w, r.WithContext(ci.ctx))
 }
 
 func main() {
-  db, err := models.NewDB("postgres://user:pass@localhost/bookstore")
-  if err != nil {
-    log.Panic(err)
-  }
-  ctx := context.WithValue(context.Background(), "db", db)
+    db, err := models.NewDB("postgres://user:pass!@localhost/bookstore")
+    if err != nil {
+        log.Panic(err)
+    }
+    ctx := context.WithValue(context.Background(), "db", db)
 
-  http.Handle("/books", &ContextAdapter{ctx, ContextHandlerFunc(booksIndex)})
-  http.ListenAndServe(":3000", nil)
+    http.Handle("/books", &ContextInjector{ctx, http.HandlerFunc(booksIndex)})
+    http.ListenAndServe(":3000", nil)
 }
 
-func booksIndex(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-  if r.Method != "GET" {
-    http.Error(w, http.StatusText(405), 405)
-    return
-  }
-  bks, err := models.AllBooks(ctx)
-  if err != nil {
-    http.Error(w, http.StatusText(500), 500)
-    return
-  }
-  for _, bk := range bks {
-    fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
-  }
+func booksIndex(w http.ResponseWriter, r *http.Request) {
+    if r.Method != "GET" {
+        http.Error(w, http.StatusText(405), 405)
+        return
+    }
+
+    db, ok := r.Context().Value("db").(*sql.DB)
+    if !ok {
+        http.Error(w, "could not get database connection pool from context", 500)
+        return
+    }
+
+    bks, err := models.AllBooks(db)
+    if err != nil {
+        http.Error(w, http.StatusText(500), 500)
+        return
+    }
+    for _, bk := range bks {
+        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
+    }
 }
 </pre></code></figure>
 
@@ -598,6 +598,7 @@ package models
 
 import (
     "database/sql"
+
     _ "github.com/lib/pq"
 )
 
@@ -618,8 +619,6 @@ package models
 
 import (
     "database/sql"
-    "errors"
-    "golang.org/x/net/context"
 )
 
 type Book struct {
@@ -629,12 +628,7 @@ type Book struct {
     Price  float32
 }
 
-func AllBooks(ctx context.Context) ([]*Book, error) {
-    db, ok := ctx.Value("db").(*sql.DB)
-    if !ok {
-        return nil, errors.New("models: could not get database connection pool from context")
-    }
-
+func AllBooks(db *sql.DB) ([]*Book, error) {
     rows, err := db.Query("SELECT * FROM books")
     if err != nil {
         return nil, err
