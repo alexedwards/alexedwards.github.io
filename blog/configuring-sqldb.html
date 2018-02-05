@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2018">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>Configuring sql.DB for Better Performance</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="http://www.alexedwards.net/blog/configuring-sqldb"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog/">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              Configuring sql.DB for Better Performance
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>Configuring sql.DB for Better Performance</h1>
+	<div class="metadata">
+		<span class="dates">
+			5th February 2018
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	<p>There are a lot of good tutorials which talk about Go's <a href="https://golang.org/pkg/database/sql/#DB"><code>sql.DB</code></a> type and how to use it to execute SQL database queries and statements. But most of them gloss over the <a href="https://golang.org/pkg/database/sql/#DB.SetMaxOpenConns"><code>SetMaxOpenConns()</code></a>, <a href="https://golang.org/pkg/database/sql/#DB.SetMaxIdleConns"><code>SetMaxIdleConns()</code></a> and <a href=""><code>SetConnMaxLifetime()</code></a> methods &mdash; which you can use to configure the behavior of <code>sql.DB</code> and alter its performance.
+
+<p>In this post I'd like to explain exactly what these settings do and demonstrate the (positive and negative) impact that they can have.</p>
+
+<h2 id="openandidleconnections">Open and idle connections</h2>
+
+<p>I'll begin with a little background.</p>
+
+<p>A <code>sql.DB</code> object is a <em>pool of many database connections</em> which contains both 'open' and 'idle' connections. A connection is marked open when you are using it to perform a database task, such as executing a SQL statement or querying rows. When the task is complete the connection becomes idle.</p>
+
+<p>When you instruct <code>sql.DB</code> to perform a database task, it will first check if any idle connections are already available in the pool. If one is available then Go will reuse the existing connection and mark it as open for the duration of the task. If there are no idle connections in the pool when you need one then Go will create a new additional connection and 'open' it. </p>
+
+<h2 id="thesetmaxopenconnsmethod">The SetMaxOpenConns method</h2>
+
+<p>By default there's no limit on the number of connections that can be open at the same time. But you can implement your own limit via the <code>SetMaxOpenConns()</code> method like so:</p>
+
+<figure class="go"><code><pre>
+// Initialise a new connection pool
+db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Set the maximum number of concurrently open connections to 5. Setting this
+// to less than or equal to 0 will mean there is no maximum limit (which
+// is also the default setting).
+db.SetMaxOpenConns(5)
+</pre></code></figure>
+
+<p>In this example code the pool now has a maximum limit of 5 concurrently open connections. If 5 connections are already open and another new connection is needed, then the application will be forced to wait until one of the 5 open connections is freed up and becomes idle.</p>
+
+<p>To illustrate the impact of changing <code>MaxOpenConns</code> I ran a benchmark test with the maximum open connections set to 1, 2, 5, 10 and unlimited. The benchmark executes parallel <code>INSERT</code> statements on a PostgreSQL database and you can find the code in <a href="https://gist.github.com/alexedwards/5d1db82e6358b5b6efcb038ca888ab07">this gist</a>. Here's the results:</p>
+
+<figure class="plain"><code><pre>
+BenchmarkMaxOpenConns1-8                 500       3129633 ns/op         478 B/op         10 allocs/op
+BenchmarkMaxOpenConns2-8                1000       2181641 ns/op         470 B/op         10 allocs/op
+BenchmarkMaxOpenConns5-8                2000        859654 ns/op         493 B/op         10 allocs/op
+BenchmarkMaxOpenConns10-8               2000        545394 ns/op         510 B/op         10 allocs/op
+BenchmarkMaxOpenConnsUnlimited-8        2000        531030 ns/op         479 B/op          9 allocs/op
+PASS
+</pre></code></figure>
+
+<p>For this benchmark we can see that the more open connections that are allowed, the less time is taken to perform the <code>INSERT</code> on the database (3129633 ns/op with 1 open connection compared to 531030 ns/op for unlimited connections &mdash; about 6 times quicker). This is because the more open connections that there are, the less time (on average) the benchmark code needs to wait for an open connection to be freed and made idle (ready for use) again.</p>
+
+
+<h2 id="thesetmaxidleconnsmethod">The SetMaxIdleConns method</h2>
+
+<p>By default <code>sql.DB</code> allows a maximum of 2 idle connections to be retained in the connection pool. You can change this via  the <code>SetMaxIdleConns()</code> method like so:</p>
+
+<figure class="go"><code><pre>
+// Initialise a new connection pool
+db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Set the maximum number of concurrently idle connections to 5. Setting this
+// to less than or equal to 0 will mean that no idle connections are retained.
+db.SetMaxIdleConns(5)
+</pre></code></figure>
+
+<p>In theory, allowing a higher number of idle connections in the pool will improve performance because it makes it less likely that a new connection will need to be established from scratch &mdash; therefore helping to save resources.</p>
+
+<p>Lets take a look at the same benchmark with the maximum idle connections is set to none, 1, 2, 5 and 10 (and the number of open connections is unlimited):</p>
+
+<figure class="plain"><code><pre>
+BenchmarkMaxIdleConnsNone-8          300       4567245 ns/op       58174 B/op        625 allocs/op
+BenchmarkMaxIdleConns1-8            2000        568765 ns/op        2596 B/op         32 allocs/op
+BenchmarkMaxIdleConns2-8            2000        529359 ns/op         596 B/op         11 allocs/op
+BenchmarkMaxIdleConns5-8            2000        506207 ns/op         451 B/op          9 allocs/op
+BenchmarkMaxIdleConns10-8           2000        501639 ns/op         450 B/op          9 allocs/op
+PASS
+</pre></code></figure>
+
+<p>When <code>MaxIdleConns</code> is set to none, a new connection has to be created from scratch for each <code>INSERT</code> and we can see from the benchmarks that the average runtime and memory usage is comparatively high.</p>
+
+<p>Allowing just 1 idle connection to be retained and reused makes a massive difference to this particular benchmark &mdash; it cuts the average runtime by about 8 times and reduces memory usage by about 20 times. Going on to increase the size of the idle connection pool makes the performance even better, although the improvements are less pronounced.</p>
+
+<p>So we should you maintain a large idle connection pool? The answer is <em>it depends on the application</em>.</p>
+
+<p>It's important to realise that keeping an idle connection alive comes at a cost &mdash; it takes up memory which can otherwise be used for both your application and the database. </p>
+
+<p>It's also possible that if a connection is idle for too long then it may become unusable. For example,  MySQL's <a href="https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_wait_timeout"><code>wait_timeout</code></a> setting will automatically close any connections that haven't been used for 8 hours (by default).</p>
+
+<p>When this happens <code>sql.DB</code> handles it gracefully. Bad connections will automatically be retried twice before giving up, at which point Go will remove the connection from the pool and create a new one. So setting <code>MaxIdleConns</code> too high may actually result in connections becoming unusable and more resources being used than if you had a smaller idle connection pool (with fewer connections that are used more frequently). So really you only want to keep a connection idle if you're likely to be using it again soon.</p>
+
+<p>One last thing to point out is that <code>MaxIdleConns</code> should always be less than or equal to <code>MaxOpenConns</code>. Go enforces this and will automatically reduce <code>MaxIdleConns</code> if necessary. This <a href="https://stackoverflow.com/a/31952911">Stack Overflow post</a> nicely describes why:</p>
+
+<blockquote>
+  <p>There is no point in ever having any more idle connections than the maximum allowed open connections, because if you could instantaneously grab all the allowed open connections, the remain idle connections would always remain idle. It's like having a bridge with four lanes, but only ever allowing three vehicles to drive across it at once.</p>
+</blockquote>
+
+<h2 id="thesetconnmaxlifetimemethod">The SetConnMaxLifetime method</h2>
+
+<p>Let's now take a look at the <code>SetConnMaxLifetime()</code> method which sets the maximum length of time that a connection can be reused for. This can be useful if your SQL database also implements a maximum connection lifetime or if &mdash; for example &mdash; you want to facilitate gracefully swapping databases behind a load balancer.</p>
+
+<p>You use it like this:</p>
+
+<figure class="go"><code><pre>
+// Initialise a new connection pool
+db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Set the maximum lifetime of a connection to 1 hour. Setting it to 0
+// means that there is no maximum lifetime and the connection is reused
+// forever (which is the default behavior).
+db.SetConnMaxLifetime(time.Hour)
+</pre></code></figure>
+
+<p>In this example all our connections will 'expire' 1 hour after they were first created, and cannot be reused after they've expired. But note:</p>
+
+<ul>
+<li>This doesn't guarantee that a connection will exist in the pool for a whole hour; it's quite possible that the connection will have become unusable for some reason and been automatically closed before then.</li>
+
+<li>A connection can still be in use more than one hour after being created &mdash; it just cannot <em><strong>start</strong> to be reused</em> after that time.</li>
+
+<li>This isn't an idle timeout. The connection will expire 1 hour after it was first created &mdash; not 1 hour after it last became idle.</li>
+
+<li>Once every second a cleanup operation is automatically run to remove 'expired' connections from the pool.</li>
+</ul>
+
+<p>In theory, the shorter <code>ConnMaxLifetime</code> is the more often connections will expire &mdash; and consequently &mdash; the more often they will need to be created from scratch.</p>
+
+<p>To illustrate this I ran the benchmarks with <code>ConnMaxLifetime</code> set to 100ms, 200ms, 500ms, 1000ms and unlimited (reused forever), with the default settings of unlimited open connections and 2 idle connections. These time periods are obviously much, much shorter than you'd use in most applications but they help illustrate the behaviour well.</p>
+
+<figure class="plain"><code><pre>
+BenchmarkConnMaxLifetime100-8               2000        637902 ns/op        2770 B/op         34 allocs/op
+BenchmarkConnMaxLifetime200-8               2000        576053 ns/op        1612 B/op         21 allocs/op
+BenchmarkConnMaxLifetime500-8               2000        558297 ns/op         913 B/op         14 allocs/op
+BenchmarkConnMaxLifetime1000-8              2000        543601 ns/op         740 B/op         12 allocs/op
+BenchmarkConnMaxLifetimeUnlimited-8         3000        532789 ns/op         412 B/op          9 allocs/op
+PASS
+</pre></code></figure>
+
+<p>In these particular benchmarks we can see that memory usage was more than 3 times greater with a 100ms lifetime compared to an unlimited lifetime, and the average runtime for each <code>INSERT</code> was also slightly longer.</p>
+
+<h2 id="exceedingconnectionlimits">Exceeding connection limits</h2>
+
+<p>Lastly, this article wouldn't be complete without mentioning what happens if you exceed a hard limit on the number of database connections.</p>
+
+<p>As an illustration, I'll change my <code>postgresql.conf</code> file so only a total of 5 connections are permitted (the default is 100)...</p>
+
+<figure class="plain"><code><pre>
+max_connections = 5
+</pre></code></figure>
+
+<p>And then rerun the benchmark test with unlimited open connections...</p>
+
+<figure class="plain"><code><pre>
+BenchmarkMaxOpenConnsUnlimited-8    --- FAIL: BenchmarkMaxOpenConnsUnlimited-8
+    main_test.go:14: pq: sorry, too many clients already
+    main_test.go:14: pq: sorry, too many clients already
+    main_test.go:14: pq: sorry, too many clients already
+FAIL
+</pre></code></figure>
+
+<p>As soon as the hard limit of 5 connections is hit my database driver (<a href="https://github.com/lib/pq">pq</a>) immediately returns a <code>sorry, too many clients already</code> error message instead of completing the <code>INSERT</code>.</p>
+
+<p>To prevent this error we need to set the <em>total</em> maximum of open and idle connections in <code>sql.DB</code> to comfortably below 5. Like so:</p>
+
+<figure class="go"><code><pre>
+// Initialise a new connection pool
+db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Set the number of open and idle connection to a maximum total of 3.
+db.SetMaxOpenConns(2)
+db.SetMaxIdleConns(1)
+</pre></code></figure>
+
+<p>Now there will only ever be a maximum of 3 connections created by <code>sql.DB</code> and the benchmark should run without any errors.</p>
+
+<p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free.</p>
+
+<p>For some applications that behavior might be fine, but for others it might not. For example, in a web application it could arguably be better to immediately log the error message and send a <code>500 Internal Server Error</code> to the user, rather than having their HTTP request hang and potentially timeout while waiting for a free connection.</p>
+
+<h2>In summary</h2>
+
+<ul>
+	<li><p>For most applications using <code>SetMaxOpenConns()</code>to limit the maximum of open connections will have a negative impact on performance, but it may make sense to do so if your database is operating in a particularly resource-constrained environment.</p></li>
+	<li><p>If your application is bursty or regularly executing more than 2 database tasks concurrently then there will probably be a positive performance impact from increasing the size of the idle connection pool via <code>SetMaxIdleConns()</code>. But be aware that making it too large may be counter-productive. Don't go crazy with it, and benchmarking real-world load is probably a good idea.</p></li>
+	<li><p>For most applications implementing a connection lifetime limit via <code>SetConnMaxLifetime()</code> will have a negative impact on performance. But if your database itself enforces a short connection lifetime then it makes sense to match this in <code>sql.DB</code> to avoid the overhead of trying-and-retrying bad connections.</p></li>
+	<li><p>If you prefer for your application to wait for a connection to be freed up (rather than return an error) when your database's hard limit of connections is reached then you should explicitly set both <code>SetMaxOpenConns()</code> and <code>SetMaxIdleConns()</code>.</p></li>
+</ul>
+
+	<div class="social">
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
+		<script src="https://apis.google.com/js/platform.js" async defer></script>
+		<g:plusone></g:plusone>
+	</div>
+</article>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://lets-go.alexedwards.net/">Check it out!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
+</script>
+    </section>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2018 &middot; Built using <a href="https://nanoc.ws">Nanoc</a></div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
