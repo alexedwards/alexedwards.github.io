@@ -244,6 +244,28 @@ article .chart {
 .lets-go p {
   margin-top: 0.5em;
 }
+
+.lets-go .button {
+    display: block;
+    padding: 13.5px 36px;
+    border-radius: 3px;
+    font-weight: 600;
+    background-color: #2ECC71;
+    color: #fff;
+    text-shadow: 0px -1px #25a25a;
+    border-bottom: 3px solid #25a25a;
+    margin-top: 0.5em;
+    text-align: center;
+    font-size: 1.075em;
+}
+
+.lets-go .button:hover, .lets-go .button:focus {
+    cursor: pointer;
+    background-color: #25a25a;
+    border-bottom: 3px solid #1b7943;
+    text-shadow: 0px -1px #1b7943;
+    text-decoration: none;
+
 /* ===================================================== */
 
 code, figcaption, pre, samp, td, th, .tags a {
