@@ -106,7 +106,7 @@ footer {
   padding: 1.5em 0;
   border-top: solid 1px #E8E8E8;
   background: #FAFAFA;
-  font-size: 0.889em;
+  font-size: 0.75em;
   color: #6A737D;
   text-align: center;
 }
@@ -421,6 +421,38 @@ td code {
 
 /* ===================================================== */
 
+.social {
+  color: #6A737D;
+  font-size: 0.889em;
+}
+
+.share-button {
+  display: inline-block;
+  background-color: blue;
+  font-size: 15px;
+  padding: 5px 8px;
+  color: white !important;
+  border-radius: 3px;
+  margin-right: 5px;
+}
+
+.share-button-facebook {
+  background-color: #3b5998;
+}
+
+.share-button-twitter {
+  background-color: #00aced;
+}
+
+.share-button-googleplus {
+  background-color: #dd4b39;
+}
+
+.share-button-linkedin {
+  background-color: #007bb6;
+}
+
+/* ===================================================== */
 
 .hljs {
   display: block;

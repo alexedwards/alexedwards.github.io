@@ -260,15 +260,21 @@ func profile(w http.ResponseWriter, r *http.Request) {
 <p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
 	<div class="social">
 		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
-		<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>&nbsp;&nbsp;&nbsp;
-		<script src="https://apis.google.com/js/platform.js" async defer></script>
-		<g:plusone></g:plusone>
+		<p>Share this post on:</p>
+		<a
+		class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=http://www.alexedwards.net/blog/a-mux-showdown&p[title]=Gorilla vs Pat vs Routes&#58; A Mux Showdown">Facebook</a>
+		<a
+		class="share-button share-button-twitter" href="http://twitter.com/share?url=http://www.alexedwards.net/blog/a-mux-showdown&text=Gorilla vs Pat vs Routes&#58; A Mux Showdown">Twitter</a>
+		<a
+		class="share-button share-button-googleplus" href="https://plus.google.com/share?url=http://www.alexedwards.net/blog/a-mux-showdown">Google+</a>
+		<a
+		class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=http://www.alexedwards.net/blog/a-mux-showdown&title=Gorilla vs Pat vs Routes&#58; A Mux Showdown&source=http://www.alexedwards.net">LinkedIn</a>
 	</div>
 </article>
 <div class="sidebar">
 	<div class="lets-go clearfix">
 		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
-		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a class="button" href="https://lets-go.alexedwards.net/">Check it out!</a></p>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
 	</div>
 </div>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
@@ -281,7 +287,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
     </section>
     <footer>
       <div class="wrapper">
-        <div><span class="copyright">&copy;</span> Alex Edwards 2018 &middot; Built using <a href="https://nanoc.ws">Nanoc</a></div>
+        <div><span class="copyright">&copy;</span> Alex Edwards 2018</div>
       </div>
     </footer>
     <script type="text/javascript">
