@@ -165,11 +165,46 @@ article .tags {
 }
 
 article .tags a {
-  background: #FAFAFA;
-  color: #D88200;
+  background: #F8F8F8;
+  /*color: #D88200;*/
   border-radius: 2px;
-  padding: 0 7px;
-  margin-left: 0.5em;
+  padding: 2px 7px;
+  margin-left: 8px;
+}
+
+article .share {
+  margin-top: 0.5em;
+  display: block;
+}
+
+article .share-button {
+  display: inline-block;
+  background-color: blue;
+  font-size: 15px;
+  padding: 5px 8px;
+  color: white !important;
+  border-radius: 3px;
+  margin-right: 5px;
+}
+
+article .share-button:first-child {
+  margin-left: 28px;
+}
+
+article .share-button-facebook {
+  background-color: #3b5998;
+}
+
+article .share-button-twitter {
+  background-color: #00aced;
+}
+
+article .share-button-googleplus {
+  background-color: #dd4b39;
+}
+
+article .share-button-linkedin {
+  background-color: #007bb6;
 }
 
 article dfn {
@@ -202,18 +237,18 @@ article blockquote {
   margin-top: 1.5em;
 }
 
-article .social {
+article .footer {
   color: #6A737D;
   font-size: 0.889em;
 }
 
-article .social .mit {
+article .footer .mit {
   padding: 1em 0;
   border-top: solid 1px #E8E8E8;
   border-bottom: solid 1px #E8E8E8;
 }
 
-article .social .mit img {
+article .footer .mit img {
   vertical-align: middle;
   position: relative;
   top: -1px;
@@ -421,38 +456,6 @@ td code {
 
 /* ===================================================== */
 
-.social {
-  color: #6A737D;
-  font-size: 0.889em;
-}
-
-.share-button {
-  display: inline-block;
-  background-color: blue;
-  font-size: 15px;
-  padding: 5px 8px;
-  color: white !important;
-  border-radius: 3px;
-  margin-right: 5px;
-}
-
-.share-button-facebook {
-  background-color: #3b5998;
-}
-
-.share-button-twitter {
-  background-color: #00aced;
-}
-
-.share-button-googleplus {
-  background-color: #dd4b39;
-}
-
-.share-button-linkedin {
-  background-color: #007bb6;
-}
-
-/* ===================================================== */
 
 .hljs {
   display: block;
