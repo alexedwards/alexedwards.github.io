@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2018">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>3 Ways to Disable http.FileServer Directory Listings</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog/">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              3 Ways to Disable http.FileServer Directory Listings
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>3 Ways to Disable http.FileServer Directory Listings</h1>
+	<div class="metadata">
+		<span class="dates">
+			14th March 2018
+			
+		</span>
+		<span class="share">
+			Share on:
+				<a
+			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings&p[title]=3 Ways to Disable http.FileServer Directory Listings">Facebook</a>
+			<a
+			class="share-button share-button-twitter" href="http://twitter.com/share?url=http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings&text=3 Ways to Disable http.FileServer Directory Listings">Twitter</a>
+			<a
+			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings">Google+</a>
+			<a
+			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings&title=3 Ways to Disable http.FileServer Directory Listings&source=http://www.alexedwards.net">LinkedIn</a>
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	
+<p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look at bit like this:</p>
+
+<p><img src="/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
+
+<p>But for certain applications you might want to prevent this behavior and disable directory listings altogether. In this post I’m going to run through three different options for doing exactly that:</p>
+
+<ul>
+    <li><a href="#using-index-html-files">Using index.html files</a></li>
+    <li><a href="#using-middleware">Using middleware</a></li>
+    <li><a href="#using-a-custom-filesystem">Using a custom filesystem</a></li>
+</ul>
+
+<h2 id="using-index-html-files">Using index.html files</h2>
+
+<p>Before <code>http.FileServer</code> generates a directory listing it checks for the existence of an <code>index.html</code> file in the directory root. If an <code>index.html</code> file exists, then it will respond with the contents of the file instead.</p>
+
+<p>So it follows that a simple way to disable directory listings is to add a blank <code>index.html</code> file to your root static file directory <em>and all sub-directories</em>, like so:</p>
+
+<figure class="plain"><code><pre>.
+├── main.go
+└── static
+    ├── css
+    │   ├── index.html
+    │   └── main.css
+    ├── img
+    │   ├── index.html
+    │   └── logo.png
+    ├── index.html
+    └── robots.txt
+</pre></code></figure>
+
+<p>If you've got a lot of sub-directories an easy way to do that is with a one-line command like this:</p>
+
+<figure class="shell"><code><pre>
+$ find ./static/ -type d -exec touch {}/index.html \;
+</pre></code></figure>
+
+<p>Any requests for a directory should now result in an empty <code>200 OK</code> response for the user, instead of a directory listing. For example:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img/
+<samp>HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 0
+Content-Type: text/html; charset=utf-8
+Last-Modified: Tue, 13 Mar 2018 12:41:10 GMT
+Date: Tue, 13 Mar 2018 12:42:35 GMT</samp>
+</pre></code></figure>
+
+<p>Or without the trailing slash, the user should get a <code>301 Redirect</code> like so:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img
+<samp>HTTP/1.1 301 Moved Permanently
+Location: /static/img/
+Date: Tue, 13 Mar 2018 12:43:13 GMT
+Content-Length: 43
+Content-Type: text/html; charset=utf-8
+
+&lt;a href=&quot;/static/img/&quot;&gt;Moved Permanently&lt;/a&gt;.</samp>
+</pre></code></figure>
+
+<p>This is a good-enough solution if you can't (or don't want to) make any changes to your Go application itself.</p>
+
+<p>But it's not perfect. You'll need to remember to add a blank <code>index.html</code> file for any new sub-directories in the future, and many people &mdash; myself included &mdash; would argue that a <code>403 Forbidden</code> or <code>404 Not Found</code> status would be more appropriate than sending the user an empty <code>200 OK</code> response.</p>
+
+<h2 id="using-middleware">Using middleware</h2>
+
+<p>Both of these imperfections can be addressed if we take a different approach and implement some custom <a href="/blog/making-and-using-middleware">middleware</a> to intercept requests before they reach the <code>http.FileServer</code>.
+<p>Essentially, we want the middleware to check if the request URL ends with a <code>/</code> character, and if it does, return a <code>404 Not Found</code> response instead of passing on the request to the <code>http.FileServer</code>. Here's a basic implementation:</p>
+
+<figure class="go"><code><pre>
+package main
+
+import (
+    &quot;log&quot;
+    &quot;net/http&quot;
+    &quot;strings&quot;
+)
+
+func main() {
+    mux := http.NewServeMux()
+
+    fileServer := http.FileServer(http.Dir(&quot;./static&quot;))
+    mux.Handle(&quot;/static/&quot;, http.StripPrefix(&quot;/static&quot;, neuter(fileServer)))
+
+    err := http.ListenAndServe(&quot;:4000&quot;, mux)
+    log.Fatal(err)
+}
+
+func neuter(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if strings.HasSuffix(r.URL.Path, &quot;/&quot;) {
+            http.NotFound(w, r)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+
+<p>This approach would result in a user getting responses like these:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img/
+<samp>HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Tue, 13 Mar 2018 12:46:20 GMT
+Content-Length: 19
+
+404 page not found</samp>
+
+$ curl -i http://localhost:4000/static/img
+<samp>HTTP/1.1 301 Moved Permanently
+Location: /static/img/
+Date: Tue, 13 Mar 2018 12:46:55 GMT
+Content-Length: 43
+Content-Type: text/html; charset=utf-8
+
+&lt;a href=&quot;/static/img/&quot;&gt;Moved Permanently&lt;/a&gt;.</samp>
+</pre></code></figure>
+
+<p>To me, this feels like a cleaner and easier-to-maintain way to disable directory listings than using blank <code>index.html</code> files. But again, it's still not perfect.</p>
+
+<p>Firstly, requests for any directories <em>without</em> the trailing slash will be <code>301</code> redirected only to receive a <code>404 Not Found</code> response. It's extra, unnecessary, requests for both the client and server to deal with.</p>
+
+<p>Secondly, if one of your directories <em>does</em> contain an <code>index.html</code> file then it won't ever be used. For example, if you have the directory structure...</p>
+</ol>
+
+<figure class="plain"><code><pre>.
+├── main.go
+└── static
+    ├── css
+    │   ├── index.html
+    │   └── main.css
+    ├── img
+    │   └── logo.png
+    └── robots.txt
+</pre></code></figure>
+
+<p>... any request to <code><a href="http://localhost:4000/static/css/">http://localhost:4000/static/css/</a></code> will result in a <code>404 Not Found</code> response instead of returning the contents of the <code>/static/css/index.html</code> file.</p>
+
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/css/
+<samp>HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Tue, 13 Mar 2018 12:51:09 GMT
+Content-Length: 19
+
+404 page not found</samp>
+</pre></code></figure>
+
+<h2 id="using-a-custom-filesystem">Using a custom filesystem</h2>
+
+<p>The final option we're going to look at is creating a custom filesystem and passing that to your <code>http.FileServer</code>.</p>
+
+<p>There are a couple of approaches described by <a href="https://groups.google.com/d/msg/golang-nuts/bStLPdIVM6w/hidTJgDZpHcJ">Brad Fitzpatrick</a> and <a href="https://groups.google.com/d/msg/golang-nuts/bStLPdIVM6w/U_LVmJZRAwAJ">George Armhold</a> you might want to consider, but I would personally suggest doing something like this:<p>
+
+<figure class="go"><code><pre>
+package main
+
+import (
+    &quot;log&quot;
+    &quot;net/http&quot;
+    &quot;strings&quot;
+)
+
+func main() {
+    mux := http.NewServeMux()
+
+    fileServer := http.FileServer(neuteredFileSystem{http.Dir(&quot;./static&quot;)})
+    mux.Handle(&quot;/static&quot;, http.NotFoundHandler())
+    mux.Handle(&quot;/static/&quot;, http.StripPrefix(&quot;/static&quot;, fileServer))
+
+    err := http.ListenAndServe(&quot;:4000&quot;, mux)
+    log.Fatal(err)
+}
+
+type neuteredFileSystem struct {
+    fs http.FileSystem
+}
+
+func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
+    f, err := nfs.fs.Open(path)
+    if err != nil {
+        return nil, err
+    }
+
+    s, err := f.Stat()
+    if s.IsDir() {
+        index := strings.TrimSuffix(path, &quot;/&quot;) + &quot;/index.html&quot;
+        if _, err := nfs.fs.Open(index); err != nil {
+            return nil, err
+        }
+    }
+
+    return f, nil
+}
+</pre></code></figure>
+
+<p>In this code we're creating a custom <code>neuteredFileSystem</code> type which embeds the standard <code>http.FileSystem</code>. We then implement an <code>Open()</code> method on it &mdash; which gets called each time our <code>http.FileServer</code> receives a request.</p>
+
+<p>In our <code>Open()</code> method we <code>Stat()</code> the requested file path and use the <code>IsDir()</code> method to check whether it's a directory or not. <em>If it is a directory</em> we then try to <code>Open()</code> any <code>index.html</code> file in it. If no <code>index.html</code> file exists a <code>os.ErrNotExist</code> error will be returned (which in turn will be transformed into a <code>404 Not Found</code> response by <code>http.Fileserver</code>). Otherwise, we just return the file and let <code>http.FileServer</code> do its thing.</p>
+
+<p>Putting this to use with the directory structure...</p>
+
+<figure class="plain"><code><pre>
+.
+├── main.go
+└── static
+    ├── css
+    │   ├── index.html
+    │   └── main.css
+    ├── img
+    │   └── logo.png
+    └── robots.txt
+</pre></code></figure>
+
+<p>...would result in responses like:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img/
+<samp>HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Tue, 13 Mar 2018 16:53:21 GMT
+Content-Length: 19
+
+404 page not found</samp>
+
+$ curl -i http://localhost:4000/static/img
+<samp>HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Tue, 13 Mar 2018 16:53:22 GMT
+Content-Length: 19
+
+404 page not found</samp>
+
+$ curl -i http://localhost:4000/static/css/
+<samp>HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 37
+Content-Type: text/html; charset=utf-8
+Last-Modified: Tue, 13 Mar 2018 12:49:00 GMT
+Date: Tue, 13 Mar 2018 16:53:27 GMT
+
+&lt;h1&gt;This is my custom index page&lt;/h1&gt;</samp>
+</pre></code></figure>
+
+<p>This is now working pretty nicely:</p>
+
+<ul>
+    <li>All requests for directories (with no <code>index.html</code> file) return a <code>404 Not Found</code> response, instead of a directory listing or a redirect. This works for requests both with and without a trailing slash.</li>
+    <li>The default behavior of <code>http.FileServer</code> isn't changed any other way, and <code>index.html</code> files work as per the standard library documentation.</li>
+</ul>
+	<div class="footer">
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+	</div>
+</article>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
+</script>
+    </section>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2018</div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>

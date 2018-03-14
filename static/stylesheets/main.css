@@ -121,6 +121,7 @@ footer span.copyright {
 
 article img {
   max-width: 100%;
+  border: solid 1px #E8E8E8;
 }
 
 article p, article ul, article ol, article figure, article table {
@@ -235,6 +236,11 @@ article blockquote {
   color: #6A737D;
   margin-bottom: 1.5em;
   margin-top: 1.5em;
+}
+
+article small {
+  font-size: 0.75em;
+  color: #6A737D;
 }
 
 article .footer {
@@ -421,7 +427,7 @@ td code {
 /* ===================================================== */
 
 .contact {
-  border-top: solid 1px #E8E8E8;
+  text-align: center;
   padding-top: 1.5em;
 }
 
@@ -431,14 +437,12 @@ td code {
 }
 
 .recent {
-  padding: 1.5em 0;
-  font-size: 0.889em;
-  color: #6A737D;
+  border-top: solid 1px #E8E8E8;
 }
 
 .recent ol {
   list-style-type: none;
-  margin-left: 0.9em;
+  margin-left: -1em;
 }
 
 .recent li {
@@ -447,11 +451,11 @@ td code {
 
 .recent li:before {
   content: "\203A";
-  margin:0 8px 0 -14px;
+  margin: 0 8px 0 -10px;
 }
 
 .recent h3 {
-  margin: 1em 0 0.5em;
+  font-size: 1em;
 }
 
 /* ===================================================== */
