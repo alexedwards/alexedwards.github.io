@@ -64,7 +64,7 @@
 	</div>
 	
 <p>Earlier this year AWS announced that their <a href="https://aws.amazon.com/lambda/">Lambda</a> service would now be providing first-class support for the Go language, which is a great step forward for any gophers (like myself) who fancy experimenting with serverless technology.</p>
-<p>So in this post I'm going to talk through how to create a HTTPS API backed by AWS Lambda, building it up one step-by-step. I found there to be quite a few gotchas in the process &mdash; especially if you're not familiar the AWS permissions system &mdash; and some rough edges in the way that Lamdba interfaces with the other AWS services. But once you get your head around these it works pretty well.</p>
+<p>So in this post I'm going to talk through how to create a HTTPS API backed by AWS Lambda, building it up step-by-step. I found there to be quite a few gotchas in the process &mdash; especially if you're not familiar the AWS permissions system &mdash; and some rough edges in the way that Lamdba interfaces with the other AWS services. But once you get your head around these it works pretty well.</p>
 <p>There's a lot of content to cover in this tutorial, so I've broken it down into the following seven steps:</p>
 <ol>
     <li><a href="#setup-and-the-aws-cli">Setting up the AWS CLI</a></li>
@@ -85,7 +85,7 @@
 <figure class="plain"><code><pre>
 {"isbn":"978-1420931693","title":"The Republic","author":"Plato"}
 </pre></code></figure>
-<p>I'm deliberately keeping it simple to avid getting bogged-down in application-specific code, but once you've grasped the basics it's fairly clear how to extend the API to support additional routes and actions.</p>
+<p>I'm keeping the API deliberately simple to avoid getting bogged-down in application-specific code, but once you've grasped the basics it's fairly clear how to extend the API to support additional routes and actions.</p>
 <h2 id="setup-and-the-aws-cli">Setting up the AWS CLI</h2>
 <ol>
 <li>
