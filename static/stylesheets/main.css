@@ -10,7 +10,7 @@ html {
   height: 100%;
   overflow-y: scroll;
   font-family: "Fira Sans", sans-serif;
-  font-size: 19px;
+  font-size: 17px;
   color: #333333;
   line-height: 1.5;
 }
@@ -70,7 +70,7 @@ header {
   padding: 1.5em 0;
   border-bottom: solid 1px #E8E8E8;
   background: #FAFAFA;
-  font-size: 0.889em;
+  /*font-size: 0.889em;*/
 }
 
 .breadcrumbs {
@@ -106,7 +106,7 @@ footer {
   padding: 1.5em 0;
   border-top: solid 1px #E8E8E8;
   background: #FAFAFA;
-  font-size: 0.75em;
+  font-size: 0.889em;
   color: #6A737D;
   text-align: center;
 }
@@ -119,7 +119,7 @@ footer span.copyright {
 
 /* ===================================================== */
 
-article img {
+article > img {
   max-width: 100%;
   border: solid 1px #E8E8E8;
 }
@@ -129,7 +129,7 @@ article p, article ul, article ol, article figure, article table {
 }
 
 article h1 {
-  font-size: 2.5em;
+  font-size: 2.7em;
   font-weight: 800;
   padding: 0 0 calc(1em / 2.5) 0;
 }
@@ -150,7 +150,7 @@ article h3 {
 article .metadata {
   border-top: solid 1px #E8E8E8;
   border-bottom: solid 1px #E8E8E8;
-  font-size: 0.889em;
+  /*font-size: 0.889em;*/
   color: #6A737D;
   margin-bottom: calc(1.5em / 0.889);
   padding: 0.75em 0;
@@ -244,7 +244,7 @@ article blockquote {
 }
 
 article small {
-  font-size: 0.75em;
+  font-size: 0.889em;
   color: #6A737D;
 }
 
@@ -278,7 +278,7 @@ article .chart {
   background: #FAFAFA;
   border: solid 1px #E8E8E8;
   border-radius: 2px;
-  font-size: 0.889em;
+  /*font-size: 0.889em;*/
   padding: 1em;
   color: #6A737D;
 }
@@ -315,7 +315,7 @@ article .chart {
 
 /* ===================================================== */
 
-code, figcaption, pre, samp, td, th, .tags a {
+code, figcaption, pre, samp, var, td, th, .tags a {
   font-family: "Fira Mono", monospace;
   font-size: 15px;
   overflow-y: auto;
@@ -332,6 +332,7 @@ p code, li code {
   white-space: nowrap;
 }
 
+
 article figure code {
   background-color: #FAFAFA;
   border: solid 1px #E8E8E8;
@@ -341,13 +342,17 @@ article figure code {
 
 article figure.shell code {
   background-color: #300A24;
-  color: #FFFFFF;
   display: block;
   border-radius: 2px;
 }
 
+article figure.shell code pre {
+  color: #FFFFFF;
+}
+
 code pre {
   padding: 1em;
+  color: #333333;
 }
 
 article figcaption {
@@ -385,7 +390,7 @@ td code {
 }
 
 .listing h1 {
-  font-size: 1.5em;
+  font-size: 1.75em;
   margin-bottom: calc(1em / 1.5);
 }
 
@@ -471,8 +476,7 @@ td code {
   overflow-x: auto;
 }
 
-.hljs-comment,
-.hljs-meta {
+.hljs-comment {
   color: #969896;
 }
 
@@ -534,8 +538,17 @@ td code {
   color: #969896;
 }
 
+.shell .hljs-keyword {
+  color: #fff;
+}
+
 #standalone-sites {
   display: none;
+}
+
+var {
+  color: red;
+  font-style: italic;
 }
 
 /* ===================================================== */
