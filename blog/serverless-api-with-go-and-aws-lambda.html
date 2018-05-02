@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/static/stylesheets/main.css">
     <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
     
-    <link rel="canonical" href="http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda"/>
+    <link rel="canonical" href="https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda"/>
     
   </head>
   <body>
@@ -48,13 +48,13 @@
 		<span class="share">
 			<span class="label">Share with:</span>
 			<a
-			class="share-button share-button-twitter" href="http://twitter.com/share?url=http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda&text=How to build a Serverless API with Go and AWS Lambda">Twitter</a>
+			class="share-button share-button-twitter" href="http://twitter.com/share?url=https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda&text=How to build a Serverless API with Go and AWS Lambda">Twitter</a>
 			<a
-			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda">Google+</a>
+			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda">Google+</a>
 				<a
-			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda&p[title]=How to build a Serverless API with Go and AWS Lambda">Facebook</a>
+			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda&p[title]=How to build a Serverless API with Go and AWS Lambda">Facebook</a>
 			<a
-			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda&title=How to build a Serverless API with Go and AWS Lambda&source=http://www.alexedwards.net">LinkedIn</a>
+			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda&title=How to build a Serverless API with Go and AWS Lambda&source=https://www.alexedwards.net">LinkedIn</a>
 		</span>
 		
 		<span class="tags">
@@ -64,7 +64,7 @@
 	</div>
 	
 <p>Earlier this year AWS announced that their <a href="https://aws.amazon.com/lambda/">Lambda</a> service would now be providing first-class support for the Go language, which is a great step forward for any gophers (like myself) who fancy experimenting with serverless technology.</p>
-<p>So in this post I'm going to talk through how to create a HTTPS API backed by AWS Lambda, building it up step-by-step. I found there to be quite a few gotchas in the process &mdash; especially if you're not familiar the AWS permissions system &mdash; and some rough edges in the way that Lamdba interfaces with the other AWS services. But once you get your head around these it works pretty well.</p>
+<p>So in this post I'm going to talk through how to create a HTTPS API backed by AWS Lambda, building it up step-by-step. I found there to be quite a few gotchas in the process &mdash; especially if you're not familiar the AWS permissions system &mdash; and some rough edges in the way that Lamdba interfaces with the other AWS services. But once you get your head around these things it works pretty well.</p>
 <p>There's a lot of content to cover in this tutorial, so I've broken it down into the following seven steps:</p>
 <ol>
     <li><a href="#setup-and-the-aws-cli">Setting up the AWS CLI</a></li>

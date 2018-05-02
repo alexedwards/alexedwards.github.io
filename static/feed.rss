@@ -2,13 +2,13 @@
 <rss version="2.0">
 <channel>
   <title>Alex Edwards</title>
-  <link>http://www.alexedwards.net/blog</link>
+  <link>https://www.alexedwards.net/blog</link>
   <language>en-gb</language>
   <lastBuildDate>Tue, 10 Apr 2018 12:00:00 GMT</lastBuildDate>
   <item>
     <pubDate>Tue, 10 Apr 2018 12:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda</link>
-    <guid>http://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda</guid>
+    <link>https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda</link>
+    <guid>https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda</guid>
     <title>How to build a Serverless API with Go and AWS Lambda</title>
     <description><![CDATA[
 <p>Earlier this year AWS announced that their <a href="https://aws.amazon.com/lambda/">Lambda</a> service would now be providing first-class support for the Go language, which is a great step forward for any gophers (like myself) who fancy experimenting with serverless technology.</p>
@@ -1007,8 +1007,8 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
   </item>
   <item>
     <pubDate>Wed, 14 Mar 2018 18:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings</link>
-    <guid>http://www.alexedwards.net/blog/disable-http-fileserver-directory-listings</guid>
+    <link>https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings</link>
+    <guid>https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings</guid>
     <title>3 Ways to Disable http.FileServer Directory Listings</title>
     <description><![CDATA[
 <p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look at bit like this:</p>
@@ -1274,8 +1274,8 @@ Date: Tue, 13 Mar 2018 16:53:27 GMT
   </item>
   <item>
     <pubDate>Mon, 5 Feb 2018 17:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/configuring-sqldb</link>
-    <guid>http://www.alexedwards.net/blog/configuring-sqldb</guid>
+    <link>https://www.alexedwards.net/blog/configuring-sqldb</link>
+    <guid>https://www.alexedwards.net/blog/configuring-sqldb</guid>
     <title>Configuring sql.DB for Better Performance</title>
     <description><![CDATA[
 <p>There are a lot of good tutorials which talk about Go's <a href="https://golang.org/pkg/database/sql/#DB"><code>sql.DB</code></a> type and how to use it to execute SQL database queries and statements. But most of them gloss over the <a href="https://golang.org/pkg/database/sql/#DB.SetMaxOpenConns"><code>SetMaxOpenConns()</code></a>, <a href="https://golang.org/pkg/database/sql/#DB.SetMaxIdleConns"><code>SetMaxIdleConns()</code></a> and <a href=""><code>SetConnMaxLifetime()</code></a> methods &mdash; which you can use to configure the behavior of <code>sql.DB</code> and alter its performance.
@@ -1470,8 +1470,8 @@ db.SetMaxIdleConns(1)
   </item>
   <item>
     <pubDate>Thu, 28 Dec 2017 17:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/how-to-rate-limit-http-requests</link>
-    <guid>http://www.alexedwards.net/blog/how-to-rate-limit-http-requests</guid>
+    <link>https://www.alexedwards.net/blog/how-to-rate-limit-http-requests</link>
+    <guid>https://www.alexedwards.net/blog/how-to-rate-limit-http-requests</guid>
     <title>How to Rate Limit HTTP Requests</title>
     <description><![CDATA[
     <p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
@@ -1588,7 +1588,7 @@ db.SetMaxIdleConns(1)
 
     <p>In our particular use-case the map keys will be the IP address of users, and so new keys will be added to the map each time a new user visits our application. We'll also want to prevent undue memory consumption by removing old entries from the map when a user hasn't been seen for a long period of time.</p>
 
-    <p>So in our case the map keys <em>won't be stable</em> and it's likely that an ordinary map protected by a mutex will perform better. (If you're not familiar with the idea of mutexes or how to use them in Go, then <a href="http://www.alexedwards.net/blog/understanding-mutexes">this post</a> has an explanation which you might want to read before continuing).</p>
+    <p>So in our case the map keys <em>won't be stable</em> and it's likely that an ordinary map protected by a mutex will perform better. (If you're not familiar with the idea of mutexes or how to use them in Go, then <a href="https://www.alexedwards.net/blog/understanding-mutexes">this post</a> has an explanation which you might want to read before continuing).</p>
 
     <p>Let's update the <code>limit.go</code> file to contain a basic implementation. I'll keep the code structure deliberately simple.</p>
 
@@ -1743,8 +1743,8 @@ db.SetMaxIdleConns(1)
   </item>
   <item>
     <pubDate>Sat, 05 Aug 2017 19:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/validation-snippets-for-go</link>
-    <guid>http://www.alexedwards.net/blog/validation-snippets-for-go</guid>
+    <link>https://www.alexedwards.net/blog/validation-snippets-for-go</link>
+    <guid>https://www.alexedwards.net/blog/validation-snippets-for-go</guid>
     <title>Validation Snippets for Go</title>
     <description><![CDATA[
     <p>Over the past few years I've built up a collection of snippets for validating inputs in Go. There's nothing new or groundbreaking here, but hopefully they might save you some time.</p>
@@ -1752,22 +1752,22 @@ db.SetMaxIdleConns(1)
     <p>The snippets assume that the data to validate is stored as strings in <code>r.Form</code>, but the principles are the same no matter where the data has come from.</p>
 
     <ol style="margin-left: 23px;">
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#required-inputs">Required inputs</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#blank-text">Blank text</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#min-and-max-length-bytes">Min and max length (bytes)</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#min-and-max-length-number-of-characters">Min and max length (number of characters)</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#starts-with,-ends-with-and-contains">Starts with, ends with and contains</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#matches-regular-expression-pattern">Matches regular expression pattern</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#unicode-character-range">Unicode character range</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#email-validation">Email validation</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#url-validation">URL validation</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#integers">Integers</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#floats">Floats</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#date">Date</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#datetime-local">Datetime-local</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#radio,-select-and-datalist-one-in-set">Radio, Select and Datalist (one-in-set)</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#checkboxes-many-in-set">Checkboxes (many-in-set)</a></li>
-    <li><a href="http://www.alexedwards.net/blog/validation-snippets-for-go#single-checkbox">Single checkbox</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#required-inputs">Required inputs</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#blank-text">Blank text</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#min-and-max-length-bytes">Min and max length (bytes)</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#min-and-max-length-number-of-characters">Min and max length (number of characters)</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#starts-with,-ends-with-and-contains">Starts with, ends with and contains</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#matches-regular-expression-pattern">Matches regular expression pattern</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#unicode-character-range">Unicode character range</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#email-validation">Email validation</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#url-validation">URL validation</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#integers">Integers</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#floats">Floats</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#date">Date</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#datetime-local">Datetime-local</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#radio,-select-and-datalist-one-in-set">Radio, Select and Datalist (one-in-set)</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#checkboxes-many-in-set">Checkboxes (many-in-set)</a></li>
+    <li><a href="https://www.alexedwards.net/blog/validation-snippets-for-go#single-checkbox">Single checkbox</a></li>
     </ol>
 
     <h2 id="required-inputs">Required inputs</h2>
@@ -2152,8 +2152,8 @@ db.SetMaxIdleConns(1)
   </item>
   <item>
     <pubDate>Tue, 30 Aug 2016 18:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/scs-session-manager</link>
-    <guid>http://www.alexedwards.net/blog/scs-session-manager</guid>
+    <link>https://www.alexedwards.net/blog/scs-session-manager</link>
+    <guid>https://www.alexedwards.net/blog/scs-session-manager</guid>
     <title>SCS: A session manager for Go 1.7+</title>
     <description><![CDATA[
     <p>I’ve just released <a href="https://github.com/alexedwards/scs">SCS</a>, a session management package for Go 1.7+.</p>
@@ -2283,8 +2283,8 @@ db.SetMaxIdleConns(1)
   </item>
   <item>
     <pubDate>Fri, 26 Feb 2016 19:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/working-with-redis</link>
-    <guid>http://www.alexedwards.net/blog/working-with-redis</guid>
+    <link>https://www.alexedwards.net/blog/working-with-redis</link>
+    <guid>https://www.alexedwards.net/blog/working-with-redis</guid>
     <title>Working with Redis</title>
     <description><![CDATA[
     <p>In this post I'm going to be looking at using <a href="http://redis.io">Redis</a> as a data persistence layer for a Go application. We'll start by explaining a few of the essential concepts, and then build a working web application which highlights some techniques for using Redis in a concurrency-safe way.</p>
@@ -3043,8 +3043,8 @@ db.SetMaxIdleConns(1)
   </item>
   <item>
     <pubDate>Thu, 16 Jul 2015 23:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/organising-database-access</link>
-    <guid>http://www.alexedwards.net/blog/organising-database-access</guid>
+    <link>https://www.alexedwards.net/blog/organising-database-access</link>
+    <guid>https://www.alexedwards.net/blog/organising-database-access</guid>
     <title>Practical Persistence in Go: Organising Database Access</title>
     <description><![CDATA[
     <p>A few weeks ago someone created a <a href="http://www.reddit.com/r/golang/comments/38hkor/go_best_practice_for_accessing_database_in/">thread on Reddit</a> asking:</p>
@@ -3656,8 +3656,8 @@ db.SetMaxIdleConns(1)
   </item>
   <item>
     <pubDate>Sat, 13 Jun 2015 20:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/practical-persistence-sql</link>
-    <guid>http://www.alexedwards.net/blog/practical-persistence-sql</guid>
+    <link>https://www.alexedwards.net/blog/practical-persistence-sql</link>
+    <guid>https://www.alexedwards.net/blog/practical-persistence-sql</guid>
     <title>Practical Persistence in Go: SQL Databases</title>
     <description><![CDATA[
     <p>This is the first in a series of tutorials about persisting data in Go web applications.</p>
@@ -4088,13 +4088,13 @@ db.SetMaxIdleConns(1)
 
     <p>Lastly, I found the tutorials at <a href="http://go-database-sql.org">go-database-sql.org</a> to be clear and helpful. Especially worth reading is the surprises and limitations section.</p>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Wed, 03 Dec 2014 22:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/handler-chains-using-stack</link>
-    <guid>http://www.alexedwards.net/blog/handler-chains-using-stack</guid>
+    <link>https://www.alexedwards.net/blog/handler-chains-using-stack</link>
+    <guid>https://www.alexedwards.net/blog/handler-chains-using-stack</guid>
     <title>Context-Aware Handler Chains in Go (using Stack)</title>
     <description><![CDATA[
     <p>I've written a package for chaining context-aware handlers in Go, called <a href="https://github.com/alexedwards/stack">Stack</a>. It was heavily inspired by <a href="https://github.com/justinas/alice">Alice</a>.</p>
@@ -4184,13 +4184,13 @@ db.SetMaxIdleConns(1)
     Unauthorized</samp>
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Tue, 21 Oct 2014 20:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/making-and-using-middleware</link>
-    <guid>http://www.alexedwards.net/blog/making-and-using-middleware</guid>
+    <link>https://www.alexedwards.net/blog/making-and-using-middleware</link>
+    <guid>https://www.alexedwards.net/blog/making-and-using-middleware</guid>
     <title>Making and Using HTTP Middleware</title>
     <description><![CDATA[
     <p>When you're building a web application there's probably some shared functionality that you want to run for many (or even all) HTTP requests. You might want to log every request, gzip every response, or check a cache before doing some  heavy processing.</p>
@@ -4212,7 +4212,7 @@ db.SetMaxIdleConns(1)
 
     <p>I'll explain how.</p>
 
-    <p>Hopefully you're already familiar with the following method for constructing a handler (if not, it's probably best to read <a href="http://www.alexedwards.net/blog/a-recap-of-request-handling">this primer</a> before continuing).</p>
+    <p>Hopefully you're already familiar with the following method for constructing a handler (if not, it's probably best to read <a href="https://www.alexedwards.net/blog/a-recap-of-request-handling">this primer</a> before continuing).</p>
 
     <figure class="plain"><code class="go"><pre>
     func messageHandler(message string) http.Handler {
@@ -4534,13 +4534,13 @@ db.SetMaxIdleConns(1)
     http.Handle("/bar", stdChain.Then(barHandler))
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Tue, 19 Nov 2013 18:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/simple-flash-messages-in-golang</link>
-    <guid>http://www.alexedwards.net/blog/simple-flash-messages-in-golang</guid>
+    <link>https://www.alexedwards.net/blog/simple-flash-messages-in-golang</link>
+    <guid>https://www.alexedwards.net/blog/simple-flash-messages-in-golang</guid>
     <title>Simple Flash Messages in Go</title>
     <description><![CDATA[
     <p>Often in web applications you need to temporarily store data in-between requests, such as an error or success message during the Post-Redirect-Get process for a form submission. Frameworks such as Rails and Django have the concept of transient single-use <em>flash messages</em> to help with this.</p>
@@ -4725,13 +4725,13 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Fri, 01 Nov 2013 23:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/form-validation-and-processing</link>
-    <guid>http://www.alexedwards.net/blog/form-validation-and-processing</guid>
+    <link>https://www.alexedwards.net/blog/form-validation-and-processing</link>
+    <guid>https://www.alexedwards.net/blog/form-validation-and-processing</guid>
     <title>Form Validation and Processing in Go</title>
     <description><![CDATA[
      <p>In this post I'm going to run through a start-to-finish tutorial for building a online contact form in Go. I'll be trying to explain the different steps in detail, as well as outlining a sensible pattern for processing that can be extended to other forms.</p>
@@ -4768,7 +4768,7 @@ db.SetMaxIdleConns(1)
 
     <p>Our contact form will issue a POST request to <code>/</code>, which will be the same URL path that we use for presenting the form. This means that we'll need to route requests for the same URL to different handlers based on the HTTP method.</p>
 
-    <p>There are a few ways of achieving this, but we'll use <a href="https://github.com/bmizerany/pat">Pat</a> &ndash; a third-party routing library which I've <a href="http://www.alexedwards.net/blog/a-mux-showdown">talked about before</a>. You'll need to install it if you're following along:</p>
+    <p>There are a few ways of achieving this, but we'll use <a href="https://github.com/bmizerany/pat">Pat</a> &ndash; a third-party routing library which I've <a href="https://www.alexedwards.net/blog/a-mux-showdown">talked about before</a>. You'll need to install it if you're following along:</p>
 
     <figure class="shell"><code><pre>
     $ go get github.com/bmizerany/pat
@@ -5010,13 +5010,13 @@ db.SetMaxIdleConns(1)
 
     <p>Additionally, <a href="https://github.com/absoludity/goforms">Goforms</a> appears to be a promising idea, with a fairly slick Django-like approach to dealing with forms. However, the existing validation options are fairly limited and the library doesn't seem to be under active development at the moment. It's still worth a look though, especially if you're thinking of rolling something a bit more generic for your form handling.</p>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Sat, 19 Oct 2013 12:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/golang-response-snippets</link>
-    <guid>http://www.alexedwards.net/blog/golang-response-snippets</guid>
+    <link>https://www.alexedwards.net/blog/golang-response-snippets</link>
+    <guid>https://www.alexedwards.net/blog/golang-response-snippets</guid>
     <title>HTTP Response Snippets for Go</title>
     <description><![CDATA[
     <p>Taking inspiration from the Rails <a href="http://guides.rubyonrails.org/layouts_and_rendering.html">layouts and rendering</a> guide, I thought it'd be a nice idea to build a snippet collection illustrating some common HTTP responses for Go web applications.</p>
@@ -5354,13 +5354,13 @@ db.SetMaxIdleConns(1)
     &lt;/html&gt;</samp>
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Fri, 04 Oct 2013 20:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/understanding-mutexes</link>
-    <guid>http://www.alexedwards.net/blog/understanding-mutexes</guid>
+    <link>https://www.alexedwards.net/blog/understanding-mutexes</link>
+    <guid>https://www.alexedwards.net/blog/understanding-mutexes</guid>
     <title>Understanding Mutexes</title>
     <description><![CDATA[
     <p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own Goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
@@ -5530,13 +5530,13 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Fri, 20 Sep 2013 22:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/golang-automatic-reloads</link>
-    <guid>http://www.alexedwards.net/blog/golang-automatic-reloads</guid>
+    <link>https://www.alexedwards.net/blog/golang-automatic-reloads</link>
+    <guid>https://www.alexedwards.net/blog/golang-automatic-reloads</guid>
     <title>Golang Automatic Reloads</title>
     <description><![CDATA[
     <p>I wrote a short Bash script to automatically reload Go programs.</p>
@@ -5623,13 +5623,13 @@ db.SetMaxIdleConns(1)
     >> Watching directories, CTRL+C to stop</samp>
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Thu, 12 Sep 2013 19:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/a-recap-of-request-handling</link>
-    <guid>http://www.alexedwards.net/blog/a-recap-of-request-handling</guid>
+    <link>https://www.alexedwards.net/blog/a-recap-of-request-handling</link>
+    <guid>https://www.alexedwards.net/blog/a-recap-of-request-handling</guid>
     <title>A Recap of Request Handling in Go</title>
     <description><![CDATA[
     <p>Processing HTTP requests with Go is primarily about two things: ServeMuxes and Handlers.</p>
@@ -5931,13 +5931,13 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
    <item>
     <pubDate>Mon, 2 Sep 2013 12:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/a-mux-showdown</link>
-    <guid>http://www.alexedwards.net/blog/a-mux-showdown</guid>
+    <link>https://www.alexedwards.net/blog/a-mux-showdown</link>
+    <guid>https://www.alexedwards.net/blog/a-mux-showdown</guid>
     <title>Gorilla vs Pat vs Routes: A Mux Showdown</title>
     <description><![CDATA[
     <p>One of the first things I missed when learning Go was being able to route HTTP requests to handlers based on the <em>pattern</em> of a URL path, like you can with web frameworks like Sinatra and Django.</p>
@@ -6146,13 +6146,13 @@ db.SetMaxIdleConns(1)
 
     <p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
    <item>
     <pubDate>Sat, 24 Aug 2013 12:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/serving-static-sites-with-go</link>
-    <guid>http://www.alexedwards.net/blog/serving-static-sites-with-go</guid>
+    <link>https://www.alexedwards.net/blog/serving-static-sites-with-go</link>
+    <guid>https://www.alexedwards.net/blog/serving-static-sites-with-go</guid>
     <title>Serving Static Sites with Go</title>
     <description><![CDATA[
     <p>I've recently moved the site you're reading right now from a Sinatra application to an (almost) static one served by Go. While it's fresh in my head, here's an explanation of principles behind creating and serving static sites with Go.</p>
@@ -6399,13 +6399,13 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="http://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
     ]]></description>
   </item>
   <item>
     <pubDate>Sat, 17 Aug 2013 12:00:00 GMT</pubDate>
-    <link>http://www.alexedwards.net/blog/cleaner-better-faster</link>
-    <guid>http://www.alexedwards.net/blog/cleaner-better-faster</guid>
+    <link>https://www.alexedwards.net/blog/cleaner-better-faster</link>
+    <guid>https://www.alexedwards.net/blog/cleaner-better-faster</guid>
     <title>Cleaner, Better, Faster</title>
     <description><![CDATA[
     <p>I've never really known what to do with my personal site. Over the years it's been a dumping ground for links to different projects, and played host to various half-hearted attempts at blogging. But it's never really had much in the way of an actual purpose.</p>
