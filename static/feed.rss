@@ -4,7 +4,115 @@
   <title>Alex Edwards</title>
   <link>https://www.alexedwards.net/blog</link>
   <language>en-gb</language>
-  <lastBuildDate>Tue, 10 Apr 2018 12:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Thu, 10 Apr 2018 16:00:00 GMT</lastBuildDate>
+   <item>
+    <pubDate>Thu, 10 Apr 2018 16:00:00 GMT</pubDate>
+    <link>https://www.alexedwards.net/blog/http-method-spoofing</link>
+    <guid>https://www.alexedwards.net/blog/http-method-spoofing</guid>
+    <title>HTTP Method Spoofing in Go</title>
+    <description><![CDATA[
+<p>A.K.A. <em>HTTP method overriding</em>.</p>
+<p>As a web developer you probably already know that HTML forms <a href="https://www.w3.org/TR/html52/sec-forms.html#element-attrdef-form-method">only support</a> the <code>GET</code> and <code>POST</code> HTTP methods. </p>
+<p>If you want to send a <code>PUT</code>, <code>PATCH</code> or <code>DELETE</code> request you need to resort to either sending a <code>XMLHttpRequest</code> from JavaScript (where they are supported by most major browsers) or implement a workaround in your server-side application code to support 'spoofed' HTTP methods.</p>
+<p>The de-facto workaround &mdash; which you might be familiar with if you've used frameworks like Ruby on Rails, Laravel or Express &mdash; is to include a hidden <code>_method</code> input in your form containing the spoofed HTTP method. A bit like this:</p>
+<figure class="plain"><code><pre>
+&lt;form method="POST" action="/"&gt;
+    &lt;input type="hidden" name="_method" value="PUT"&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+</pre></code></figure>
+<p>Another common workaround is to send a spoofed HTTP method in a <code>X-HTTP-Method-Override</code> header.</p>
+<p>So how can we support these things in a Go application?</p>
+<h2>MethodOverride Middleware</h2>
+<p>Intercepting and dealing with spoofed HTTP methods is the perfect task for some custom <a href="https://www.alexedwards.net/blog/making-and-using-middleware">middleware</a>. We want the middleware to:</p>
+<ol>
+    <li>Intercept <code>POST</code> requests before they reach any application handlers.</li>
+    <li>Check for a spoofed HTTP method, either in a <code>_method</code> parameter of the request body or a <code>X-HTTP-Method-Override</code> header. </li>
+    <li>If a spoofed method exists &mdash; and is equal to <code>"PUT"</code>, <code>"PATCH"</code> or <code>"DELETE"</code> &mdash; the current <code>http.Request.Method</code> value should be updated accordingly.</li>
+</ol>
+<p>It's pretty quick to implement:</p>
+<figure class="go"><code><pre>
+package main
+
+import (
+    "net/http"
+)
+
+func MethodOverride(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Only act on POST requests.
+        if r.Method == "POST" {
+
+            // Look in the request body and headers for a spoofed method.
+            // Prefer the value in the request body if they conflict.
+            method := r.PostFormValue("_method")
+            if method == "" {
+                method = r.Header.Get("X-HTTP-Method-Override")
+            }
+
+            // Check that the spoofed method is a valid HTTP method and
+            // update the request object accordingly.
+            if method == "PUT" || method == "PATCH" || method == "DELETE" {
+                r.Method = method
+            }
+        }
+
+        // Call the next handler in the chain.
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+<p>You can then use the middleware in your application like so:</p>
+<figure class="go"><code><pre>
+package main
+
+import (
+    "html/template"
+    "io"
+    "log"
+    "net/http"
+)
+
+const form = `
+&lt;!DOCTYPE HTML&gt;
+&lt;html&gt;
+    &lt;body&gt;
+        &lt;form method="POST" action="/"&gt;
+            &lt;input type="hidden" name="_method" value="PUT"&gt;
+            &lt;label&gt;Example field&lt;/label&gt;
+            &lt;input type="text" name="example"&gt;
+            &lt;button type="submit"&gt;Submit&lt;/button&gt;
+        &lt;/form&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+`
+
+func main() {
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", formHandler)
+
+    // Wrap the servemux with the MethodOverride middleware.
+    err := http.ListenAndServe(":4000", MethodOverride(mux))
+    log.Println(err)
+}
+
+func formHandler(w http.ResponseWriter, r *http.Request) {
+    switch r.Method {
+    case "GET":
+        t, err := template.New("form").Parse(form)
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+        }
+        t.Execute(w, nil)
+    case "PUT":
+        io.WriteString(w, "This is a PUT request")
+    default:
+        http.Error(w, http.StatusText(405), 405)
+    }
+}
+</pre></code></figure>
+    ]]></description>
+  </item>
   <item>
     <pubDate>Tue, 10 Apr 2018 12:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/serverless-api-with-go-and-aws-lambda</link>

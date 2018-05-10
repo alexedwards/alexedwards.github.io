@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2018">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>HTTP Method Spoofing in Go</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="https://www.alexedwards.net/blog/http-method-spoofing"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+          <span class="crumbs">
+            
+              <span class="separator">&rsaquo;</span>
+              <a href="/blog/">Blog</a>
+            
+            
+              <span class="separator">&rsaquo;</span>
+              HTTP Method Spoofing in Go
+            
+          </span>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <section class="wrapper clearfix">
+      <article class="primary">
+	<h1>HTTP Method Spoofing in Go</h1>
+	<div class="metadata">
+		<span class="dates">
+			<span class="label">Posted on:</span> 10th May 2018
+			
+		</span>
+		<span class="share">
+			<span class="label">Share with:</span>
+			<a
+			class="share-button share-button-twitter" href="http://twitter.com/share?url=https://www.alexedwards.net/blog/http-method-spoofing&text=HTTP Method Spoofing in Go">Twitter</a>
+			<a
+			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=https://www.alexedwards.net/blog/http-method-spoofing">Google+</a>
+				<a
+			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=https://www.alexedwards.net/blog/http-method-spoofing&p[title]=HTTP Method Spoofing in Go">Facebook</a>
+			<a
+			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=https://www.alexedwards.net/blog/http-method-spoofing&title=HTTP Method Spoofing in Go&source=https://www.alexedwards.net">LinkedIn</a>
+		</span>
+		
+		<span class="tags">
+			<span class="label">Filed under:</span> <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	
+<p>A.K.A. <em>HTTP method overriding</em>.</p>
+<p>As a web developer you probably already know that HTML forms <a href="https://www.w3.org/TR/html52/sec-forms.html#element-attrdef-form-method">only support</a> the <code>GET</code> and <code>POST</code> HTTP methods. </p>
+<p>If you want to send a <code>PUT</code>, <code>PATCH</code> or <code>DELETE</code> request you need to resort to either sending a <code>XMLHttpRequest</code> from JavaScript (where they are supported by most major browsers) or implement a workaround in your server-side application code to support 'spoofed' HTTP methods.</p>
+<p>The de-facto workaround &mdash; which you might be familiar with if you've used frameworks like Ruby on Rails, Laravel or Express &mdash; is to include a hidden <code>_method</code> input in your form containing the spoofed HTTP method. A bit like this:</p>
+<figure class="plain"><code><pre>
+&lt;form method="POST" action="/"&gt;
+    &lt;input type="hidden" name="_method" value="PUT"&gt;
+    &lt;button type="submit"&gt;Submit&lt;/button&gt;
+&lt;/form&gt;
+</pre></code></figure>
+<p>Another common workaround is to send a spoofed HTTP method in a <code>X-HTTP-Method-Override</code> header.</p>
+<p>So how can we support these things in a Go application?</p>
+<h2>MethodOverride Middleware</h2>
+<p>Intercepting and dealing with spoofed HTTP methods is the perfect task for some custom <a href="https://www.alexedwards.net/blog/making-and-using-middleware">middleware</a>. We want the middleware to:</p>
+<ol>
+	<li>Intercept <code>POST</code> requests before they reach any application handlers.</li>
+	<li>Check for a spoofed HTTP method, either in a <code>_method</code> parameter of the request body or a <code>X-HTTP-Method-Override</code> header. </li>
+	<li>If a spoofed method exists &mdash; and is equal to <code>"PUT"</code>, <code>"PATCH"</code> or <code>"DELETE"</code> &mdash; the current <code>http.Request.Method</code> value should be updated accordingly.</li>
+</ol>
+<p>It's pretty quick to implement:</p>
+<figure class="go"><code><pre>
+package main
+
+import (
+    "net/http"
+)
+
+func MethodOverride(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Only act on POST requests.
+        if r.Method == "POST" {
+
+            // Look in the request body and headers for a spoofed method.
+            // Prefer the value in the request body if they conflict.
+            method := r.PostFormValue("_method")
+            if method == "" {
+                method = r.Header.Get("X-HTTP-Method-Override")
+            }
+
+            // Check that the spoofed method is a valid HTTP method and
+            // update the request object accordingly.
+            if method == "PUT" || method == "PATCH" || method == "DELETE" {
+                r.Method = method
+            }
+        }
+
+        // Call the next handler in the chain.
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+<p>You can then use the middleware in your application like so:</p>
+<figure class="go"><code><pre>
+package main
+
+import (
+    "html/template"
+    "io"
+    "log"
+    "net/http"
+)
+
+const form = `
+&lt;!DOCTYPE HTML&gt;
+&lt;html&gt;
+    &lt;body&gt;
+        &lt;form method="POST" action="/"&gt;
+            &lt;input type="hidden" name="_method" value="PUT"&gt;
+            &lt;label&gt;Example field&lt;/label&gt;
+            &lt;input type="text" name="example"&gt;
+            &lt;button type="submit"&gt;Submit&lt;/button&gt;
+        &lt;/form&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+`
+
+func main() {
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", formHandler)
+
+    // Wrap the servemux with the MethodOverride middleware.
+    err := http.ListenAndServe(":4000", MethodOverride(mux))
+    log.Println(err)
+}
+
+func formHandler(w http.ResponseWriter, r *http.Request) {
+    switch r.Method {
+    case "GET":
+        t, err := template.New("form").Parse(form)
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+        }
+        t.Execute(w, nil)
+    case "PUT":
+        io.WriteString(w, "This is a PUT request")
+    default:
+        http.Error(w, http.StatusText(405), 405)
+    }
+}
+</pre></code></figure>
+	<div class="footer">
+		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+	</div>
+</article>
+<div class="sidebar">
+	<div class="lets-go clearfix">
+		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
+		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+	</div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
+</script>
+    </section>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2018</div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
