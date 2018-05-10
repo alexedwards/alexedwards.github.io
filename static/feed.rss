@@ -4,9 +4,9 @@
   <title>Alex Edwards</title>
   <link>https://www.alexedwards.net/blog</link>
   <language>en-gb</language>
-  <lastBuildDate>Thu, 10 Apr 2018 16:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Thu, 10 May 2018 16:00:00 GMT</lastBuildDate>
    <item>
-    <pubDate>Thu, 10 Apr 2018 16:00:00 GMT</pubDate>
+    <pubDate>Thu, 10 May 2018 16:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/http-method-spoofing</link>
     <guid>https://www.alexedwards.net/blog/http-method-spoofing</guid>
     <title>HTTP Method Spoofing in Go</title>
