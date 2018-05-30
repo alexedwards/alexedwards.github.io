@@ -62,8 +62,7 @@
 		</span>
 		
 	</div>
-	
-<p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
+	<p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
 
 <p>But if you want something simple and lightweight &ndash; or just want to learn &ndash; it's not too difficult to roll your own middleware to handle rate limiting. In this post I'll run through the essentials of how to do that.</p>
 
@@ -335,7 +334,11 @@ func limit(next http.Handler) http.Handler {
 <div class="sidebar">
 	<div class="lets-go clearfix">
 		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
-		<p> <strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+		
+		
+			<p><strong>Not sure how to structure your Go web application?</strong> My new book guides you step-by-step through building a clear, idiomatic and secure real-world web application. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+			<!-- <p><strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><a href="https://lets-go.alexedwards.net/">Take a look!</a></p> -->
+		
 	</div>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
