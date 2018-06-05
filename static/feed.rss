@@ -4,7 +4,266 @@
   <title>Alex Edwards</title>
   <link>https://www.alexedwards.net/blog</link>
   <language>en-gb</language>
-  <lastBuildDate>Thu, 10 May 2018 16:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Tue, 5 Jun 2018 13:00:00 GMT</lastBuildDate>
+     <item>
+    <pubDate>Tue, 5 Jun 2018 13:00:00 GMT</pubDate>
+    <link>https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow</link>
+    <guid>https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow</guid>
+    <title>Streamline Your Sublime Text + Go Workflow</title>
+    <description><![CDATA[
+<p>For the past couple of years I've used Sublime Text as my primary code editor, along with the <a href="https://github.com/DisposaBoy/GoSublime">GoSublime</a> plugin to provide some extra IDE-like features.</p>
+
+<p>But I've recently swapped GoSublime for a more modular plugin setup and have been really happy with the way it's worked out. Although it took a while to configure, it's resulted in a coding environment that feels clearer to use and more streamlined than before.</p>
+
+<p>I've opted for:</p>
+
+<ul>
+<li><strong>Tooling integration</strong> with the official <a href="https://github.com/golang/sublime-build">sublime-build</a> plugin.</li>
+<li><strong>Automatic formatting</strong> with the <a href="https://github.com/noonat/sublime-gofmt">Gofmt</a> plugin and <a href="https://godoc.org/golang.org/x/tools/cmd/goimports">goimports</a>.</li>
+<li><strong>Code linting</strong> with the <a href="https://github.com/SublimeLinter/SublimeLinter">SublimeLinter</a> plugin and <a href="https://github.com/alecthomas/gometalinter">gometalinter</a>.</li>
+<li><strong>Autocompletion</strong> with the <a href="https://github.com/mdempsky/gocode">gocode</a> package.</li>
+<li><strong>Code navigation</strong> with the <a href="https://github.com/alvarolm/GoGuru">GoGuru</a> plugin.</li>
+<li><strong>Snippet management</strong> with Sublime Text's inbuilt tool and the <a href="https://github.com/skuroda/PackageResourceViewer">PackageResourceViewer</a> plugin.</li>
+</ul>
+
+<p>In this post I'm going to run through the process of setting these up. If you haven't come across these plugins before, I recommend giving them a try!</p>
+
+<h2>Prerequisites</h2>
+
+<p>To work correctly some of these Sublime Text plugins need an explicit <code>$GOPATH</code> environment variable to be set. And if you're following along, you should also make sure that your workspace's <code>bin</code> directory is on your system path.</p>
+
+<p>Accordingly my bash <code>~/.profile</code> configuration includes these lines:</p>
+
+<figure class="plain"><code><pre>
+...
+export GOPATH=/home/alex/Code/go
+export PATH=$PATH:$GOPATH/bin
+</pre></code></figure>
+
+<p>You'll also need to <a href="https://packagecontrol.io/installation">install Package Control</a>, if you haven't already. In the latest version of  Sublime Text the easiest way to do that by going to <code>Tools &gt; Install Package Control&hellip;</code>.</p>
+
+<h2>Tooling integration</h2>
+
+<p>The official <a href="https://github.com/golang/sublime-build">sublime-build</a> plugin provides integrations so you can execute common <code>go</code> commands (like <code>go run</code>, <code>go test</code> and <code>go get</code>) without leaving your editor.</p>
+
+<p>You can install it like so:</p>
+
+<ol>
+<li>Open the Sublime Text command palette by pressing <code>Ctrl+Shift+P</code>.</li>
+<li>Run the <code>Package Control: Install Package</code> command.</li>
+<li>Type <code>Golang Build</code> and hit <code>Enter</code> to install the package.</li>
+</ol>
+
+<p>After installation should see a bunch of new tools in your command palette. Their names are pretty self explanatory:</p>
+
+<ul>
+<li><code>Build With: Go</code></li>
+<li><code>Build With: Go - Clean</code></li>
+<li><code>Build With: Go - Install</code></li>
+<li><code>Build With: Go - Run</code></li>
+<li><code>Build With: Go - Test</code></li>
+<li><code>Build With: Go - Cross-Compile</code></li>
+<li><code>Go: Get</code></li>
+<li><code>Go: Open Terminal</code></li>
+</ul>
+
+<p>When you run these commands they will open and execute in a panel <em>within</em> Sublime Text. As an example, here's a screenshot of output from the <code>Build With: Go - Test</code> command:</p>
+
+<img src="https://www.alexedwards.net/static/images/sublime-1.png">
+
+<h2>Automatic formatting</h2>
+
+<p>For automatic formatting of <code>.go</code> files I've been using the <a href="https://github.com/noonat/sublime-gofmt">Gofmt</a> plugin. You can install it as follows:</p>
+
+<ol>
+<li>Open the Sublime Text command palette  by pressing <code>Ctrl+Shift+P</code>.</li>
+<li>Run the <code>Package Control: Install Package</code> command.</li>
+<li>Type <code>Gofmt</code> and hit <code>Enter</code> to install the package.</li>
+</ol>
+
+<p>By default this will run <code>go fmt -s -e</code> on the current file each time it is saved.</p>
+
+<p>I've customised this further to use the <a href="https://godoc.org/golang.org/x/tools/cmd/goimports">goimports</a> tool. If you're not already familiar with <code>goimports</code>, it runs <code>go fmt</code> <em>and</em> fixes your import lines &mdash; adding missing packages and removing unreferenced ones as necessary.</p>
+
+<p>To set this up you'll need to install <code>goimports</code> and make sure it's available on your system path:</p>
+
+<figure class="shell"><code><pre>
+$ go get golang.org/x/tools/cmd/goimports
+$ which goimports
+<samp>/home/alex/Code/go/bin/goimports</samp>
+</pre></code></figure>
+
+<p>When that's installed, you'll then need to change the <code>Gofmt</code> plugin settings in Sublime Text by opening
+<code>Preferences &gt; Package Settings &gt; Gofmt &gt; Settings - User</code> and adding the following configuration settings:</p>
+
+<figure class="json"><code><pre>
+{
+  "cmds": [
+    ["goimports"]
+  ],
+  "format_on_save": true
+}
+</pre></code></figure>
+
+<p>(You'll probably need to restart Sublime Text for this to take effect.)</p>
+
+<p>Each time you now save a <code>.go</code> file, you'll find that it gets automatically formatted and the import packages are updated. No more <code>"imported and not used"</code> errors!</p>
+
+<h2>Code linting</h2>
+
+<p>For linting of source code I'm using the <a href="https://github.com/SublimeLinter/SublimeLinter">SublimeLinter</a> plugin. This plugin isn't a linter itself, but provides a <em>framework</em> for running linters and displaying error messages. You can install it like so:</p>
+
+<ol>
+<li>Open command palette by pressing <code>Ctrl+Shift+P</code>.</li>
+<li>Run the <code>Package Control: Install Package</code> command.</li>
+<li>Type <code>SublimeLinter</code> and hit <code>Enter</code> to install the package.</li>
+</ol>
+
+<p>The next step is to install an actual linter. I'm using <a href="https://github.com/alecthomas/gometalinter">gometalinter</a>, which acts as a wrapper around a bunch of <a href="https://github.com/alecthomas/gometalinter#supported-linters">different linters</a> and picks up more potential problems and inefficiencies than using <code>go vet</code> and <code>golint</code> alone. You can install it with the commands:</p>
+
+<figure class="shell"><code><pre>
+$ go get github.com/alecthomas/gometalinter
+$ which gometalinter
+<samp>/home/alex/Code/go/bin/gometalinter</samp>
+$ gometalinter --install
+</pre></code></figure>
+
+<p>Once that's done, you'll need to install the <a href="https://github.com/alecthomas/SublimeLinter-contrib-gometalinter">SublimeLinter-contrib-gometalinter</a> plugin. This acts as the bridge between SublimeLinter and gometalinter.</p>
+
+<ol>
+<li>Open command palette by pressing <code>Ctrl+Shift+P</code>.</li>
+<li>Run the <code>Package Control: Install Package</code> command.</li>
+<li>Type <code>SublimeLinter-contrib-gometalinter</code> and hit <code>Enter</code> to install the package.</li>
+</ol>
+
+<p>By default the linter will run in the background as you type, and errors will be shown in the Sublime Text status bar at the bottom of the screen. But I've found suits me more to only lint when saving a file and to display all errors at once in a panel. If you want to do the same, go to <code>Preferences &gt; Package Settings &gt; SublimeLinter &gt; Settings</code> and add the following settings to the <code>SublimeLinter Settings - User</code> file:</p>
+
+<figure class="json"><code><pre>
+{
+    "show_panel_on_save": "window",
+    "lint_mode": "save",
+}
+</pre></code></figure>
+
+<img src="https://www.alexedwards.net/static/images/sublime-2.png">
+
+<p>I should mention that the <code>SublimeLinter-contrib-gometalinter</code> plugin only executes the 'fast' linters included in <code>gometalinter</code>. You can see exactly which ones are run by checking the <a href="https://github.com/alecthomas/gometalinter/blob/322f0639d93eafd502424842597e73f8c3ae43d8/linters.go#L205">source code</a>.</p>
+
+<h2>Autocompletion</h2>
+
+<p>For autocompletion I'm using the <a href="github.com/mdempsky/gocode">gocode</a> package, which provides a deamon for code completion. You can install it like so:</p>
+
+<figure class="shell"><code><pre>
+$ go get github.com/mdempsky/gocode
+$ which gocode
+<samp>/home/alex/Code/go/bin/gocode</samp>
+</pre></code></figure>
+
+<p>There isn't currently a <code>gocode</code> plugin available via Sublime Text package control (I might add one soon!)&hellip; but there is a plugin included in the <code>subl3</code> directory <em>within</em> the <code>gocode</code> source itself.</p>
+
+<p>You should be able to copy it into your Sublime Text <code>Packages</code> directory with the following command:</p>
+
+<figure class="shell"><code><pre>
+$ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Packages/gocode
+</pre></code></figure>
+
+<p>If you open the command palette and run <code>Package Control: List Packages</code> you should see a <code>gocode</code> entry in the list.</p>
+
+<img src="https://www.alexedwards.net/static/images/sublime-3.png">
+
+<p>By default Sublime Text will make autocomplete suggestions whenever a letter is pressed. But when working with Go I like also to display potential method names whenever I hit the <code>.</code> character. You can make that happen by going to <code>Preferences &gt; Settings</code> and adding a new trigger in the <code>Preferences.sublime-settings - User</code> file:</p>
+
+<figure class="json"><code><pre>
+{
+    ...
+    "auto_complete_triggers": [
+        {"selector": "text.html", "characters": "&lt;"},
+        {"selector": "source.go", "characters": "."}
+    ],
+}
+</pre></code></figure>
+
+<p>You'll need to then restart Sublime Text for the settings to take effect. Once you have, you should have autocomplete working nicely and looking something like this:</p>
+
+<img src="https://www.alexedwards.net/static/images/sublime-4.png">
+
+<h2>Code navigation</h2>
+
+<p>To help with navigating code I use the <a href="golang.org/x/tools/cmd/guru">guru</a> tool, which you can install with the following command:</p>
+
+<figure class="shell"><code><pre>
+$ go get golang.org/x/tools/cmd/guru
+$ which guru
+<samp>/home/alex/Code/go/bin/guru</samp>
+</pre></code></figure>
+
+<p>To integrate this with Sublime Text you'll also need to install the <a href="https://github.com/alvarolm/GoGuru">GoGuru</a> plugin like so:</p>
+
+<ol>
+<li>Open command palette by pressing <code>Ctrl+Shift+P</code>.</li>
+<li>Run the <code>Package Control: Install Package</code> command.</li>
+<li>Type <code>GoGuru</code> and hit <code>Enter</code> to install the package.</li>
+</ol>
+
+<p>To use the GoGuru tool, first place your cursor over the piece of code you're interested in. Then if you open the command palette and type the <code>GoGuru</code> prefix you'll see a list of available commands, including:
+
+<ul>
+<li><code>GoGuru: callees</code> &ndash; Show possible targets of selected function call</li>
+<li><code>GoGuru: callers</code> &ndash; Show possible callers of selected function</li>
+<li><code>GoGuru: callstack</code> &ndash; Show path from callgraph root to selected function</li>
+<li><code>GoGuru: definition</code> &ndash; Show declaration of selected identifier</li>
+<li><code>GoGuru: describe</code> &ndash; Describe selected syntax: definition, methods, etc</li>
+<li><code>GoGuru: freevars</code> &ndash; Show free variables of selection</li>
+<li><code>GoGuru: implements</code> &ndash; Show 'implements' relation for selected type or method</li>
+<li><code>GoGuru: jump to definition</code> &ndash; Open the file at the declaration of selected identifier</li>
+<li><code>GoGuru: peers</code> &ndash; Show send/receive corresponding to selected channel op</li>
+<li><code>GoGuru: pointsto</code> &ndash; Show variables the selected pointer may point to</li>
+<li><code>GoGuru: referrers</code> &ndash; Show all refs to thing denoted by selected identifier</li>
+<li><code>GoGuru: what</code> &ndash; Show basic information about the selected syntax node</li>
+<li><code>GoGuru: whicherrs</code> &ndash; Show possible values of the selected error variable</li>
+</ul>
+
+<p>You can find a detailed description these commands and their behaviour in <a href="https://docs.google.com/document/d/1_Y9xCEMj5S-7rv2ooHpZNH15JgRT5iM742gJkw5LtmQ">this GoogleDoc</a>.</p>
+
+<p>I don't use the GoGuru plugin as often as the others, but when working on a unfamiliar codebase it definitely makes navigating code and building up a mental map of how things work easier. I find the <code>GoGuru: jump to definition</code> and <code>GoGuru: callers</code> commands particularly useful, and easier to use than grepping or running <code>Ctrl+F</code> on the repository.</p>
+
+<p>As an illustration, here's a screenshot of running <code>GoGuru: callers</code> on the <code>Sum</code> function:</p>
+
+<img src="https://www.alexedwards.net/static/images/sublime-5.png">
+
+<h2>Snippets</h2>
+
+<p>Sublime Text ships with a pretty good workflow for creating and using custom snippets. If you're not already familiar with this Jimmy Zhang has written a great <a href="https://medium.freecodecamp.org/a-guide-to-preserving-your-wrists-with-sublime-text-snippets-7541662a53f2">in-depth guide</a> that I recommend reading.</p>
+
+<p>My most frequently-used snippet is probably this one for creating a HTTP handler function:</p>
+
+<figure class="html"><code><pre>
+&lt;snippet&gt;
+    &lt;content&gt;&lt;![CDATA[
+func ${1:name}(w http.ResponseWriter, r *http.Request) {
+    ${2:}
+}
+]]&gt;&lt;/content&gt;
+    &lt;tabTrigger&gt;hf&lt;/tabTrigger&gt;
+    &lt;scope&gt;source.go&lt;/scope&gt;
+&lt;/snippet&gt;
+</pre></code></figure>
+
+<p>One thing that bugged me for a while was the <em>built-in snippets</em> for Go that Sublime Text ships with. In particular I didn't like the way that the <code>main()</code> snippet kept triggering whenever I wrote out <code>"package main"</code>.</p>
+
+<p>If, like me, you want to edit these built-in snippets the easiest way is probably with the <a href="https://github.com/skuroda/PackageResourceViewer">PackageResourceViewer</a> plugin. You can install this as follows:</p>
+
+<ol>
+<li>Open command palette by pressing <code>Ctrl+Shift+P</code>.</li>
+<li>Run the <code>Package Control: Install Package</code> command.</li>
+<li>Type <code>PackageResourceViewer</code> and hit <code>Enter</code> to install the package.</li>
+</ol>
+
+<p>Once installed you can open the command palette and run <code>PackageResourceViewer: Open Resource</code> which will list all packages on your system. If you navigate through <code>Go &gt; Snippets/</code> you should see a list of all the built-in snippets and you can open and edit them as you wish.</p>
+
+<p><em>Hint:</em> You can also use PackageResourceViewer to edit your own custom snippets without leaving SublimeText. If &ndash; for example &ndash; your custom snippets are saved under your <code>Packages/User</code> directory, you can open them by running <code>PackageResourceViewer: Open Resource</code> and navigating to the <code>User</code> folder.</p>
+    ]]></description>
+  </item>
    <item>
     <pubDate>Thu, 10 May 2018 16:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/http-method-spoofing</link>
@@ -1121,7 +1380,7 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
     <description><![CDATA[
 <p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look at bit like this:</p>
 
-<p><img src="/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
+<p><img src="https://www.alexedwards.net/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
 
 <p>But for certain applications you might want to prevent this behavior and disable directory listings altogether. In this post I’m going to run through three different options for doing exactly that:</p>
 
@@ -6230,7 +6489,7 @@ db.SetMaxIdleConns(1)
     <p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the <a href="https://gist.github.com/alexedwards/6404944">code samples</a> and results:</p>
 
     <figure class="chart">
-      <img src="/static/images/muxer-performance-comparison.png" alt="">
+      <img src="https://www.alexedwards.net/static/images/muxer-performance-comparison.png" alt="">
     </figure>
 
     <p>In this test the best performing package appeared to be Pat by a large margin. It handled around 30% more requests than Routes and Gorilla Mux, which were very evenly matched.</p>
@@ -6238,7 +6497,7 @@ db.SetMaxIdleConns(1)
     <p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the <a href="https://gist.github.com/alexedwards/6414164">code samples</a> and results:</p>
 
     <figure class="chart">
-      <img src="/static/images/muxer-performance-comparison-2.png" alt="">
+      <img src="https://www.alexedwards.net/static/images/muxer-performance-comparison-2.png" alt="">
     </figure>
 
 

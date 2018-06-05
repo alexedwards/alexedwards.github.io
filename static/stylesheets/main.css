@@ -128,6 +128,10 @@ article p, article ul, article ol, article figure, article table {
   margin-bottom: 1.5em;
 }
 
+article img + p {
+  margin-top: 1.5em;
+}
+
 article h1 {
   font-size: 2.7em;
   font-weight: 800;
@@ -323,13 +327,15 @@ code, figcaption, pre, samp, var, td, th, .tags a {
 
 a code {
   color: #1863A1 !important;
+  background-color: #FAFAFA;
 }
 
 
 p code, li code {
   color: rgb(216, 130, 0);
-  padding: 0.1em;
+  padding: 0.2em;
   white-space: nowrap;
+  background-color: #FAFAFA;
 }
 
 
