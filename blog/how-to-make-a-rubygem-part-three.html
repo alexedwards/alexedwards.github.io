@@ -194,6 +194,14 @@ $ listless &quot;foo,bar,baz&quot;
 
 <p>You can find the full source code for this gem on <a href="https://github.com/alexedwards/listless">Github</a>.</p>
 
+	<form id="newsgroup">
+	  <h3>Improve your Go skills&hellip;</h3>
+	  <p>Get my weekly <em>Go Tricks</em> email containing useful hints, tips and tricks for working with Go.</p>
+	  <p id='feedback'></p>
+	  <input type="email" name="email" placeholder="Your email address" required>
+	  <button type="submit">Get Go Tricks &raquo;</button>
+	  <p class="small">No spam. Unsubscribe anytime.</p>
+	</form>
 	<div class="footer">
 		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
 	</div>
@@ -213,8 +221,22 @@ $ listless &quot;foo,bar,baz&quot;
 <script type="text/javascript">
   $(document).ready(function() {
     $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+
+	$("form#newsgroup").submit(function(event) {
+	    event.preventDefault();
+	    var $form = $(this);
+	    $form.find("p")
+	    var $email = $form.find("input[name='email']");
+	    $.post("http://167.99.204.185/newsgroup/tips/subscribe", {email: $email.val()});
+	    $email.val("").blur()
+	    $form.attr("novalidate", "novalidate");
+	    $form.find("p#feedback").html("<strong>Great!</strong> You'll get the first Go Tricks email in a few days.")
+	  });
+
   });
 </script>
+
+
     </section>
     <footer>
       <div class="wrapper">
