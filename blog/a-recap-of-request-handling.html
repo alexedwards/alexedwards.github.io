@@ -399,7 +399,8 @@ func main() {
 	    var $form = $(this);
 	    $form.find("p")
 	    var $email = $form.find("input[name='email']");
-	    $.post("http://167.99.204.185/newsgroup/tips/subscribe", {email: $email.val()});
+	    // $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=bob@example.com", {email: $email.val()});
+	    $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=" + $email.val());
 	    $email.val("").blur()
 	    $form.attr("novalidate", "novalidate");
 	    $form.find("p#feedback").html("<strong>Great!</strong> You'll get the first Go Tricks email in a few days.")
