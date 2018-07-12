@@ -181,7 +181,7 @@ Hello world!</samp>
 <p>The complete <a href="https://godoc.org/github.com/alexedwards/scs">godocs are here</a>.</p>
 
 <p>I’d love to hear any feedback &ndash; either drop me an email or <a href="https://github.com/alexedwards/scs/issues">open an issue</a> on Github.</p>
-	<form id="newsgroup">
+	<form id="newsgroup" method="GET" action="http://golangcollege.com/newsgroup/tips/subscribe">
 	  <h3>Improve your Go skills&hellip;</h3>
 	  <p>Get my weekly <em>Go Tricks</em> email containing useful hints, tips and tricks for working with Go.</p>
 	  <p id='feedback'></p>
@@ -209,17 +209,17 @@ Hello world!</samp>
   $(document).ready(function() {
     $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
 
-	$("form#newsgroup").submit(function(event) {
-	    event.preventDefault();
-	    var $form = $(this);
-	    $form.find("p")
-	    var $email = $form.find("input[name='email']");
-	    // $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=bob@example.com", {email: $email.val()});
-	    $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=" + $email.val());
-	    $email.val("").blur()
-	    $form.attr("novalidate", "novalidate");
-	    $form.find("p#feedback").html("<strong>Great!</strong> You'll get the first Go Tricks email in a few days.")
-	  });
+	// $("form#newsgroup").submit(function(event) {
+	//     event.preventDefault();
+	//     var $form = $(this);
+	//     $form.find("p")
+	//     var $email = $form.find("input[name='email']");
+	//     // $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=bob@example.com", {email: $email.val()});
+	//     $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=" + $email.val());
+	//     $email.val("").blur()
+	//     $form.attr("novalidate", "novalidate");
+	//     $form.find("p#feedback").html("<strong>Great!</strong> You'll get the first Go Tricks email in a few days.")
+	//   });
 
   });
 </script>

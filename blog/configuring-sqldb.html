@@ -251,7 +251,7 @@ db.SetMaxIdleConns(1)
 	<li><p>If you prefer for your application to wait for a connection to be freed up (rather than return an error) when your database's hard limit of connections is reached then you should explicitly set both <code>SetMaxOpenConns()</code> and <code>SetMaxIdleConns()</code>.</p></li>
 </ul>
 
-	<form id="newsgroup">
+	<form id="newsgroup" method="GET" action="http://golangcollege.com/newsgroup/tips/subscribe">
 	  <h3>Improve your Go skills&hellip;</h3>
 	  <p>Get my weekly <em>Go Tricks</em> email containing useful hints, tips and tricks for working with Go.</p>
 	  <p id='feedback'></p>
@@ -279,17 +279,17 @@ db.SetMaxIdleConns(1)
   $(document).ready(function() {
     $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
 
-	$("form#newsgroup").submit(function(event) {
-	    event.preventDefault();
-	    var $form = $(this);
-	    $form.find("p")
-	    var $email = $form.find("input[name='email']");
-	    // $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=bob@example.com", {email: $email.val()});
-	    $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=" + $email.val());
-	    $email.val("").blur()
-	    $form.attr("novalidate", "novalidate");
-	    $form.find("p#feedback").html("<strong>Great!</strong> You'll get the first Go Tricks email in a few days.")
-	  });
+	// $("form#newsgroup").submit(function(event) {
+	//     event.preventDefault();
+	//     var $form = $(this);
+	//     $form.find("p")
+	//     var $email = $form.find("input[name='email']");
+	//     // $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=bob@example.com", {email: $email.val()});
+	//     $.get("http://167.99.204.185/newsgroup/tips/subscribe?email=" + $email.val());
+	//     $email.val("").blur()
+	//     $form.attr("novalidate", "novalidate");
+	//     $form.find("p#feedback").html("<strong>Great!</strong> You'll get the first Go Tricks email in a few days.")
+	//   });
 
   });
 </script>
