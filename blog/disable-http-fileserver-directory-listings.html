@@ -321,7 +321,7 @@ Date: Tue, 13 Mar 2018 16:53:27 GMT
     <li>All requests for directories (with no <code>index.html</code> file) return a <code>404 Not Found</code> response, instead of a directory listing or a redirect. This works for requests both with and without a trailing slash.</li>
     <li>The default behavior of <code>http.FileServer</code> isn't changed any other way, and <code>index.html</code> files work as per the standard library documentation.</li>
 </ul>
-	<form id="newsgroup" method="POST" action="http://golangcollege.com/newsgroup/tips/subscribe">
+	<form id="newsgroup" method="GET" action="http://golangcollege.com/newsgroup/tips/subscribe">
 	  <h3>Improve your Go skills&hellip;</h3>
 	  <p>Get my weekly <em>Go Tricks</em> email containing useful hints, tips and tricks for working with Go.</p>
 	  <p id='feedback'></p>

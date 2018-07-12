@@ -269,7 +269,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 <p>If you're likely to be validating a lot of parameter input with regular expressions in your application, then it probably makes sense to skip Pat and use Routes or Gorilla Mux instead, with the expressions built into your routing patterns.</p>
 
 <p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
-	<form id="newsgroup" method="POST" action="http://golangcollege.com/newsgroup/tips/subscribe">
+	<form id="newsgroup" method="GET" action="http://golangcollege.com/newsgroup/tips/subscribe">
 	  <h3>Improve your Go skills&hellip;</h3>
 	  <p>Get my weekly <em>Go Tricks</em> email containing useful hints, tips and tricks for working with Go.</p>
 	  <p id='feedback'></p>

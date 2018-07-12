@@ -327,7 +327,7 @@ func limit(next http.Handler) http.Handler {
     <li>Remove the reliance on global variables, so that different rate limiters can be created with different settings.</li>
     <li>Switch to a <code>sync.RWMutex</code> to help reduce contention on the map.</li>
 </ul>
-	<form id="newsgroup" method="POST" action="http://golangcollege.com/newsgroup/tips/subscribe">
+	<form id="newsgroup" method="GET" action="http://golangcollege.com/newsgroup/tips/subscribe">
 	  <h3>Improve your Go skills&hellip;</h3>
 	  <p>Get my weekly <em>Go Tricks</em> email containing useful hints, tips and tricks for working with Go.</p>
 	  <p id='feedback'></p>
