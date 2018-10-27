@@ -44,6 +44,8 @@
 		<span class="dates">
 			<span class="label">Posted on:</span> 5th February 2018
 			
+			&middot; Updated 27th October 2018
+			
 		</span>
 		<span class="share">
 			<span class="label">Share with:</span>
@@ -243,16 +245,6 @@ db.SetMaxIdleConns(1)
 <p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free.</p>
 
 <p>For some applications that behavior might be fine, but for others it might not. For example, in a web application it could arguably be better to immediately log the error message and send a <code>500 Internal Server Error</code> to the user, rather than having their HTTP request hang and potentially timeout while waiting for a free connection.</p>
-
-<h2>In summary</h2>
-
-<ul>
-	<li><p>For most applications using <code>SetMaxOpenConns()</code>to limit the maximum of open connections will have a negative impact on performance, but it may make sense to do so if your database is operating in a particularly resource-constrained environment.</p></li>
-	<li><p>If your application is bursty or regularly executing more than 2 database tasks concurrently then there will probably be a positive performance impact from increasing the size of the idle connection pool via <code>SetMaxIdleConns()</code>. But be aware that making it too large may be counter-productive. Don't go crazy with it, and benchmarking real-world load is probably a good idea.</p></li>
-	<li><p>For most applications implementing a connection lifetime limit via <code>SetConnMaxLifetime()</code> will have a negative impact on performance. But if your database itself enforces a short connection lifetime then it makes sense to match this in <code>sql.DB</code> to avoid the overhead of trying-and-retrying bad connections.</p></li>
-	<li><p>If you prefer for your application to wait for a connection to be freed up (rather than return an error) when your database's hard limit of connections is reached then you should explicitly set both <code>SetMaxOpenConns()</code> and <code>SetMaxIdleConns()</code>.</p></li>
-</ul>
-
 	<!-- <form id="newsgroup" method="POST" action="https://golangcollege.com/newsgroup/tips/subscribe">
 	  <h3>Boost Your Go Knowledge&hellip;</h3>
 	  <p>Get my weekly <em>Golang Tips</em> email containing useful shortcuts, hints, tips and tricks for working with Go.</p>
