@@ -104,6 +104,8 @@ BenchmarkMaxOpenConnsUnlimited-8        2000        531030 ns/op         479 B/o
 PASS
 </pre></code></figure>
 
+<p><strong>Edit:</strong> The purpose of this benchmark is not to simulate 'real-life' behaviour of an application. It's solely to help illustrate how `sql.DB` behaves behind the scenes and the impact of changing <code>MaxOpenConns</code> on that behaviour.</p>
+
 <p>For this benchmark we can see that the more open connections that are allowed, the less time is taken to perform the <code>INSERT</code> on the database (3129633 ns/op with 1 open connection compared to 531030 ns/op for unlimited connections &mdash; about 6 times quicker). This is because the more open connections that there are, the less time (on average) the benchmark code needs to wait for an open connection to be freed and made idle (ready for use) again.</p>
 
 
