@@ -38,7 +38,7 @@ a:hover {
 }
 
 main {
-  padding: 4em 0;
+  padding: 2em 0;
   min-height: calc(100vh - 77px - 77px); /*Sticky footer*/
 }
 
