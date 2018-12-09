@@ -703,6 +703,10 @@ var {
     text-align: center;
     width: 100%;
   }
+  .pages a {
+    margin-left: 0.75em;
+    margin-right: 0.75em;
+  }
   .splash img {
     display: block;
     float: none;
