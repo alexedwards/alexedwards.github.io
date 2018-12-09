@@ -34,8 +34,7 @@
 
 <p>Accordingly my bash <code>~/.profile</code> configuration includes these lines:</p>
 
-<figure class="plain"><code><pre>
-...
+<figure class="plain"><code><pre>...
 export GOPATH=/home/alex/Code/go
 export PATH=$PATH:$GOPATH/bin
 </pre></code></figure>
@@ -87,8 +86,7 @@ export PATH=$PATH:$GOPATH/bin
 
 <p>To set this up you'll need to install <code>goimports</code> and make sure it's available on your system path:</p>
 
-<figure class="shell"><code><pre>
-$ go get golang.org/x/tools/cmd/goimports
+<figure class="shell"><code><pre>$ go get golang.org/x/tools/cmd/goimports
 $ which goimports
 <samp>/home/alex/Code/go/bin/goimports</samp>
 </pre></code></figure>
@@ -96,8 +94,7 @@ $ which goimports
 <p>When that's installed, you'll then need to change the <code>Gofmt</code> plugin settings in Sublime Text by opening
 <code>Preferences &gt; Package Settings &gt; Gofmt &gt; Settings - User</code> and adding the following configuration settings:</p>
 
-<figure class="json"><code><pre>
-{
+<figure class="json"><code><pre>{
   "cmds": [
     ["goimports"]
   ],
@@ -121,8 +118,7 @@ $ which goimports
 
 <p>The next step is to install an actual linter. I'm using <a href="https://github.com/alecthomas/gometalinter">gometalinter</a>, which acts as a wrapper around a bunch of <a href="https://github.com/alecthomas/gometalinter#supported-linters">different linters</a> and picks up more potential problems and inefficiencies than using <code>go vet</code> and <code>golint</code> alone. You can install it with the commands:</p>
 
-<figure class="shell"><code><pre>
-$ go get github.com/alecthomas/gometalinter
+<figure class="shell"><code><pre>$ go get github.com/alecthomas/gometalinter
 $ which gometalinter
 <samp>/home/alex/Code/go/bin/gometalinter</samp>
 $ gometalinter --install
@@ -138,8 +134,7 @@ $ gometalinter --install
 
 <p>By default the linter will run in the background as you type, and errors will be shown in the Sublime Text status bar at the bottom of the screen. But I've found suits me more to only lint when saving a file and to display all errors at once in a panel. If you want to do the same, go to <code>Preferences &gt; Package Settings &gt; SublimeLinter &gt; Settings</code> and add the following settings to the <code>SublimeLinter Settings - User</code> file:</p>
 
-<figure class="json"><code><pre>
-{
+<figure class="json"><code><pre>{
     "show_panel_on_save": "window",
     "lint_mode": "save",
 }
@@ -153,8 +148,7 @@ $ gometalinter --install
 
 <p>For autocompletion I'm using the <a href="github.com/mdempsky/gocode">gocode</a> package, which provides a deamon for code completion. You can install it like so:</p>
 
-<figure class="shell"><code><pre>
-$ go get github.com/mdempsky/gocode
+<figure class="shell"><code><pre>$ go get github.com/mdempsky/gocode
 $ which gocode
 <samp>/home/alex/Code/go/bin/gocode</samp>
 </pre></code></figure>
@@ -163,8 +157,7 @@ $ which gocode
 
 <p>You should be able to copy it into your Sublime Text <code>Packages</code> directory with the following command:</p>
 
-<figure class="shell"><code><pre>
-$ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Packages/gocode
+<figure class="shell"><code><pre>$ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Packages/gocode
 </pre></code></figure>
 
 <p>If you open the command palette and run <code>Package Control: List Packages</code> you should see a <code>gocode</code> entry in the list.</p>
@@ -173,8 +166,7 @@ $ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Pa
 
 <p>By default Sublime Text will make autocomplete suggestions whenever a letter is pressed. But when working with Go I like also to display potential method names whenever I hit the <code>.</code> character. You can make that happen by going to <code>Preferences &gt; Settings</code> and adding a new trigger in the <code>Preferences.sublime-settings - User</code> file:</p>
 
-<figure class="json"><code><pre>
-{
+<figure class="json"><code><pre>{
     ...
     "auto_complete_triggers": [
         {"selector": "text.html", "characters": "&lt;"},
@@ -191,8 +183,7 @@ $ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Pa
 
 <p>To help with navigating code I use the <a href="golang.org/x/tools/cmd/guru">guru</a> tool, which you can install with the following command:</p>
 
-<figure class="shell"><code><pre>
-$ go get golang.org/x/tools/cmd/guru
+<figure class="shell"><code><pre>$ go get golang.org/x/tools/cmd/guru
 $ which guru
 <samp>/home/alex/Code/go/bin/guru</samp>
 </pre></code></figure>
@@ -237,8 +228,7 @@ $ which guru
 
 <p>My most frequently-used snippet is probably this one for creating a HTTP handler function:</p>
 
-<figure class="html"><code><pre>
-&lt;snippet&gt;
+<figure class="html"><code><pre>&lt;snippet&gt;
     &lt;content&gt;&lt;![CDATA[
 func ${1:name}(w http.ResponseWriter, r *http.Request) {
     ${2:}
@@ -274,8 +264,7 @@ func ${1:name}(w http.ResponseWriter, r *http.Request) {
 <p>As a web developer you probably already know that HTML forms <a href="https://www.w3.org/TR/html52/sec-forms.html#element-attrdef-form-method">only support</a> the <code>GET</code> and <code>POST</code> HTTP methods. </p>
 <p>If you want to send a <code>PUT</code>, <code>PATCH</code> or <code>DELETE</code> request you need to resort to either sending a <code>XMLHttpRequest</code> from JavaScript (where they are supported by most major browsers) or implement a workaround in your server-side application code to support 'spoofed' HTTP methods.</p>
 <p>The de-facto workaround &mdash; which you might be familiar with if you've used frameworks like Ruby on Rails, Laravel or Express &mdash; is to include a hidden <code>_method</code> input in your form containing the spoofed HTTP method. A bit like this:</p>
-<figure class="plain"><code><pre>
-&lt;form method="POST" action="/"&gt;
+<figure class="plain"><code><pre>&lt;form method="POST" action="/"&gt;
     &lt;input type="hidden" name="_method" value="PUT"&gt;
     &lt;button type="submit"&gt;Submit&lt;/button&gt;
 &lt;/form&gt;
@@ -290,8 +279,7 @@ func ${1:name}(w http.ResponseWriter, r *http.Request) {
     <li>If a spoofed method exists &mdash; and is equal to <code>"PUT"</code>, <code>"PATCH"</code> or <code>"DELETE"</code> &mdash; the current <code>http.Request.Method</code> value should be updated accordingly.</li>
 </ol>
 <p>It's pretty quick to implement:</p>
-<figure class="go"><code><pre>
-package main
+<figure class="go"><code><pre>package main
 
 import (
     "net/http"
@@ -322,8 +310,7 @@ func MethodOverride(next http.Handler) http.Handler {
 }
 </pre></code></figure>
 <p>You can then use the middleware in your application like so:</p>
-<figure class="go"><code><pre>
-package main
+<figure class="go"><code><pre>package main
 
 import (
     "html/template"
@@ -397,16 +384,14 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
     <tr><td>POST</td><td>/books</td><td>Create a new book</td></tr>
 </table>
 <p>Where a book is a basic JSON record which looks like this:</p>
-<figure class="plain"><code><pre>
-{"isbn":"978-1420931693","title":"The Republic","author":"Plato"}
+<figure class="plain"><code><pre>{"isbn":"978-1420931693","title":"The Republic","author":"Plato"}
 </pre></code></figure>
 <p>I'm keeping the API deliberately simple to avoid getting bogged-down in application-specific code, but once you've grasped the basics it's fairly clear how to extend the API to support additional routes and actions.</p>
 <h2 id="setup-and-the-aws-cli">Setting up the AWS CLI</h2>
 <ol>
 <li>
 <p>Throughout this tutorial we'll use the AWS CLI (command line interface) to configure our lambda functions and other AWS services. Installation and basic usage instructions can be <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html">found here</a>, but if you’re using a Debian-based system like Ubuntu you can install the CLI with <code>apt</code> and run it using the <code>aws</code> command:</p>
-<figure class="shell"><code><pre>
-$ sudo apt install awscli
+<figure class="shell"><code><pre>$ sudo apt install awscli
 $ aws --version
 <samp>aws-cli/1.11.139 Python/3.6.3 Linux/4.13.0-37-generic botocore/1.6.6</samp>
 </pre></code></figure>
@@ -416,8 +401,7 @@ $ aws --version
 </li>
 <li>
 <p>Configure the CLI to use the credentials of the IAM user you've just created using the <code>configure</code> command. You’ll also need to specify the <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html">default region</a> and <a href="https://docs.aws.amazon.com/cli/latest/userguide/controlling-output.html">output format</a> you want the CLI to use.</p>
-<figure class="shell"><code><pre>
-$ aws configure
+<figure class="shell"><code><pre>$ aws configure
 <samp>AWS Access Key ID [None]: <var>access-key-ID</var>
 AWS Secret Access Key [None]: <var>secret-access-key</var>
 Default region name [None]: us-east-1
@@ -430,22 +414,19 @@ Default output format [None]: json</samp>
 <ol>
 <li>
 <p>Now for the exciting part: making a lambda function. If you're following along, go to your <code>$GOPATH/src</code> folder and create a <code>books</code> repository containing a <code>main.go</code> file.</p>
-<figure class="shell"><code><pre>
-$ cd ~/go/src
+<figure class="shell"><code><pre>$ cd ~/go/src
 $ mkdir books && cd books
 $ touch main.go
 </pre></code></figure>
 </li>
 <li>
 <p>Next you'll need to install the <a href="https://github.com/aws/aws-lambda-go"></a><code>github.com/aws-lambda-go/lambda</code> package. This provides the essential libraries and types we need for creating a lambda function in Go.</p>
-<figure class="shell"><code><pre>
-$ go get github.com/aws/aws-lambda-go/lambda
+<figure class="shell"><code><pre>$ go get github.com/aws/aws-lambda-go/lambda
 </pre></code></figure>
 </li>
 <li>
 <p>Then open up the <code>main.go</code> file and add the following code:</p>
-<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>
-package main
+<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>package main
 
 import (
     "github.com/aws/aws-lambda-go/lambda"
@@ -474,8 +455,7 @@ func main() {
 
 <p>In the <code>main()</code> function we call <code>lambda.Start()</code> and pass in the <code>show</code> function as the lambda <em>handler</em>. In this case the handler simply initializes and returns a new <code>book</code> object.</p>
 <p>Lamdba handlers can take a variety of different signatures and reflection is used to determine exactly which signature you're using. The full list of supported forms is&hellip;</p>
-<figure class="plain"><code><pre>
-func()
+<figure class="plain"><code><pre>func()
 func() error
 func(TIn) error
 func() (TOut, error)
@@ -489,15 +469,13 @@ func(context.Context, TIn) (TOut, error)
 </li>
 <li>
 <p>The next step is to build an executable from the <code>books</code> package using <code>go build</code>. In the code snippet below I'm using the <code>-o</code> flag to save the executable to <code>/tmp/main</code> but you can save it to any location (and name it whatever) you wish.</p>
-<figure class="shell"><code><pre>
-$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
+<figure class="shell"><code><pre>$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
 </pre></code></figure>
 <p>Important: as part of this command we're using <code>env</code> to temporarily set two environment variables for the duration for the command (<code>GOOS=linux</code> and <code>GOARCH=amd64</code>). These instruct the Go compiler to create an executable suitable for use with a linux OS and amd64 architecture &mdash; which is what it will be running on when we deploy it to AWS.</p>
 </li>
 <li>
 <p>AWS requires us to upload our lambda functions in a zip file, so let's make a <code>main.zip</code> zip file containing the executable we just made:</p>
-<figure class="shell"><code><pre>
-$ zip -j /tmp/main.zip /tmp/main
+<figure class="shell"><code><pre>$ zip -j /tmp/main.zip /tmp/main
 </pre></code></figure>
 <p>Note that the executable must be <em>in the root</em> of the zip file &mdash; not in a folder within the zip file. To ensure this I've used the <code>-j</code> flag in the snippet above to junk directory names.</p>
 </li>
@@ -505,8 +483,7 @@ $ zip -j /tmp/main.zip /tmp/main
 <p>The next step is a bit awkward, but critical to getting our lambda function working properly. We need to set up an IAM role which defines the permission that our <em>lambda function will have when it is running</em>.</p>
 <p>For now let's set up a <code>lambda-books-executor</code> role and attach the <code>AWSLambdaBasicExecutionRole</code> managed policy to it. This will give our lambda function the basic permissions it need to run and log to the AWS cloudwatch service.</p>
 <p>First we have to create a <em>trust policy</em> JSON file. This will essentially instruct AWS to allow lambda services to assume the <code>lambda-books-executor</code> role:</p>
-<figure class="file"><figcaption>File: /tmp/trust-policy.json</figcaption><code><pre>
-{
+<figure class="file"><figcaption>File: /tmp/trust-policy.json</figcaption><code><pre>{
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -520,8 +497,7 @@ $ zip -j /tmp/main.zip /tmp/main
 }
 </pre></code></figure>
 <p>Then use the <code>aws iam create-role</code> command to create the role with this trust policy:</p>
-<figure class="shell"><code><pre>
-$ aws iam create-role --role-name lambda-books-executor \
+<figure class="shell"><code><pre>$ aws iam create-role --role-name lambda-books-executor \
 --assume-role-policy-document file:///tmp/trust-policy.json
 <samp>{
     "Role": {
@@ -547,8 +523,7 @@ $ aws iam create-role --role-name lambda-books-executor \
 </pre></code></figure>
 <p>Make a note of the returned ARN (Amazon Resource Name) &mdash; you'll need this in the next step.</p>
 <p>Now the <code>lambda-books-executor</code> role has been created we need to specify the permissions that the role has. The easiest way to do this it to use the <code>aws iam attach-role-policy</code> command, passing in the ARN of <code>AWSLambdaBasicExecutionRole</code> permission policy like so:</p>
-<figure class="shell"><code><pre>
-$ aws iam attach-role-policy --role-name lambda-books-executor \
+<figure class="shell"><code><pre>$ aws iam attach-role-policy --role-name lambda-books-executor \
 --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 </pre></code></figure>
 <p>Note: you can find a list of other permission policies that might be useful <a href="https://docs.aws.amazon.com/lambda/latest/dg/intro-permission-model.html#lambda-intro-execution-role">here</a>.</p>
@@ -578,8 +553,7 @@ $ aws iam attach-role-policy --role-name lambda-books-executor \
 </tr>
 </table>
 <p>Go ahead and try deploying it:</p>
-<figure class="shell"><code><pre>
-$ aws lambda create-function --function-name books --runtime go1.x \
+<figure class="shell"><code><pre>$ aws lambda create-function --function-name books --runtime go1.x \
 --role arn:aws:iam::<var>account-id</var>:role/lambda-books-executor \
 --handler main --zip-file fileb:///tmp/main.zip
 <samp>{
@@ -603,8 +577,7 @@ $ aws lambda create-function --function-name books --runtime go1.x \
 </li>
 <li>
 <p>So there it is. Our lambda function has been deployed and is now ready to use. You can try it out by using the <code>aws lambda invoke</code> command (which requires you to specify an output file for the response &mdash; I've used <code>/tmp/output.json</code> in the snippet below).</p>
-<figure class="shell"><code><pre>
-$ aws lambda invoke --function-name books /tmp/output.json
+<figure class="shell"><code><pre>$ aws lambda invoke --function-name books /tmp/output.json
 <samp>{
     "StatusCode": 200
 }</samp>
@@ -619,8 +592,7 @@ $ cat /tmp/output.json
 <li>
 <p>In this section we're going to add a persistence layer for our data which can be accessed by our lambda function. For this I'll use Amazon DynamoDB (it integrates nicely with AWS lambda and has a generous free-usage tier). If you're not familiar with DynamoDB, there's a decent run down of <a href="https://www.tutorialspoint.com/dynamodb/dynamodb_overview.htm">the basics here</a>.</p>
 <p>The first thing we need to do is create a <code>Books</code> table to hold the book records. DynanmoDB is schema-less, but we do need to define the partion key (a bit like a primary key) on the ISBN field. We can do this in one command like so:</p>
-<figure class="shell"><code><pre>
-$ aws dynamodb create-table --table-name Books \
+<figure class="shell"><code><pre>$ aws dynamodb create-table --table-name Books \
 --attribute-definitions AttributeName=ISBN,AttributeType=S \
 --key-schema AttributeName=ISBN,KeyType=HASH \
 --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
@@ -655,25 +627,21 @@ $ aws dynamodb create-table --table-name Books \
 </li>
 <li>
 <p>Then lets add a couple of items using the <code>put-item</code> command, which we'll use in the next steps.</p>
-<figure class="shell"><code><pre>
-$ aws dynamodb put-item --table-name Books --item '{"ISBN": {"S": "978-1420931693"}, "Title": {"S": "The Republic"}, "Author":  {"S": "Plato"}}'
+<figure class="shell"><code><pre>$ aws dynamodb put-item --table-name Books --item '{"ISBN": {"S": "978-1420931693"}, "Title": {"S": "The Republic"}, "Author":  {"S": "Plato"}}'
 $ aws dynamodb put-item --table-name Books --item '{"ISBN": {"S": "978-0486298238"}, "Title": {"S": "Meditations"},  "Author":  {"S": "Marcus Aurelius"}}'
 </pre></code></figure>
 </li>
 <li>
 <p>The next thing to do is update our Go code so that our lambda handler can connect to and use the DynamoDB layer. For this you'll need to install the <code>github.com/aws/aws-sdk-go</code> package which provides libraries for working with DynamoDB (and other AWS services).</p>
-<figure class="shell"><code><pre>
-$ go get github.com/aws/aws-sdk-go
+<figure class="shell"><code><pre>$ go get github.com/aws/aws-sdk-go
 </pre></code></figure>
 </li>
 <li>
 <p>Now for the code. To keep a bit of separation create a new <code>db.go</code> file in your <code>books</code> repository:</p>
-<figure class="shell"><code><pre>
-$ touch ~/go/src/books/db.go
+<figure class="shell"><code><pre>$ touch ~/go/src/books/db.go
 </pre></code></figure>
 <p>And add the following code:</p>
-<figure class="file"><figcaption>File: books/db.go</figcaption><code><pre>
-package main
+<figure class="file"><figcaption>File: books/db.go</figcaption><code><pre>package main
 
 import (
     "github.com/aws/aws-sdk-go/aws"
@@ -722,8 +690,7 @@ func getItem(isbn string) (*book, error) {
 }
 </pre></code></figure>
 <p>And then update the <code>main.go</code> to use this new code:</p>
-<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>
-package main
+<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>package main
 
 import (
     "github.com/aws/aws-lambda-go/lambda"
@@ -753,22 +720,19 @@ func main() {
 </li>
 <li>
 <p>Save the files, then rebuild and zip up the lambda function so it's ready to deploy:</p>
-<figure class="shell"><code><pre>
-$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
+<figure class="shell"><code><pre>$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
 $ zip -j /tmp/main.zip /tmp/main
 </pre></code></figure>
 </li>
 <li>
 <p>Re-deploying a lambda function is easier than creating it for the first time &mdash; we can use the <code>aws lambda update-function-code</code> command like so:</p>
-<figure class="shell"><code><pre>
-$ aws lambda update-function-code --function-name books \
+<figure class="shell"><code><pre>$ aws lambda update-function-code --function-name books \
 --zip-file fileb:///tmp/main.zip
 </pre></code></figure>
 </li>
 <li>
 <p>Let's try executing the lambda function now:</p>
-<figure class="shell"><code><pre>
-$ aws lambda invoke --function-name books /tmp/output.json
+<figure class="shell"><code><pre>$ aws lambda invoke --function-name books /tmp/output.json
 <samp>{
     "StatusCode": 200,
     "FunctionError": "Unhandled"
@@ -780,8 +744,7 @@ $ cat /tmp/output.json
 </li>
 <li>
 <p>Create a privilege policy file that gives <code>GetItem</code> and <code>PutItem</code> privileges on DynamoDB like so:</p>
-<figure class="file"><figcaption>File: /tmp/privilege-policy.json</figcaption><code><pre>
-{
+<figure class="file"><figcaption>File: /tmp/privilege-policy.json</figcaption><code><pre>{
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -796,8 +759,7 @@ $ cat /tmp/output.json
 }
 </pre></code></figure>
 <p>And then attach it to the <code>lambda-books-executor</code> role using the <code>aws iam put-role-policy</code> command:</p>
-<figure class="shell"><code><pre>
-$ aws iam put-role-policy --role-name lambda-books-executor \
+<figure class="shell"><code><pre>$ aws iam put-role-policy --role-name lambda-books-executor \
 --policy-name dynamodb-item-crud-role \
 --policy-document file:///tmp/privilege-policy.json
 </pre></code></figure>
@@ -805,8 +767,7 @@ $ aws iam put-role-policy --role-name lambda-books-executor \
 </li>
 <li>
 <p>Let's try executing the lambda function again. It should work smoothly this time and return information about the book with ISBN <code>978-0486298238</code>.</p>
-<figure class="shell"><code><pre>
-$ aws lambda invoke --function-name books /tmp/output.json
+<figure class="shell"><code><pre>$ aws lambda invoke --function-name books /tmp/output.json
 <samp>{
     "StatusCode": 200
 }</samp>
@@ -831,8 +792,7 @@ $ cat /tmp/output.json
 </li>
 <li>
 <p>Go ahead and create a <code>bookstore</code> API using the <code>aws apigateway create-rest-api</code> command like so:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway create-rest-api --name bookstore
+<figure class="shell"><code><pre>$ aws apigateway create-rest-api --name bookstore
 <samp>{
     "id": "<var>rest-api-id</var>",
     "name": "bookstore",
@@ -843,8 +803,7 @@ $ aws apigateway create-rest-api --name bookstore
 </li>
 <li>
 <p>Next we need to get the id of the root API resource (<code>"/"</code>). We can retrieve this using the <code>aws apigateway get-resources</code> command like so:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway get-resources --rest-api-id <var>rest-api-id</var>
+<figure class="shell"><code><pre>$ aws apigateway get-resources --rest-api-id <var>rest-api-id</var>
 <samp>{
     "items": [
         {
@@ -858,8 +817,7 @@ $ aws apigateway get-resources --rest-api-id <var>rest-api-id</var>
 </li>
 <li>
 <p>Now we need to create a new resource <em>under the root path</em> &mdash; specifically a resource for the URL path <code>/books</code>. We can do this by using the <code>aws apigateway create-resource</code> command with the <code>--path-part</code> parameter like so:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway create-resource --rest-api-id <var>rest-api-id</var> \
+<figure class="shell"><code><pre>$ aws apigateway create-resource --rest-api-id <var>rest-api-id</var> \
 --parent-id <var>root-path-id</var> --path-part books
 <samp>{
     "id": "<var>resource-id</var>",
@@ -873,8 +831,7 @@ $ aws apigateway create-resource --rest-api-id <var>rest-api-id</var> \
 </li>
 <li>
 <p>But we're not doing either of those things. Let's get back to our <code>/books</code> resource and use the <code>aws apigateway put-method</code> command to register the HTTP method of <code>ANY</code>. This will mean that our <code>/books</code> resource will respond to all requests regardless of their HTTP method.</p>
-<figure class="shell"><code><pre>
-$ aws apigateway put-method --rest-api-id <var>rest-api-id</var> \
+<figure class="shell"><code><pre>$ aws apigateway put-method --rest-api-id <var>rest-api-id</var> \
 --resource-id <var>resource-id</var> --http-method ANY \
 --authorization-type NONE
 <samp>{
@@ -890,14 +847,12 @@ $ aws apigateway put-method --rest-api-id <var>rest-api-id</var> \
 <li>The <code>--type</code> parameter should be <code>AWS_PROXY</code>. When this is used the AWS API Gateway will send information about the HTTP request as an 'event' to the lambda function. It will also automatically transform the output from the lambda function to a HTTP response.</li>
 <li>The <code>--integration-http-method</code> parameter must be <code>POST</code>. Don't confuse this with what HTTP methods your API resource responds to.</li>
 <li>The <code>--uri</code> parameter needs to take the format:<br><br>
-<figure class="plain"><code><pre>
-arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/<var>your-lambda-function-arn</var>/invocations
+<figure class="plain"><code><pre>arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/<var>your-lambda-function-arn</var>/invocations
 </pre></code></figure>
 </li>
 </ul>
 <p>With those things in mind, your command should look a bit like this:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway put-integration --rest-api-id <var>rest-api-id</var> \
+<figure class="shell"><code><pre>$ aws apigateway put-integration --rest-api-id <var>rest-api-id</var> \
 --resource-id <var>resource-id</var> --http-method ANY --type AWS_PROXY \
 --integration-http-method POST \
 --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:<var>account-id</var>:function:books/invocations
@@ -913,8 +868,7 @@ $ aws apigateway put-integration --rest-api-id <var>rest-api-id</var> \
 </li>
 <li>
 <p>Alright, let's give this a whirl. We can send a test request to the resource we just made using the <code>aws apigateway test-invoke-method</code> command like so:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resource-id <var>resource-id</var> --http-method "GET"
+<figure class="shell"><code><pre>$ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resource-id <var>resource-id</var> --http-method "GET"
 <samp>{
     "status": 500,
     "body": "{\"message\": \"Internal server error\"}",
@@ -929,8 +883,7 @@ $ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resou
 </li>
 <li>
 <p>The easiest way to fix that is to use the <code>aws lambda add-permission</code> command to give our API permissions to invoke it, like so:</p>
-<figure class="shell"><code><pre>
-$ aws lambda add-permission --function-name books --statement-id <var>a-GUID</var> \
+<figure class="shell"><code><pre>$ aws lambda add-permission --function-name books --statement-id <var>a-GUID</var> \
 --action lambda:InvokeFunction --principal apigateway.amazonaws.com \
 --source-arn arn:aws:execute-api:us-east-1:<var>account-id</var>:<var>rest-api-id</var>/*/*/*
 <samp>{
@@ -940,8 +893,7 @@ $ aws lambda add-permission --function-name books --statement-id <var>a-GUID</va
 <p>Note that the <code>--statement-id</code> parameter needs to be a globally unique identifier. This could be a <a href="https://www.guidgenerator.com/">random ID</a> or something more descriptive.</p>
 </li>
 <li><p>Alright, let's try again:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resource-id <var>resource-id</var> --http-method "GET"
+<figure class="shell"><code><pre>$ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resource-id <var>resource-id</var> --http-method "GET"
 <samp>{
     "status": 502,
     "body": "{\"message\": \"Internal server error\"}",
@@ -956,8 +908,7 @@ $ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resou
 <p><code>Endpoint response body before transformations: {\"isbn\":\"978-0486298238\",\"title\":\"Meditations\",\"author\":\"Marcus Aurelius\"}</code></p>
 <p>So there's some definite progress here. Our API is talking to our lambda function and is receiving the correct response (a <code>book</code> object marshalled to JSON). It's just that the AWS API Gateway considers the response to be in the wrong format.</p>
 <p>This is because, when you're using the API Gateway's lambda proxy integration, the return value from the lambda function <strong>must</strong> be in the following JSON format:</p>
-<figure class="plain"><code><pre>
-{
+<figure class="plain"><code><pre>{
     "isBase64Encoded": true|false,
     "statusCode": httpStatusCode,
     "headers": { "headerName": "headerValue", ... },
@@ -971,12 +922,10 @@ $ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resou
 <ol>
 <li>
 <p>The easiest way to provide the responses that the AWS API Gateway needs is to install the <code>github.com/aws/aws-lambda-go/events</code> package:</p>
-<figure class="shell"><code><pre>
-go get github.com/aws/aws-lambda-go/events
+<figure class="shell"><code><pre>go get github.com/aws/aws-lambda-go/events
 </pre></code></figure>
 <p>This provides a couple of useful types (<code>APIGatewayProxyRequest</code> and <code>APIGatewayProxyResponse</code>) which contain information about incoming HTTP requests and allow us to construct responses that the API Gateway understands.
-<figure class="plain"><code><pre>
-type APIGatewayProxyRequest struct {
+<figure class="plain"><code><pre>type APIGatewayProxyRequest struct {
     Resource              string                        `json:"resource"` // The resource path defined in API Gateway
     Path                  string                        `json:"path"`     // The url path for the caller
     HTTPMethod            string                        `json:"httpMethod"`
@@ -989,8 +938,7 @@ type APIGatewayProxyRequest struct {
     IsBase64Encoded       bool                          `json:"isBase64Encoded,omitempty"`
 }
 </pre></code></figure>
-<figure class="plain"><code><pre>
-type APIGatewayProxyResponse struct {
+<figure class="plain"><code><pre>type APIGatewayProxyResponse struct {
     StatusCode      int               `json:"statusCode"`
     Headers         map[string]string `json:"headers"`
     Body            string            `json:"body"`
@@ -1000,12 +948,10 @@ type APIGatewayProxyResponse struct {
 </li>
 <li>
 <p>Let's go back to our <code>main.go</code> file and update our lambda handler so that it uses the signature:</p>
-<figure class="plain"><code><pre>
-func(events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
+<figure class="plain"><code><pre>func(events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 </pre></code></figure>
 <p>Essentially, the handler will accept a <code>APIGatewayProxyRequest</code> object which contains a bunch of information about the HTTP request, and return a <code>APIGatewayProxyResponse</code> object (which is marshalable into a JSON response suitable for the AWS API Gateway).</p>
-<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>
-package main
+<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>package main
 
 import (
     "encoding/json"
@@ -1088,8 +1034,7 @@ func main() {
 </li>
 <li>
 <p>Anyway, save the file and rebuild and redeploy the lambda function:</p>
-<figure class="shell"><code><pre>
-$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
+<figure class="shell"><code><pre>$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
 $ zip -j /tmp/main.zip /tmp/main
 $ aws lambda update-function-code --function-name books \
 --zip-file fileb:///tmp/main.zip
@@ -1097,8 +1042,7 @@ $ aws lambda update-function-code --function-name books \
 </li>
 <li>
 <p>And if you test it again now it should work as expected. Give it a try with different <code>isbn</code> values in the query string:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> \
+<figure class="shell"><code><pre>$ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> \
 --resource-id <var>resource-id</var> --http-method "GET" \
 --path-with-query-string "/books?isbn=978-1420931693"
 <samp>{
@@ -1126,8 +1070,7 @@ $ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> \
 </li>
 <li>
 <p>As a side note, anything sent to <code>os.Stderr</code> will be logged to the AWS Cloudwatch service. So if you've set up an error logger like we have in the code above, you can query Cloudwatch for errors like so:</p>
-<figure class="shell"><code><pre>
-$ aws logs filter-log-events --log-group-name /aws/lambda/books \
+<figure class="shell"><code><pre>$ aws logs filter-log-events --log-group-name /aws/lambda/books \
 --filter-pattern "ERROR"
 </pre></code></figure>
 </li>
@@ -1136,8 +1079,7 @@ $ aws logs filter-log-events --log-group-name /aws/lambda/books \
 <ol>
 <li>
 <p>Now that the API Gateway is working properly it's time to make it live. We can do this with the <code>aws apigateway create-deployment</code> command like so:</p>
-<figure class="shell"><code><pre>
-$ aws apigateway create-deployment --rest-api-id <var>rest-api-id</var> \
+<figure class="shell"><code><pre>$ aws apigateway create-deployment --rest-api-id <var>rest-api-id</var> \
 --stage-name staging
 <samp>{
     "id": "4pdblq",
@@ -1148,12 +1090,10 @@ $ aws apigateway create-deployment --rest-api-id <var>rest-api-id</var> \
 </li>
 <li>
 <p>Once deployed your API should be accessible at the URL:</p>
-<figure class="plain"><code><pre>
-https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/staging
+<figure class="plain"><code><pre>https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/staging
 </pre></code></figure>
 <p>Go ahead and give it a try using curl. It should work as you expect:</p>
-<figure class="shell"><code><pre>
-$ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/staging/books?isbn=978-1420931693
+<figure class="shell"><code><pre>$ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/staging/books?isbn=978-1420931693
 <samp>{"isbn":"978-1420931693","title":"The Republic","author":"Plato"}</samp>
 $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/staging/books?isbn=foobar
 <samp>Bad Request</samp>
@@ -1166,8 +1106,7 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
 <p>Let's add support for a <code>POST /books</code> action. We want this to read and validate a new book record (from a JSON HTTP request body) and then add it to the DynamoDB table.</p>
 <p>Now that the different AWS services are hooked up, extending our lambda function to support additional actions is perhaps the most straightforward part of this tutorial, as it can be managed purely within our Go code.</p>
 <p>First update the <code>db.go</code> file to include a new <code>putItem</code> function like so:</p>
-<figure class="file"><figcaption>File: books/db.go</figcaption><code><pre>
-package main
+<figure class="file"><figcaption>File: books/db.go</figcaption><code><pre>package main
 
 import (
     "github.com/aws/aws-sdk-go/aws"
@@ -1227,8 +1166,7 @@ func putItem(bk *book) error {
 }
 </pre></code></figure>
 <p>And then update the <code>main.go</code> function so that the <code>lambda.Start()</code> method calls a new <code>router</code> function, which does a switch on the HTTP request method to determine which action to take. Like so:</p>
-<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>
-package main
+<figure class="file"><figcaption>File: books/main.go</figcaption><code><pre>package main
 
 import (
     "encoding/json"
@@ -1339,8 +1277,7 @@ func main() {
 </li>
 <li>
 <p>Rebuild and zip up the lambda function, then deploy it as normal:</p>
-<figure class="shell"><code><pre>
-$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
+<figure class="shell"><code><pre>$ env GOOS=linux GOARCH=amd64 go build -o /tmp/main books
 $ zip -j /tmp/main.zip /tmp/main
 $ aws lambda update-function-code --function-name books \
 --zip-file fileb:///tmp/main.zip
@@ -1348,8 +1285,7 @@ $ aws lambda update-function-code --function-name books \
 </li>
 <li>
 <p>And now when you hit the API using different HTTP methods it should call the appropriate action:</p>
-<figure class="shell"><code><pre>
-$ curl -i -H "Content-Type: application/json" -X POST \
+<figure class="shell"><code><pre>$ curl -i -H "Content-Type: application/json" -X POST \
 -d '{"isbn":"978-0141439587", "title":"Emma", "author": "Jane Austen"}' \
 https://<var>rest-api-id</var>.execeast-1.amazonaws.com/staging/books
 <samp>HTTP/1.1 201 Created
@@ -1411,14 +1347,12 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
 
 <p>If you've got a lot of sub-directories an easy way to do that is with a one-line command like this:</p>
 
-<figure class="shell"><code><pre>
-$ find ./static/ -type d -exec touch {}/index.html \;
+<figure class="shell"><code><pre>$ find ./static/ -type d -exec touch {}/index.html \;
 </pre></code></figure>
 
 <p>Any requests for a directory should now result in an empty <code>200 OK</code> response for the user, instead of a directory listing. For example:</p>
 
-<figure class="shell"><code><pre>
-$ curl -i http://localhost:4000/static/img/
+<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img/
 <samp>HTTP/1.1 200 OK
 Accept-Ranges: bytes
 Content-Length: 0
@@ -1429,8 +1363,7 @@ Date: Tue, 13 Mar 2018 12:42:35 GMT</samp>
 
 <p>Or without the trailing slash, the user should get a <code>301 Redirect</code> like so:</p>
 
-<figure class="shell"><code><pre>
-$ curl -i http://localhost:4000/static/img
+<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img
 <samp>HTTP/1.1 301 Moved Permanently
 Location: /static/img/
 Date: Tue, 13 Mar 2018 12:43:13 GMT
@@ -1449,8 +1382,7 @@ Content-Type: text/html; charset=utf-8
 <p>Both of these imperfections can be addressed if we take a different approach and implement some custom <a href="/blog/making-and-using-middleware">middleware</a> to intercept requests before they reach the <code>http.FileServer</code>.
 <p>Essentially, we want the middleware to check if the request URL ends with a <code>/</code> character, and if it does, return a <code>404 Not Found</code> response instead of passing on the request to the <code>http.FileServer</code>. Here's a basic implementation:</p>
 
-<figure class="go"><code><pre>
-package main
+<figure class="go"><code><pre>package main
 
 import (
     &quot;log&quot;
@@ -1482,8 +1414,7 @@ func neuter(next http.Handler) http.Handler {
 
 <p>This approach would result in a user getting responses like these:</p>
 
-<figure class="shell"><code><pre>
-$ curl -i http://localhost:4000/static/img/
+<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img/
 <samp>HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
@@ -1522,8 +1453,7 @@ Content-Type: text/html; charset=utf-8
 
 <p>... any request to <code><a href="http://localhost:4000/static/css/">http://localhost:4000/static/css/</a></code> will result in a <code>404 Not Found</code> response instead of returning the contents of the <code>/static/css/index.html</code> file.</p>
 
-<figure class="shell"><code><pre>
-$ curl -i http://localhost:4000/static/css/
+<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/css/
 <samp>HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
@@ -1539,8 +1469,7 @@ Content-Length: 19
 
 <p>There are a couple of approaches described by <a href="https://groups.google.com/d/msg/golang-nuts/bStLPdIVM6w/hidTJgDZpHcJ">Brad Fitzpatrick</a> and <a href="https://groups.google.com/d/msg/golang-nuts/bStLPdIVM6w/U_LVmJZRAwAJ">George Armhold</a> you might want to consider, but I would personally suggest doing something like this:<p>
 
-<figure class="go"><code><pre>
-package main
+<figure class="go"><code><pre>package main
 
 import (
     &quot;log&quot;
@@ -1587,8 +1516,7 @@ func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
 
 <p>Putting this to use with the directory structure...</p>
 
-<figure class="plain"><code><pre>
-.
+<figure class="plain"><code><pre>.
 ├── main.go
 └── static
     ├── css
@@ -1601,8 +1529,7 @@ func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
 
 <p>...would result in responses like:</p>
 
-<figure class="shell"><code><pre>
-$ curl -i http://localhost:4000/static/img/
+<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img/
 <samp>HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
@@ -1661,8 +1588,7 @@ Date: Tue, 13 Mar 2018 16:53:27 GMT
 
 <p>By default there's no limit on the number of connections that can be open at the same time. But you can implement your own limit via the <code>SetMaxOpenConns()</code> method like so:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -1678,8 +1604,7 @@ db.SetMaxOpenConns(5)
 
 <p>To illustrate the impact of changing <code>MaxOpenConns</code> I ran a benchmark test with the maximum open connections set to 1, 2, 5, 10 and unlimited. The benchmark executes parallel <code>INSERT</code> statements on a PostgreSQL database and you can find the code in <a href="https://gist.github.com/alexedwards/5d1db82e6358b5b6efcb038ca888ab07">this gist</a>. Here's the results:</p>
 
-<figure class="plain"><code><pre>
-BenchmarkMaxOpenConns1-8                 500       3129633 ns/op         478 B/op         10 allocs/op
+<figure class="plain"><code><pre>BenchmarkMaxOpenConns1-8                 500       3129633 ns/op         478 B/op         10 allocs/op
 BenchmarkMaxOpenConns2-8                1000       2181641 ns/op         470 B/op         10 allocs/op
 BenchmarkMaxOpenConns5-8                2000        859654 ns/op         493 B/op         10 allocs/op
 BenchmarkMaxOpenConns10-8               2000        545394 ns/op         510 B/op         10 allocs/op
@@ -1694,8 +1619,7 @@ PASS
 
 <p>By default <code>sql.DB</code> allows a maximum of 2 idle connections to be retained in the connection pool. You can change this via  the <code>SetMaxIdleConns()</code> method like so:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -1710,8 +1634,7 @@ db.SetMaxIdleConns(5)
 
 <p>Lets take a look at the same benchmark with the maximum idle connections is set to none, 1, 2, 5 and 10 (and the number of open connections is unlimited):</p>
 
-<figure class="plain"><code><pre>
-BenchmarkMaxIdleConnsNone-8          300       4567245 ns/op       58174 B/op        625 allocs/op
+<figure class="plain"><code><pre>BenchmarkMaxIdleConnsNone-8          300       4567245 ns/op       58174 B/op        625 allocs/op
 BenchmarkMaxIdleConns1-8            2000        568765 ns/op        2596 B/op         32 allocs/op
 BenchmarkMaxIdleConns2-8            2000        529359 ns/op         596 B/op         11 allocs/op
 BenchmarkMaxIdleConns5-8            2000        506207 ns/op         451 B/op          9 allocs/op
@@ -1743,8 +1666,7 @@ PASS
 
 <p>You use it like this:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -1772,8 +1694,7 @@ db.SetConnMaxLifetime(time.Hour)
 
 <p>To illustrate this I ran the benchmarks with <code>ConnMaxLifetime</code> set to 100ms, 200ms, 500ms, 1000ms and unlimited (reused forever), with the default settings of unlimited open connections and 2 idle connections. These time periods are obviously much, much shorter than you'd use in most applications but they help illustrate the behaviour well.</p>
 
-<figure class="plain"><code><pre>
-BenchmarkConnMaxLifetime100-8               2000        637902 ns/op        2770 B/op         34 allocs/op
+<figure class="plain"><code><pre>BenchmarkConnMaxLifetime100-8               2000        637902 ns/op        2770 B/op         34 allocs/op
 BenchmarkConnMaxLifetime200-8               2000        576053 ns/op        1612 B/op         21 allocs/op
 BenchmarkConnMaxLifetime500-8               2000        558297 ns/op         913 B/op         14 allocs/op
 BenchmarkConnMaxLifetime1000-8              2000        543601 ns/op         740 B/op         12 allocs/op
@@ -1789,14 +1710,12 @@ PASS
 
 <p>As an illustration, I'll change my <code>postgresql.conf</code> file so only a total of 5 connections are permitted (the default is 100)...</p>
 
-<figure class="plain"><code><pre>
-max_connections = 5
+<figure class="plain"><code><pre>max_connections = 5
 </pre></code></figure>
 
 <p>And then rerun the benchmark test with unlimited open connections...</p>
 
-<figure class="plain"><code><pre>
-BenchmarkMaxOpenConnsUnlimited-8    --- FAIL: BenchmarkMaxOpenConnsUnlimited-8
+<figure class="plain"><code><pre>BenchmarkMaxOpenConnsUnlimited-8    --- FAIL: BenchmarkMaxOpenConnsUnlimited-8
     main_test.go:14: pq: sorry, too many clients already
     main_test.go:14: pq: sorry, too many clients already
     main_test.go:14: pq: sorry, too many clients already
@@ -1807,8 +1726,7 @@ FAIL
 
 <p>To prevent this error we need to set the <em>total</em> maximum of open and idle connections in <code>sql.DB</code> to comfortably below 5. Like so:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -1847,14 +1765,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you'd like to follow along, you'll need to install the <code><a href="https://godoc.org/golang.org/x/time/rate">x/time/rate</a></code> package. This provides a <a href="https://en.wikipedia.org/wiki/Token_bucket">token bucket</a> rate-limiter algorithm (which is also used by Tollbooth behind the scenes).</p>
 
-    <figure class="shell"><code><pre>
-    $ go get golang.org/x/time/rate
+    <figure class="shell"><code><pre>    $ go get golang.org/x/time/rate
     </pre></code></figure>
 
     <p>Then create a demo directory containing two files: <code>limit.go</code> and <code>main.go</code>.</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir ratelimit-demo
+    <figure class="shell"><code><pre>    $ mkdir ratelimit-demo
     $ cd ratelimit-demo
     $ touch limit.go main.go
     </pre></code></figure>
@@ -1863,8 +1779,7 @@ db.SetMaxIdleConns(1)
 
     <p>Open up the <code>limit.go</code> file and add the following code:</p>
 
-    <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>    package main
 
     import (
         "net/http"
@@ -1888,8 +1803,7 @@ db.SetMaxIdleConns(1)
 
     <p>In this code we've used the <code>rate.NewLimiter()</code> function to initialize and return a new rate limiter. Its signature looks like this:</p>
 
-    <figure class="plain"><code><pre>
-    func NewLimiter(r Limit, b int) *Limiter
+    <figure class="plain"><code><pre>    func NewLimiter(r Limit, b int) *Limiter
     </pre></code></figure>
 
     <p>From <a href="https://godoc.org/golang.org/x/time/rate#Limiter">the documentation</a>:</p>
@@ -1904,8 +1818,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's put this to use. Open up the <code>main.go</code> file and setup a simple web server which uses the <code>limit</code> middleware like so:</p>
 
-    <figure class="file"><figcaption>File: ratelimit-demo/main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: ratelimit-demo/main.go</figcaption><code><pre>    package main
 
     import (
         "net/http"
@@ -1926,14 +1839,12 @@ db.SetMaxIdleConns(1)
 
     <p>Go ahead and run the application&hellip;</p>
 
-    <figure class="shell"><code><pre>
-    $ go run *.go
+    <figure class="shell"><code><pre>    $ go run *.go
     </pre></code></figure>
 
     <p>And if you make enough requests in quick succession, you should eventually get a response which looks like this:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:4000
+    <figure class="shell"><code><pre>    $ curl -i localhost:4000
     <samp>HTTP/1.1 429 Too Many Requests
     Content-Type: text/plain; charset=utf-8
     X-Content-Type-Options: nosniff
@@ -1959,8 +1870,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's update the <code>limit.go</code> file to contain a basic implementation. I'll keep the code structure deliberately simple.</p>
 
-    <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>    package main
 
     import (
         "net/http"
@@ -2017,8 +1927,7 @@ db.SetMaxIdleConns(1)
 
     <p>We can fix this fairly simply by recording the <em>last seen</em> time for each visitor and running a background goroutine to deletes old entries from the map (and therefore free up memory as we go).</p>
 
-    <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>    package main
 
     import (
         "net/http"
@@ -2141,14 +2050,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that a value for the <code>"foo"</code> field has been submitted with:</p>
 
-    <figure class="plain"><code><pre>
-    if r.Form.Get("foo") == "" {
+    <figure class="plain"><code><pre>    if r.Form.Get("foo") == "" {
         fmt.Println("error: foo is required")
     }
     </pre></code></figure>
@@ -2159,14 +2066,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that a value for the <code>"foo"</code> field isn't blank (i.e. contains whitespace only) with the <code>strings.TrimSpace</code> function:</p>
 
-    <figure class="plain"><code><pre>
-    import "strings"
+    <figure class="plain"><code><pre>    import "strings"
     ···
     if strings.TrimSpace(r.Form.Get("foo")) == "" {
         fmt.Println("error: foo must not be blank")
@@ -2177,14 +2082,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field contains a certain number of bytes with the builtin <code>len</code> function:</p>
 
-    <figure class="plain"><code><pre>
-    l := len(r.Form.Get("foo"))
+    <figure class="plain"><code><pre>    l := len(r.Form.Get("foo"))
     if l &lt; 5 || l &gt; 10 {
         fmt.Println("error: foo must be between 5 and 10 bytes long")
     }
@@ -2194,14 +2097,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field contains a certain number of <em>characters</em> with the <code>utf8.RuneCountInString</code> function. This is subtly different to checking the number of bytes. For example, the string <code>"Zoë"</code> contains 3 characters but is 4 bytes long because of the accented character.</p>
 
-    <figure class="plain"><code><pre>
-    import "unicode/utf8"
+    <figure class="plain"><code><pre>    import "unicode/utf8"
     ···
     l := utf8.RuneCountInString(r.Form.Get("foo"))
     if l &lt; 5 || l &gt; 10 {
@@ -2213,14 +2114,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field starts with, ends with, or contains a particular string using the functions in the <code>strings</code> package:</p>
 
-    <figure class="plain"><code><pre>
-    import "strings"
+    <figure class="plain"><code><pre>    import "strings"
     ···
     // Check that the field value starts with 'abc'.
     if !strings.HasPrefix(r.Form.Get("foo"), "abc") {
@@ -2243,14 +2142,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field matches a particular regular expression using the <code>regexp</code> package. For example, to check that it matches the pattern <code>^[a-z]{4}\.[0-9]{2}$</code> (four lowercase letters followed by a period and two digits):</p>
 
-    <figure class="plain"><code><pre>
-    import "regexp"
+    <figure class="plain"><code><pre>    import "regexp"
     ···
     // Pre-compiling the regular expression and storing it in a variable is more efficient
     // if you're going to use it multiple times. The regexp.MustCompile function will
@@ -2264,8 +2161,7 @@ db.SetMaxIdleConns(1)
 
     <p>Note that because the dot character has a special meaning in regular expressions, we escaped it using the <code>\</code> character so it is interpreted as a literal period character instead. In the example above we also used a <a href="https://golang.org/ref/spec#String_literals">raw string</a> for the regular expression. If you use an <em>interpreted string</em> (i.e. a string surrounded by double quotes), you need to <em>escape the backslash</em> too because that's the escape character for interpreted strings. So you would need to write:</p>
 
-    <figure class="plain"><code><pre>
-    var rxPat = regexp.MustCompile("^[a-z]{4}\.[0-9]{2}$")
+    <figure class="plain"><code><pre>    var rxPat = regexp.MustCompile("^[a-z]{4}\.[0-9]{2}$")
     </pre></code></figure>
 
     <p>If you're not familiar with regular expressions then <a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions">this guide</a> from Mozilla is a good explanation.</p>
@@ -2274,14 +2170,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="text" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="text" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field only contains characters in a certain unicode range using the <code>regexp</code> package. For example, to check that it contains only Cyrillic characters in the two <a href="http://jrgraphix.net/research/unicode_blocks.php">unicode blocks</a> 0400 - 04FF (Cyrillic) and 0500 - 052F (Cyrillic Supplementary):</p>
 
-    <figure class="plain"><code><pre>
-    import "regexp"
+    <figure class="plain"><code><pre>    import "regexp"
     ···
     // Use an interpreted string and the \u escape notation to create a regular
     // expression matching the range of characters in the two unicode code blocks.
@@ -2296,16 +2190,14 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="email" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="email" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can sanity check that the <code>"foo"</code> field contains an email address using the <code>regexp</code> package. Choosing a regular expression to use for email validation is a contentious topic, but as a starting point I would suggest the pattern recommended by the <a href="https://www.w3.org/TR/2016/REC-html51-20161101/sec-forms.html#email-state-typeemail">W3C</a> and <a href="https://html.spec.whatwg.org/multipage/forms.html#valid-e-mail-address">Web Hypertext Application Technology Working Group</a>.</p>
 
     <p>In addition, the email addresses have a <a href="http://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address">practical limit of 254 bytes</a>. Putting those together, a decent sanity check is:</p>
 
-    <figure class="plain"><code><pre>
-    import "regexp"
+    <figure class="plain"><code><pre>    import "regexp"
     ···
     var rxEmail = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
@@ -2321,16 +2213,14 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="url" name="foo"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="url" name="foo"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field contains a valid URL by first parsing it with the <code>url.Parse</code> function. This will take a URL string, break it into it's component pieces, and store it as a <a href="https://golang.org/pkg/net/url/#URL">url.URL</a> struct. You can then sanity check the component pieces as necessary.</p>
 
     <p>For instance, to check that a URL is absolute (i.e has both a scheme and host) and that the scheme is either http or https:</p>
 
-    <figure class="plain"><code><pre>
-    import "net/url"
+    <figure class="plain"><code><pre>    import "net/url"
     ···
     // If there are any major problems with the format of the URL, url.Parse() will
     // return an error.
@@ -2348,16 +2238,14 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="number" name="foo" min="0" max="100" step="5"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="number" name="foo" min="0" max="100" step="5"&gt;
     </pre></code></figure>
 
     You can verify that the <code>"foo"</code> field contains an integer by parsing it with the <code>strconv.Atoi</code> function. You can then sanity check the integer as necessary.</p>
 
     <p>For instance, to check that an integer is a multiple of 5 between 0 and 100:</p>
 
-    <figure class="plain"><code><pre>
-    import "strconv"
+    <figure class="plain"><code><pre>    import "strconv"
     ···
     n, err := strconv.Atoi(r.Form.Get("foo"))
     if err != nil {
@@ -2373,16 +2261,14 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="number" name="foo" min="0" max="1" step="0.01"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="number" name="foo" min="0" max="1" step="0.01"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field contains an integer by parsing it with the <code>strconv.ParseFloat</code> function. You can then sanity check the float as necessary.</p>
 
     <p>For instance, to check that an float is a between 0 and 1:</p>
 
-    <figure class="plain"><code><pre>
-    import "strconv"
+    <figure class="plain"><code><pre>    import "strconv"
 
     n, err := strconv.ParseFloat(r.Form.Get("foo"), 64)
     if err != nil {
@@ -2396,8 +2282,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="date" name="foo" min="2017-01-01" max="2017-12-31"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="date" name="foo" min="2017-01-01" max="2017-12-31"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field contains a valid date by parsing it with the <code>time.Parse</code> function. It will return an error if the date is not real: any day of month larger than 31 is rejected, as is February 29 in non-leap years, February 30, February 31, April 31, June 31, September 31, and November 31.</p>
@@ -2408,8 +2293,7 @@ db.SetMaxIdleConns(1)
 
     <p>For instance, to check that an date is valid and between 2017-01-01 and 2017-12-31:</p>
 
-    <figure class="plain"><code><pre>
-    import "time"
+    <figure class="plain"><code><pre>    import "time"
     ···
     d, err := time.Parse("2006-01-02", r.Form.Get("foo"))
     if err != nil {
@@ -2423,16 +2307,14 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="datetime-local" name="foo" min="2017-01-01" max="2017-12-31"&gt;
+    <figure class="plain"><code><pre>    &lt;input type="datetime-local" name="foo" min="2017-01-01" max="2017-12-31"&gt;
     </pre></code></figure>
 
     <p>You can verify that the <code>"foo"</code> field contains a valid datetime for a specific location by parsing it with the <code>time.ParseInLocation</code> function. This will return an error if the date is not real: any day of month larger than 31 is rejected, as is February 29 in non-leap years, February 30, February 31, April 31, June 31, September 31, and November 31.</p>
 
     <p>For instance, to check that an datetime for the "Europe/Vienna" timezone is valid and between 2017-01-01 00:00 and 2017-12-31 23:59:</p>
 
-    <figure class="plain"><code><pre>
-    import "time"
+    <figure class="plain"><code><pre>    import "time"
     ···
 
     // Load the users local time zone. This accepts a location name corresponding
@@ -2456,16 +2338,14 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="radio" name="foo" value="wibble"&gt; Wibble
+    <figure class="plain"><code><pre>    &lt;input type="radio" name="foo" value="wibble"&gt; Wibble
     &lt;input type="radio" name="foo" value="wobble"&gt; Wobble
     &lt;input type="radio" name="foo" value="wubble"&gt; Wubble
     </pre></code></figure>
 
     <p>You can check that the submitted value for the <code>"foo"</code> field is one of a known set like this:</p>
 
-    <figure class="plain"><code><pre>
-    set := map[string]bool{"wibble": true, "wobble": true, "wubble": true}
+    <figure class="plain"><code><pre>    set := map[string]bool{"wibble": true, "wobble": true, "wubble": true}
 
     if !set[r.Form.Get("foo")] {
         fmt.Printf("error: foo not match 'wibble', 'wobble' or 'wubble'")
@@ -2476,8 +2356,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="checkbox" name="foo" value="wibble"&gt; Wibble
+    <figure class="plain"><code><pre>    &lt;input type="checkbox" name="foo" value="wibble"&gt; Wibble
     &lt;input type="checkbox" name="foo" value="wobble"&gt; Wobble
     &lt;input type="checkbox" name="foo" value="wubble"&gt; Wubble
     </pre></code></figure>
@@ -2487,8 +2366,7 @@ db.SetMaxIdleConns(1)
 
     <p>You can check that the submitted values for the <code>"foo"</code> field are part of a known set like this:</p>
 
-    <figure class="plain"><code><pre>
-    set := map[string]bool{"wibble": true, "wobble": true, "wubble": true}
+    <figure class="plain"><code><pre>    set := map[string]bool{"wibble": true, "wobble": true, "wubble": true}
 
     for _, f := range r.Form["foo"] {
         if !set[f] {
@@ -2504,14 +2382,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you have the HTML form:</p>
 
-    <figure class="plain"><code><pre>
-    &lt;input type="checkbox" name="foo" value="checked"&gt; I accept the terms
+    <figure class="plain"><code><pre>    &lt;input type="checkbox" name="foo" value="checked"&gt; I accept the terms
     </pre></code></figure>
 
     <p>You can verify that it has been checked like this:</p>
 
-    <figure class="plain"><code><pre>
-    if r.Form.Get("foo") != "checked" {
+    <figure class="plain"><code><pre>    if r.Form.Get("foo") != "checked" {
         fmt.Println("foo must be checked")
     }
     </pre></code></figure>
@@ -2570,15 +2446,13 @@ db.SetMaxIdleConns(1)
 
     <p>For example:</p>
 
-    <figure class="shell"><code><pre>
-    $ go get github.com/alexedwards/scs/session
+    <figure class="shell"><code><pre>    $ go get github.com/alexedwards/scs/session
     $ go get github.com/alexedwards/scs/engine/memstore
     </pre></code></figure>
 
     <p>Usage is then simple:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
         &quot;io&quot;
@@ -2625,8 +2499,7 @@ db.SetMaxIdleConns(1)
 
     <p>You should be able to verify that the session data is being across requests with curl:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i -c cookies localhost:4000/put
+    <figure class="shell"><code><pre>    $ curl -i -c cookies localhost:4000/put
     <samp>HTTP/1.1 200 OK
     Set-Cookie: scs.session.token=uts3FRcCMOIXpyx5uZx28Y54uUFRHxgtYhbgD4epeI4; Path=/; HttpOnly
     Date: Tue, 30 Aug 2016 17:37:12 GMT
@@ -2664,14 +2537,12 @@ db.SetMaxIdleConns(1)
 
     <p>Throughout this post we'll be using the <a href="https://github.com/mediocregopher/radix.v2">Radix.v2</a> driver. It's well maintained, and I've found it's API clean and straightforward to use. If you're following along you'll need to <code>go get</code> it:</p>
 
-    <figure class="shell"><code><pre>
-    $ go get github.com/mediocregopher/radix.v2
+    <figure class="shell"><code><pre>    $ go get github.com/mediocregopher/radix.v2
     </pre></code></figure>
 
     <p>Notice that the Radix.v2 package is broken up into 6 sub-packages (<code>cluster</code>, <code>pool</code>, <code>pubsub</code>, <code>redis</code>, <code>sentinel</code> and <code>util</code>). To begin with we'll only need the functionality in the <code>redis</code> package, so our import statements should look like:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    import (
+    <figure class="plain"><code class="go"><pre>    import (
         "github.com/mediocregopher/radix.v2/redis"
     )
     </pre></code></figure>
@@ -2684,8 +2555,7 @@ db.SetMaxIdleConns(1)
 
     <p>So if we wanted to store a new album using the Redis CLI, we could execute a <code>HMSET</code> command along the lines of:</p>
 
-    <figure class="shell"><code><pre>
-    127.0.0.1:6379> HMSET album:1 title "Electric Ladyland" artist "Jimi Hendrix" price 4.95 likes 8
+    <figure class="shell"><code><pre>    127.0.0.1:6379> HMSET album:1 title "Electric Ladyland" artist "Jimi Hendrix" price 4.95 likes 8
     <samp>OK</samp>
     </pre></code></figure>
 
@@ -2697,8 +2567,7 @@ db.SetMaxIdleConns(1)
 
     <p>It's quite straightforward in practice:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
         "fmt"
@@ -2737,8 +2606,7 @@ db.SetMaxIdleConns(1)
 
     <p>In such cases, it's common to chain the check against <code>Err</code> like so:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    err = conn.Cmd("HMSET", "album:1", "title", "Electric Ladyland", "artist", "Jimi Hendrix", "price", 4.95, "likes", 8).Err
+    <figure class="plain"><code class="go"><pre>    err = conn.Cmd("HMSET", "album:1", "title", "Electric Ladyland", "artist", "Jimi Hendrix", "price", 4.95, "likes", 8).Err
     if err != nil {
         log.Fatal(err)
     }
@@ -2763,8 +2631,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's use some of these in conjunction with the <code>HGET</code> command to retrieve information from one of our album hashes:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
         "fmt"
@@ -2812,15 +2679,13 @@ db.SetMaxIdleConns(1)
 
     <p>If you run the code above you should get output which looks like:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     <samp>Electric Ladyland by Jimi Hendrix: £4.95 [8 likes]</samp>
     </pre></code></figure>
 
     <p>Let's now look at a more complete example, where we use the <code>HGETALL</code> command to retrieve all fields from an album hash in one go and store the information in a custom <code>Album</code> struct.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
         "fmt"
@@ -2888,8 +2753,7 @@ db.SetMaxIdleConns(1)
 
     <p>Running this code should give an output like:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     <samp>&{Electric Ladyland Jimi Hendrix 4.95 8}</samp>
     </pre></code></figure>
 
@@ -2910,8 +2774,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you'd like to follow along, head on over into your Go workspace and create a basic application scaffold&hellip;</p>
 
-    <figure class="shell"><code><pre>
-    $ cd $GOPATH/src
+    <figure class="shell"><code><pre>    $ cd $GOPATH/src
     $ mkdir -p recordstore/models
     $ cd recordstore
     $ touch main.go models/albums.go
@@ -2924,8 +2787,7 @@ db.SetMaxIdleConns(1)
 
     <p>&hellip;And use the Redis CLI to add a few additional albums, along with a new <code>likes</code> sorted set. This sorted set will be used within the <code>GET /popular</code> route to help us quickly and efficiently retrieve the ids of albums with the most likes. Here's the commands to run:</p>
 
-    <figure class="shell"><code><pre>
-    HMSET album:1 title "Electric Ladyland" artist "Jimi Hendrix" price 4.95 likes 8
+    <figure class="shell"><code><pre>    HMSET album:1 title "Electric Ladyland" artist "Jimi Hendrix" price 4.95 likes 8
     HMSET album:2 title "Back in Black" artist "AC/DC" price 5.95 likes 3
     HMSET album:3 title "Rumours" artist "Fleetwood Mac" price 7.95 likes 12
     HMSET album:4 title "Nevermind" artist "Nirvana" price 5.95 likes 8
@@ -2936,8 +2798,7 @@ db.SetMaxIdleConns(1)
 
     <p>In the <code>models/albums.go</code> file we'll use the <code>init()</code> function to establish a Redis connection pool on startup, and we'll repurpose the code we wrote earlier into a <code>FindAlbum()</code> function that we can use from our HTTP handlers.</p>
 
-    <figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>
-    package models
+    <figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>    package models
 
     import (
         "errors"
@@ -3021,8 +2882,7 @@ db.SetMaxIdleConns(1)
 
     <p>Here's the <code>FindAlbum()</code> function re-written to use this shortcut:</p>
 
-    <figure class="plain"><code><pre>
-    func FindAlbum(id string) (*Album, error) {
+    <figure class="plain"><code><pre>    func FindAlbum(id string) (*Album, error) {
         reply, err := db.Cmd("HGETALL", "album:"+id).Map()
         if err != nil {
             return nil, err
@@ -3036,8 +2896,7 @@ db.SetMaxIdleConns(1)
 
     <p>Alright, let's head over to the <code>main.go</code> file and set up a simple web server and HTTP handler for the <code>GET /album</code> route.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
         "fmt"
@@ -3097,14 +2956,12 @@ db.SetMaxIdleConns(1)
 
     <p>If you run the application:
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     </pre></code></figure>
 
     <p>And make a request for one of the albums using cURL. You should get a response like:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000/album?id=2
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000/album?id=2
     <samp>HTTP/1.1 200 OK
     Content-Length: 42
     Content-Type: text/plain; charset=utf-8
@@ -3124,8 +2981,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's create a new <code>IncrementLikes()</code> function in the albums model which uses this technique.</p>
 
-    <figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>
-    ...
+    <figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>    ...
     func IncrementLikes(id string) error {
         conn, err := db.Get()
         if err != nil {
@@ -3179,8 +3035,7 @@ db.SetMaxIdleConns(1)
 
     <p>We'll also update the <code>main.go</code> file to add an <code>addLike()</code> handler for the route:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    func main() {
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    func main() {
         http.HandleFunc("/album", showAlbum)
         http.HandleFunc("/like", addLike)
         http.ListenAndServe(":3000", nil)
@@ -3232,8 +3087,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you make a POST request to like one of the albums you should now get a response like:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i -L -d "id=2" localhost:3000/like
+    <figure class="shell"><code><pre>    $ curl -i -L -d "id=2" localhost:3000/like
     <samp>HTTP/1.1 303 See Other
     Location: /album?id=2
     Date: Thu, 25 Feb 2016 17:08:19 GMT
@@ -3261,8 +3115,7 @@ db.SetMaxIdleConns(1)
 
     <p>The solution here is to use the Redis <code>WATCH</code> command in conjunction with a transaction. <code>WATCH</code> instructs Redis to monitor a specific key for any changes. If another client modifies our watched key between our <code>WATCH</code> instruction and our subsequent transaction's <code>EXEC</code>, the transaction will fail and return a nil reply. If no client changes the value before our <code>EXEC</code>, the transaction will complete as normal. We can execute our code in a loop until the transaction is successful.</p>
 
-    <figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>
-    package models
+    <figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>    package models
 
     import (
         "errors"
@@ -3359,8 +3212,7 @@ db.SetMaxIdleConns(1)
 
     <p>Using this from our web application is nice and straightforward:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    func main() {
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    func main() {
         http.HandleFunc("/album", showAlbum)
         http.HandleFunc("/like", addLike)
         http.HandleFunc("/popular", listPopular)
@@ -3396,8 +3248,7 @@ db.SetMaxIdleConns(1)
 
     <p>Making a request to the <code>GET /popular</code> route should now yield a response similar to:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000/popular
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000/popular
     <samp>HTTP/1.1 200 OK
     Content-Length: 147
     Content-Type: text/plain; charset=utf-8
@@ -3436,16 +3287,14 @@ db.SetMaxIdleConns(1)
 
     <p>I like concrete examples, so let's carry on working with the online bookstore database and code from my <a href="/blog/practical-persistence-sql">previous post</a>. We'll create a simple application with an MVC-like structure &ndash; with the HTTP handlers in <code>main</code> and a <code>models</code> package containing a global <code>DB</code> variable, <code>InitDB()</code> function, and our database logic.</p>
 
-    <figure class="shell"><code><pre>
-    bookstore
+    <figure class="shell"><code><pre>    bookstore
     ├── main.go
     └── models
         ├── books.go
         └── db.go
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
         "bookstore/models"
@@ -3476,8 +3325,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>    package models
 
     import (
         "database/sql"
@@ -3500,8 +3348,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>    package models
 
     type Book struct {
         Isbn   string
@@ -3535,8 +3382,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you run the application and make a request to <code>/books</code> you should get a response similar to:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000/books
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000/books
     <samp>HTTP/1.1 200 OK
     Content-Length: 205
     Content-Type: text/plain; charset=utf-8
@@ -3566,8 +3412,7 @@ db.SetMaxIdleConns(1)
 
     <p>So for projects where all your handlers are in the same package, a neat approach is to put these items into a custom <code>Env</code> type:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    type Env struct {
+    <figure class="plain"><code class="go"><pre>    type Env struct {
         db *sql.DB
         logger *log.Logger
         templates *template.Template
@@ -3576,8 +3421,7 @@ db.SetMaxIdleConns(1)
 
     <p>&hellip; and then define your handlers as methods against <code>Env</code>. This provides a clean and idiomatic way of making the connection pool (and potentially other items) available to your handlers. Here's a full example:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
         "bookstore/models"
@@ -3618,8 +3462,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>    package models
 
     import (
         "database/sql"
@@ -3638,8 +3481,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>    package models
 
     import "database/sql"
 
@@ -3677,8 +3519,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you don't want to define your handlers as methods on <code>Env</code> an alternative approach is to put your handler logic into a closure and <em>close over</em> the <code>Env</code> variable like so:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
         "bookstore/models"
@@ -3739,16 +3580,14 @@ db.SetMaxIdleConns(1)
 
     <p>Let's amend the example to include a new <code>Datastore</code> interface, which implements exactly the same methods as our new <code>DB</code> type.</p>
 
-    <figure class="plain"><code class="go"><pre>
-    type Datastore interface {
+    <figure class="plain"><code class="go"><pre>    type Datastore interface {
         AllBooks() ([]*Book, error)
     }
     </pre></code></figure>
 
     <p>We can then use this interface instead of the direct <code>DB</code> type throughout our application. Here's the updated example:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
         "fmt"
@@ -3789,8 +3628,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>    package models
 
     import (
         _ "github.com/lib/pq"
@@ -3817,8 +3655,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>    package models
 
     type Book struct {
         Isbn   string
@@ -3852,8 +3689,7 @@ db.SetMaxIdleConns(1)
 
     <p>Because our handlers are now using the <code>Datastore</code> interface we can easily create mock database responses for any unit tests:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    package main
+    <figure class="plain"><code class="go"><pre>    package main
 
     import (
         "bookstore/models"
@@ -3899,8 +3735,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's adapt the bookstore example one last time, passing <code>context.Context</code> to our handlers using the pattern suggested in this <a href="https://joeshaw.org/net-context-and-http-handler/#custom-context-handler-types">excellent article</a> by Joe Shaw.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
       "bookstore/models"
@@ -3956,8 +3791,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>    package models
 
     import (
         "database/sql"
@@ -3976,8 +3810,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-    package models
+    <figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>    package models
 
     import (
         "database/sql"
@@ -4035,8 +3868,7 @@ db.SetMaxIdleConns(1)
 
     <p>In this post I'll be using Postgres and the excellent <a href="https://github.com/lib/pq">pq</a> driver. But all the code in this tutorial is (nearly) exactly the same for any other driver or database &ndash; including MySQL and SQLite. I'll point out the very few Postgres-specific bits as we go.</p>
 
-    <figure class="shell"><code><pre>
-    $ go get github.com/lib/pq
+    <figure class="shell"><code><pre>    $ go get github.com/lib/pq
     </pre></code></figure>
 
     <h2>Basic usage</h2>
@@ -4045,8 +3877,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you'd like to follow along, you'll need to create a new <code>bookstore</code> database and scaffold it with the following:</p>
 
-    <figure class="plain"><code class="sql"><pre>
-    CREATE TABLE books (
+    <figure class="plain"><code class="sql"><pre>    CREATE TABLE books (
       isbn    char(14) NOT NULL,
       title   varchar(255) NOT NULL,
       author  varchar(255) NOT NULL,
@@ -4063,16 +3894,14 @@ db.SetMaxIdleConns(1)
 
     <p>Once that's done, head over to your Go workspace and create a new <code>bookstore</code> package directory and a <code>main.go</code> file:</p>
 
-    <figure class="shell"><code><pre>
-    $ cd $GOPATH/src
+    <figure class="shell"><code><pre>    $ cd $GOPATH/src
     $ mkdir bookstore &amp;&amp; cd bookstore
     $ touch main.go
     </pre></code></figure>
 
     <p>Let's start with some code that executes a <code>SELECT * FROM books</code> query and then prints the results to stdout.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
       _ "github.com/lib/pq"
@@ -4144,8 +3973,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you run the code you should get the following output:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     <samp>978-1503261969, Emma, Jayne Austen, £9.44
     978-1505255607, The Time Machine, H. G. Wells, £5.99
     978-1503379640, The Prince, Niccolò Machiavelli, £6.99</samp>
@@ -4164,8 +3992,7 @@ db.SetMaxIdleConns(1)
 
     <p>We've just written all the core logic we need for the <code>GET /books</code> route. Let's adapt it into a <code>booksIndex()</code> HTTP handler for our web application.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
       _ "github.com/lib/pq"
@@ -4245,8 +4072,7 @@ db.SetMaxIdleConns(1)
 
     <p>Run the application and then make a request:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000/books
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000/books
     <samp>HTTP/1.1 200 OK
     Content-Length: 205
     Content-Type: text/plain; charset=utf-8
@@ -4264,8 +4090,7 @@ db.SetMaxIdleConns(1)
 
     <p>We'll create a new <code>bookShow()</code> handler for this:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    ...
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    ...
 
     func main() {
       http.HandleFunc("/books", booksIndex)
@@ -4330,8 +4155,7 @@ db.SetMaxIdleConns(1)
 
     <p>Give it a try:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000/books/show?isbn=978-1505255607
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000/books/show?isbn=978-1505255607
     <samp>HTTP/1.1 200 OK
     Content-Length: 54
     Content-Type: text/plain; charset=utf-8
@@ -4347,8 +4171,7 @@ db.SetMaxIdleConns(1)
 
     <p>Here's the code:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    ...
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    ...
 
     import (
       _ "github.com/lib/pq"
@@ -4417,8 +4240,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's try out the <code>/books/create</code> route, passing our parameters in the POST body:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i -X POST -d "isbn=978-1470184841&title=Metamorphosis&author=Franz Kafka&price=5.90" localhost:3000/books/create
+    <figure class="shell"><code><pre>    $ curl -i -X POST -d "isbn=978-1470184841&title=Metamorphosis&author=Franz Kafka&price=5.90" localhost:3000/books/create
     <samp>HTTP/1.1 200 OK
     Content-Length: 58
     Content-Type: text/plain; charset=utf-8
@@ -4500,8 +4322,7 @@ db.SetMaxIdleConns(1)
 
     <p>The <a href="https://github.com/alexedwards/stack/blob/master/README.md">full documentation for Stack is here</a>, but here's a quick example of how to use it:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
         "fmt"
@@ -4535,8 +4356,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i user:pass@localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i user:pass@localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Length: 41
     Content-Type: text/plain; charset=utf-8
@@ -4581,8 +4401,7 @@ db.SetMaxIdleConns(1)
 
     <p>Hopefully you're already familiar with the following method for constructing a handler (if not, it's probably best to read <a href="https://www.alexedwards.net/blog/a-recap-of-request-handling">this primer</a> before continuing).</p>
 
-    <figure class="plain"><code class="go"><pre>
-    func messageHandler(message string) http.Handler {
+    <figure class="plain"><code class="go"><pre>    func messageHandler(message string) http.Handler {
       return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte(message)
       })
@@ -4595,8 +4414,7 @@ db.SetMaxIdleConns(1)
 
     <p>This gives us a complete pattern for constructing middleware:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    func exampleMiddleware(next http.Handler) http.Handler {
+    <figure class="plain"><code class="go"><pre>    func exampleMiddleware(next http.Handler) http.Handler {
       return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         // Our middleware logic goes here...
         next.ServeHTTP(w, r)
@@ -4617,8 +4435,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's look at a stripped-down example with some middleware that simply writes log messages to stdout:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -4660,8 +4477,7 @@ db.SetMaxIdleConns(1)
 
     <p>Run this application and make a request to <a href="http://localhost:3000/">http://localhost:3000</a>. You should get log output similar to this:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     <samp>2014/10/13 20:27:36 Executing middlewareOne
     2014/10/13 20:27:36 Executing middlewareTwo
     2014/10/13 20:27:36 Executing finalHandler
@@ -4679,8 +4495,7 @@ db.SetMaxIdleConns(1)
 
     <p>OK, let's say that we're building a service which processes requests containing a XML body. We want to create some middleware which a) checks for the existence of a request body, and b) sniffs the body to make sure it is XML. If either of those checks fail, we want our middleware to write an error message and to stop the request from reaching our application handlers.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
       "bytes"
@@ -4719,8 +4534,7 @@ db.SetMaxIdleConns(1)
 
     <p>This looks good. Let's test it by creating a simple XML file:</p>
 
-    <figure class="shell"><code><pre>
-    $ cat &gt; books.xml
+    <figure class="shell"><code><pre>    $ cat &gt; books.xml
     &lt;?xml version="1.0"?&gt;
     &lt;books&gt;
       &lt;book&gt;
@@ -4733,8 +4547,7 @@ db.SetMaxIdleConns(1)
 
     <p>And making some requests using cURL:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 400 Bad Request
     Content-Type: text/plain; charset=utf-8
     Content-Length: 12
@@ -4761,12 +4574,10 @@ db.SetMaxIdleConns(1)
 
     <p>The goji/httpauth package provides HTTP Basic Authentication functionality. It has a <a href="https://godoc.org/github.com/goji/httpauth#SimpleBasicAuth">SimpleBasicAuth</a> helper which returns a function with the signature <code>func(http.Handler) http.Handler</code>. This means we can use it in exactly the same way as our custom-built middleware.</p>
 
-    <figure class="shell"><code><pre>
-    $ go get github.com/goji/httpauth
+    <figure class="shell"><code><pre>    $ go get github.com/goji/httpauth
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
       "github.com/goji/httpauth"
@@ -4788,8 +4599,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you run this example you should get the responses you'd expect for valid and invalid credentials:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i username:password@localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i username:password@localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Length: 2
     Content-Type: text/plain; charset=utf-8
@@ -4810,12 +4620,10 @@ db.SetMaxIdleConns(1)
 
     <p>Here's a simple example in which we write logs to a <code>server.log</code> file:</p>
 
-    <figure class="shell"><code><pre>
-    go get github.com/gorilla/handlers
+    <figure class="shell"><code><pre>    go get github.com/gorilla/handlers
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
 
     import (
       "github.com/gorilla/handlers"
@@ -4848,8 +4656,7 @@ db.SetMaxIdleConns(1)
 
     <p>We can clean this up by creating a constructor function (let's call it <code>myLoggingHandler</code>) with the signature <code>func(http.Handler) http.Handler</code>. This will allow us to nest it more neatly with other middleware:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    func myLoggingHandler(h http.Handler) http.Handler {
+    <figure class="plain"><code class="go"><pre>    func myLoggingHandler(h http.Handler) http.Handler {
       logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
       if err != nil {
         panic(err)
@@ -4867,8 +4674,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you run this application and make a few requests your <code>server.log</code> file should look something like this:</p>
 
-    <figure class="shell"><code><pre>
-    $ cat server.log
+    <figure class="shell"><code><pre>    $ cat server.log
     <samp>127.0.0.1 - - [21/Oct/2014:18:56:43 +0100] "GET / HTTP/1.1" 200 2
     127.0.0.1 - - [21/Oct/2014:18:56:36 +0100] "POST / HTTP/1.1" 200 2
     127.0.0.1 - - [21/Oct/2014:18:56:43 +0100] "PUT / HTTP/1.1" 200 2</samp>
@@ -4894,8 +4700,7 @@ db.SetMaxIdleConns(1)
 
     <p>In my eyes at least, that code is slightly clearer to understand at a glance. However, the real benefit of Alice is that it lets you to specify a handler chain once and reuse it for multiple routes. Like so:</p>
 
-    <figure class="plain"><code class="go"><pre>
-    stdChain := alice.New(myLoggingHandler, authHandler, enforceXMLHandler)
+    <figure class="plain"><code class="go"><pre>    stdChain := alice.New(myLoggingHandler, authHandler, enforceXMLHandler)
 
     http.Handle("/foo", stdChain.Then(fooHandler))
     http.Handle("/bar", stdChain.Then(barHandler))
@@ -4916,16 +4721,14 @@ db.SetMaxIdleConns(1)
 
     <p>We'll start by creating a directory for the project, along with a <code>flash.go</code> file for our code and a <code>main.go</code> file for an example application.</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir flash-example
+    <figure class="shell"><code><pre>    $ mkdir flash-example
     $ cd flash-example
     $ touch flash.go main.go
     </pre></code></figure>
 
     <p>In order to keep our request handlers nice and clean, we'll create our primary <code>SetFlash()</code> and <code>GetFlash()</code> helper functions in the <code>flash.go</code> file.</p>
 
-    <figure class="file"><figcaption>File: flash.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: flash.go</figcaption><code><pre>    package main
 
     import (
       "encoding/base64"
@@ -4978,8 +4781,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's use these helper functions in a short example:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "fmt"
@@ -5014,15 +4816,13 @@ db.SetMaxIdleConns(1)
 
     <p>Run the application:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go flash.go
+    <figure class="shell"><code><pre>    $ go run main.go flash.go
     <samp>Listening...</samp>
     </pre></code></figure>
 
     <p>And make some requests against it using <a href="http://curl.haxx.se/">cURL</a>:</p>
 
-    <figure class="shell"><code><pre>
-    $ curl -i --cookie-jar cj localhost:3000/set
+    <figure class="shell"><code><pre>    $ curl -i --cookie-jar cj localhost:3000/set
     <samp>HTTP/1.1 200 OK
     Set-Cookie: message=VGhpcyBpcyBhIGZsYXNoZWQgbWVzc2FnZSE=
     Content-Type: text/plain; charset=utf-8
@@ -5050,8 +4850,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you don't want to roll your own helpers for flash messages, or need them to be 'signed' to prevent tampering, then the <a href="http://www.gorillatoolkit.org/pkg/sessions">Gorilla Sessions</a> package is a good option. Here's the previous example implemented with Gorilla instead:</p>
 
-    <figure class="plain"><code><pre>
-    package main
+    <figure class="plain"><code><pre>    package main
 
     import (
       "fmt"
@@ -5105,14 +4904,12 @@ db.SetMaxIdleConns(1)
 
     <p>Let's begin the example by creating a new directory for the application, along with a <code>main.go</code> file for our code and a couple of vanilla HTML templates:</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir -p contact-form/templates
+    <figure class="shell"><code><pre>    $ mkdir -p contact-form/templates
     $ cd contact-form
     $ touch main.go templates/index.html templates/confirmation.html
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
-    &lt;h1&gt;Contact&lt;/h1&gt;
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>    &lt;h1&gt;Contact&lt;/h1&gt;
     &lt;form action="/" method="POST" novalidate&gt;
       &lt;div&gt;
         &lt;label&gt;Your email:&lt;/label&gt;
@@ -5128,8 +4925,7 @@ db.SetMaxIdleConns(1)
     &lt;/form&gt;
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: templates/confirmation.html</figcaption><code><pre>
-    &lt;h1&gt;Confirmation&lt;/h1&gt;
+    <figure class="file"><figcaption>File: templates/confirmation.html</figcaption><code><pre>    &lt;h1&gt;Confirmation&lt;/h1&gt;
     &lt;p&gt;Your message has been sent!&lt;/p&gt;
     </pre></code></figure>
 
@@ -5137,14 +4933,12 @@ db.SetMaxIdleConns(1)
 
     <p>There are a few ways of achieving this, but we'll use <a href="https://github.com/bmizerany/pat">Pat</a> &ndash; a third-party routing library which I've <a href="https://www.alexedwards.net/blog/a-mux-showdown">talked about before</a>. You'll need to install it if you're following along:</p>
 
-    <figure class="shell"><code><pre>
-    $ go get github.com/bmizerany/pat
+    <figure class="shell"><code><pre>    $ go get github.com/bmizerany/pat
     </pre></code></figure>
 
     <p>Go ahead and create a skeleton for the application:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "github.com/bmizerany/pat"
@@ -5192,8 +4986,7 @@ db.SetMaxIdleConns(1)
 
     <p>If you run the application:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     <samp>Listening...</samp>
     </pre></code></figure>
 
@@ -5203,12 +4996,10 @@ db.SetMaxIdleConns(1)
 
     <p>One approach to setting this up is to add the code inline in our <code>send</code> handler, but personally I find it cleaner and neater to break out the logic into a separate <code>message.go</code> file:</p>
 
-    <figure class="shell"><code><pre>
-    $ touch message.go
+    <figure class="shell"><code><pre>    $ touch message.go
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: message.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: message.go</figcaption><code><pre>    package main
 
     import (
       "regexp"
@@ -5247,8 +5038,7 @@ db.SetMaxIdleConns(1)
 
     <p>This approach means that we can keep the code in our <code>send</code> handler fantastically light. All we need it to do is retrieve the form values from the POST request, create a new <code>Message</code> object with them, and call <code>Validate()</code>. If the validation fails we'll then want to reshow the contact form, passing back the relevant <code>Message</code> object.</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    ...
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    ...
     func send(w http.ResponseWriter, r *http.Request) {
       msg := &Message{
         Email: r.FormValue("email"),
@@ -5268,8 +5058,7 @@ db.SetMaxIdleConns(1)
 
     <p>As a side note, in this example above we're using the <a href="http://golang.org/pkg/net/http/#Request.FormValue">FormValue</a> method on the request to access the POST data. We could also access the data directly via <code>r.Form</code>, but there is a gotcha to point out &ndash; by default <code>r.Form</code> will be empty until it is filled by calling <a href="http://golang.org/pkg/net/http/#Request.ParseForm">ParseForm</a> on the request. Once that's done, we can access it in the same way as any <a href="http://golang.org/pkg/net/url/#Values">url.Values</a> type. For example:</p>
 
-    <figure class="plain"><code><pre>
-    err := r.ParseForm()
+    <figure class="plain"><code><pre>    err := r.ParseForm()
     // Handle error
     msg := &Message{
       Email: r.Form.Get("email"),
@@ -5280,8 +5069,7 @@ db.SetMaxIdleConns(1)
 
     <p>Anyway, let's update our template so it shows the validation errors (if they exist) above the relevant fields, and repopulate the form inputs with any information that the user previously typed in:</p>
 
-    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
-    &lt;style type="text/css"&gt;.error &#123;color: red;&#125;&lt;/style&gt;
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>    &lt;style type="text/css"&gt;.error &#123;color: red;&#125;&lt;/style&gt;
 
     &lt;h1&gt;Contact&lt;/h1&gt;
     &lt;form action="/" method="POST" novalidate&gt;
@@ -5307,15 +5095,13 @@ db.SetMaxIdleConns(1)
 
     <p>Go ahead and give it a try:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go message.go
+    <figure class="shell"><code><pre>    $ go run main.go message.go
     <samp>Listening...</samp>
     </pre></code></figure>
 
     <p>Still, our contact form is pretty useless unless we actually do something with it. Let's add a <code>Deliver</code> method which sends the contact form message to a particular email address. In the code below I'm using Gmail, but the same thing should work with any other SMTP server.</p>
 
-    <figure class="file"><figcaption>File: message.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: message.go</figcaption><code><pre>    package main
 
     import (
       "fmt"
@@ -5339,8 +5125,7 @@ db.SetMaxIdleConns(1)
 
     <p>The final step is to head back to our <code>main.go</code> file,  add some code to call <code>Deliver()</code>, and issue a 303 redirect to the confirmation page that we made earlier:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    ...
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    ...
     func send(w http.ResponseWriter, r *http.Request) {
       msg := &Message{
         Email: r.FormValue("email"),
@@ -5365,8 +5150,7 @@ db.SetMaxIdleConns(1)
 
     <p>If mapping form data to objects is something that you're doing a lot of, you may find <a href="http://www.gorillatoolkit.org/pkg/schema">Gorilla Schema's</a> automatic decoder useful. If we were using it for our contact form example, the code would look a bit like this:</p>
 
-    <figure class="plain"><code><pre>
-    import "github.com/gorilla/schema"
+    <figure class="plain"><code><pre>    import "github.com/gorilla/schema"
     ...
     err := r.ParseForm()
     // Handle error
@@ -5401,8 +5185,7 @@ db.SetMaxIdleConns(1)
 
     <h2 id="headers">Sending Headers Only</h2>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "net/http"
@@ -5419,8 +5202,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 200 OK
     Server: A Go Web Server
     Content-Type: text/plain; charset=utf-8
@@ -5429,8 +5211,7 @@ db.SetMaxIdleConns(1)
 
     <h2 id="plain">Rendering Plain Text</h2>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "net/http"
@@ -5446,8 +5227,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Type: text/plain; charset=utf-8
     Content-Length: 2
@@ -5457,8 +5237,7 @@ db.SetMaxIdleConns(1)
 
     <h2 id="json">Rendering JSON</h2>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "encoding/json"
@@ -5489,8 +5268,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Type: application/json
     Content-Length: 56
@@ -5500,8 +5278,7 @@ db.SetMaxIdleConns(1)
 
     <h2 id="xml">Rendering XML</h2>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "encoding/xml"
@@ -5532,8 +5309,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Type: application/xml
     Content-Length: 128
@@ -5549,8 +5325,7 @@ db.SetMaxIdleConns(1)
 
     <h2 id="file">Serving a File</h2>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "net/http"
@@ -5569,8 +5344,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -I localhost:3000
+    <figure class="shell"><code><pre>    $ curl -I localhost:3000
     <samp>HTTP/1.1 200 OK
     Accept-Ranges: bytes
     Content-Length: 236717
@@ -5580,13 +5354,11 @@ db.SetMaxIdleConns(1)
 
     <h2 id="html">Rendering a HTML Template</h2>
 
-    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
-    &lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>    &lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
     &lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit.&lt;/p&gt;
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "html/template"
@@ -5620,8 +5392,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Type: text/html; charset=utf-8
     Content-Length: 84
@@ -5634,8 +5405,7 @@ db.SetMaxIdleConns(1)
 
     <p>Instead of passing in the <code>http.ResponseWriter</code> when executing your template (like in the above snippet) use a buffer instead:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    ...
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    ...
     buf := new(bytes.Buffer)
     if err := tmpl.Execute(buf, profile); err != nil {
       http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -5646,8 +5416,7 @@ db.SetMaxIdleConns(1)
 
     <h2 id="nesting">Using Layouts and Nested Templates</h2>
 
-    <figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>
-    &lt;html&gt;
+    <figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>    &lt;html&gt;
       &lt;head&gt;
         &lt;title&gt;&#123;&#123; template "title" . &#125;&#125;&lt;/title&gt;
       &lt;/head&gt;
@@ -5657,8 +5426,7 @@ db.SetMaxIdleConns(1)
     &lt;/html&gt;
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
-    &#123;&#123; define "title" &#125;&#125;An example layout&#123;&#123; end &#125;&#125;
+    <figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>    &#123;&#123; define "title" &#125;&#125;An example layout&#123;&#123; end &#125;&#125;
 
     &#123;&#123; define "content" &#125;&#125;
     &lt;h1&gt;Hello &#123;&#123; .Name &#125;&#125;&lt;/h1&gt;
@@ -5666,8 +5434,7 @@ db.SetMaxIdleConns(1)
     &#123;&#123; end &#125;&#125;
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "html/template"
@@ -5704,8 +5471,7 @@ db.SetMaxIdleConns(1)
     }
     </pre></code></figure>
 
-    <figure class="shell"><code><pre>
-    $ curl -i localhost:3000
+    <figure class="shell"><code><pre>    $ curl -i localhost:3000
     <samp>HTTP/1.1 200 OK
     Content-Type: text/html; charset=utf-8
     Content-Length: 180
@@ -5760,8 +5526,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's create some toy code to mimic the bank balance example:
 
-    <figure class="plain"><code><pre>
-    import "strconv"
+    <figure class="plain"><code><pre>    import "strconv"
 
     var Balance = &amp;currency{50.00, "GBP"}
 
@@ -5789,8 +5554,7 @@ db.SetMaxIdleConns(1)
 
     <p>In practice, it's more simple than it sounds:</p>
 
-    <figure class="plain"><code><pre>
-    import (
+    <figure class="plain"><code><pre>    import (
       "strconv"
       "sync"
     )
@@ -5828,8 +5592,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's tidy up the example a bit:</p>
 
-    <figure class="plain"><code><pre>
-    import (
+    <figure class="plain"><code><pre>    import (
       "strconv"
       "sync"
     )
@@ -5870,8 +5633,7 @@ db.SetMaxIdleConns(1)
 
     <p>Reader locks can be opened and closed with <code>RLock()</code> and <code>RUnlock()</code> like so:</p>
 
-    <figure class="plain"><code><pre>
-    import (
+    <figure class="plain"><code><pre>    import (
       "strconv"
       "sync"
     )
@@ -5912,8 +5674,7 @@ db.SetMaxIdleConns(1)
 
     <p>You can grab this from the <a href="https://github.com/alexedwards/go-reload">Github repository</a>.</p>
 
-    <figure class="file"><figcaption>File: go-reload</figcaption><code><pre>
-    #!/bin/bash
+    <figure class="file"><figcaption>File: go-reload</figcaption><code><pre>    #!/bin/bash
 
     # Watch all *.go files in the specified directory
     # Call the restart function when they are saved
@@ -5970,22 +5731,19 @@ db.SetMaxIdleConns(1)
 
     <p>The only dependency for this script is <a href="https://github.com/rvoicilas/inotify-tools/wiki">inotify-tools</a>, which is used to monitor the filesystem for changes.<p>
 
-    <figure class="shell"><code><pre>
-    $ sudo apt-get install inotify-tools
+    <figure class="shell"><code><pre>    $ sudo apt-get install inotify-tools
     </pre></code></figure>
 
     <p>Once you've <a href="https://raw.github.com/alexedwards/go-reload/master/go-reload">downloaded</a> (or copy-pasted) the script, you'll need to make it executable and move it to <code>/usr/local/bin</code> or another directory on your system path:</p>
 
-    <figure class="shell"><code><pre>
-    $ wget https://raw.github.com/alexedwards/go-reload/master/go-reload
+    <figure class="shell"><code><pre>    $ wget https://raw.github.com/alexedwards/go-reload/master/go-reload
     $ chmod +x go-reload
     $ sudo mv go-reload /usr/local/bin/
     </pre></code></figure>
 
     <p>You should then be able to use the <code>go-reload</code> command in place of <code>go run</code>:</p>
 
-    <figure class="shell"><code><pre>
-    $ go-reload main.go
+    <figure class="shell"><code><pre>    $ go-reload main.go
     <samp>== Go-reload
     >> Watching directories, CTRL+C to stop</samp>
     </pre></code></figure>
@@ -6009,14 +5767,12 @@ db.SetMaxIdleConns(1)
 
     <p>Go's HTTP package ships with a few functions to generate common handlers, such as <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a>,  <a href="http://golang.org/pkg/net/http/#NotFoundHandler">NotFoundHandler</a> and <a href="http://golang.org/pkg/net/http/#RedirectHandler">RedirectHandler</a>. Let's begin with a simple but contrived example:</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir handler-example
+    <figure class="shell"><code><pre>    $ mkdir handler-example
     $ cd handler-example
     $ touch main.go
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -6044,8 +5800,7 @@ db.SetMaxIdleConns(1)
 
     <p>Go ahead and run the application:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run main.go
+    <figure class="shell"><code><pre>    $ go run main.go
     <samp>Listening...</samp>
     </pre></code></figure>
 
@@ -6061,8 +5816,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's create a custom handler which responds with the current local time in a given format:</p>
 
-    <figure class="plain"><code><pre>
-    type timeHandler struct {
+    <figure class="plain"><code><pre>    type timeHandler struct {
       format string
     }
 
@@ -6078,8 +5832,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's embed this in a concrete example:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -6115,8 +5868,7 @@ db.SetMaxIdleConns(1)
 
     <p>Notice too that we could easily reuse the <code>timeHandler</code> in multiple routes:</p>
 
-    <figure class="plain"><code><pre>
-    func main() {
+    <figure class="plain"><code><pre>    func main() {
       mux := http.NewServeMux()
 
       th1123 := &timeHandler{format: time.RFC1123}
@@ -6142,8 +5894,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's reproduce the timeHandler application using this technique:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -6175,8 +5926,7 @@ db.SetMaxIdleConns(1)
 
     <p>This is what the <code>main()</code> function would have looked like if we'd used this shortcut instead:</p>
 
-    <figure class="plain"><code><pre>
-    func main() {
+    <figure class="plain"><code><pre>    func main() {
       mux := http.NewServeMux()
 
       mux.HandleFunc("/time", timeHandler)
@@ -6192,8 +5942,7 @@ db.SetMaxIdleConns(1)
 
     <p>A neat approach is to put our handler logic into a closure, and <em>close over</em> the variables we want to use:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -6230,8 +5979,7 @@ db.SetMaxIdleConns(1)
 
     <p>You might also see this same pattern written as:</p>
 
-    <figure class="plain"><code><pre>
-    func timeHandler(format string) http.Handler {
+    <figure class="plain"><code><pre>    func timeHandler(format string) http.Handler {
       return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         tm := time.Now().Format(format)
         w.Write([]byte("The time is: " + tm))
@@ -6241,8 +5989,7 @@ db.SetMaxIdleConns(1)
 
     <p>Or using an implicit conversion to the HandlerFunc type on return:</p>
 
-    <figure class="plain"><code><pre>
-    func timeHandler(format string) http.HandlerFunc {
+    <figure class="plain"><code><pre>    func timeHandler(format string) http.HandlerFunc {
       return func(w http.ResponseWriter, r *http.Request) {
         tm := time.Now().Format(format)
         w.Write([]byte("The time is: " + tm))
@@ -6266,8 +6013,7 @@ db.SetMaxIdleConns(1)
 
     <p>So as a final step, let's update our timeHandler application to use the DefaultServeMux instead:</p></del>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -6323,15 +6069,13 @@ db.SetMaxIdleConns(1)
 
     <p>Let's take a look at a sample application using Pat:</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir pat-example && cd pat-example
+    <figure class="shell"><code><pre>    $ mkdir pat-example && cd pat-example
     $ touch app.go
     $ go get github.com/bmizerany/pat
     </pre></code></figure>
 
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    package main
 
     import (
       "github.com/bmizerany/pat"
@@ -6368,8 +6112,7 @@ db.SetMaxIdleConns(1)
 
     <p>Go ahead and run the application:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run app
+    <figure class="shell"><code><pre>    $ go run app
     <samp>Listening...</samp>
     </pre></code></figure>
 
@@ -6397,14 +6140,12 @@ db.SetMaxIdleConns(1)
 
     <p>Basic usage of Routes is almost identical to Pat:</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir routes-example && cd routes-example
+    <figure class="shell"><code><pre>    $ mkdir routes-example && cd routes-example
     $ touch app.go
     $ go get github.com/drone/routes
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    package main
 
     import (
       "github.com/drone/routes"
@@ -6446,14 +6187,12 @@ db.SetMaxIdleConns(1)
 
     <p>Let's take a look at an example:</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir gorilla-example && cd gorilla-example
+    <figure class="shell"><code><pre>    $ mkdir gorilla-example && cd gorilla-example
     $ touch app.go
     $ go get github.com/gorilla/mux
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    package main
 
     import (
       "github.com/gorilla/mux"
@@ -6528,21 +6267,18 @@ db.SetMaxIdleConns(1)
 
     <p>Start by creating a directory to hold the project:</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir static-site
+    <figure class="shell"><code><pre>    $ mkdir static-site
     $ cd static-site
     </pre></code></figure>
 
     <p>Along with an <code>app.go</code> file to hold our code, and some sample HTML and CSS files in a <code>static</code> directory.</p>
 
-    <figure class="shell"><code><pre>
-    $ touch app.go
+    <figure class="shell"><code><pre>    $ touch app.go
     $ mkdir -p static/stylesheets
     $ touch static/example.html static/stylesheets/main.css
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: static/example.html</figcaption><code><pre>
-    &lt;!doctype html&gt;
+    <figure class="file"><figcaption>File: static/example.html</figcaption><code><pre>    &lt;!doctype html&gt;
     &lt;html&gt;
     &lt;head&gt;
       &lt;meta charset="utf-8"&gt;
@@ -6555,14 +6291,12 @@ db.SetMaxIdleConns(1)
     &lt;/html&gt;
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: static/stylesheets/main.css</figcaption><code><pre>
-    body {color: #c0392b}
+    <figure class="file"><figcaption>File: static/stylesheets/main.css</figcaption><code><pre>    body {color: #c0392b}
     </pre></code></figure>
 
     <p>Once those files are created, the code we need to get up and running is wonderfully compact:</p>
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    package main
 
     import (
       "log"
@@ -6586,8 +6320,7 @@ db.SetMaxIdleConns(1)
 
     <p>Go ahead and run the application:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run app.go
+    <figure class="shell"><code><pre>    $ go run app.go
     <samp>Listening...</samp>
     </pre></code></figure>
 
@@ -6599,8 +6332,7 @@ db.SetMaxIdleConns(1)
 
     <p>At the moment <em>all</em> requests are being handled by our FileServer. Let's make a slight adjustment to our application so it only handles request paths that begin with the pattern <code>/static/</code> instead.</p>
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    ...
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    ...
     func main() {
       fs := http.FileServer(http.Dir("static"))
       http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -6616,13 +6348,11 @@ db.SetMaxIdleConns(1)
 
     <p>Now let's create a <code>templates</code> directory, containing a <code>layout.html</code> file with shared markup, and an <code>example.html</code> file with some page-specific content.</p>
 
-    <figure class="shell"><code><pre>
-    $ mkdir templates
+    <figure class="shell"><code><pre>    $ mkdir templates
     $ touch templates/layout.html templates/example.html
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>
-    &#123;&#123;define "layout"&#125;&#125;
+    <figure class="file"><figcaption>File: templates/layout.html</figcaption><code><pre>    &#123;&#123;define "layout"&#125;&#125;
     &lt;!doctype html&gt;
     &lt;html&gt;
     &lt;head&gt;
@@ -6637,8 +6367,7 @@ db.SetMaxIdleConns(1)
     &#123;&#123;end&#125;&#125;
     </pre></code></figure>
 
-    <figure class="file"><figcaption>File: templates/example.html</figcaption><code><pre>
-    &#123;&#123;define "title"&#125;&#125;A templated page&#123;&#123;end&#125;&#125;
+    <figure class="file"><figcaption>File: templates/example.html</figcaption><code><pre>    &#123;&#123;define "title"&#125;&#125;A templated page&#123;&#123;end&#125;&#125;
 
     &#123;&#123;define "body"&#125;&#125;
     &lt;h1&gt;Hello from a templated page&lt;/h1&gt;
@@ -6651,8 +6380,7 @@ db.SetMaxIdleConns(1)
 
     <p>Let's update the application code to use these:</p>
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    package main
 
     import (
       "html/template"
@@ -6696,8 +6424,7 @@ db.SetMaxIdleConns(1)
 
     <p>Restart the application:</p>
 
-    <figure class="shell"><code><pre>
-    $ go run app.go
+    <figure class="shell"><code><pre>    $ go run app.go
     <samp>Listening...</samp>
     </pre></code></figure>
 
@@ -6711,8 +6438,7 @@ db.SetMaxIdleConns(1)
       <li>Send a <code>500</code> response if the <code>template.ParseFiles</code> or <code>template.ExecuteTemplate</code> functions throw an error, and log the detailed error message.</li>
     </ul>
 
-    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>
-    package main
+    <figure class="file"><figcaption>File: app.go</figcaption><code><pre>    package main
 
     import (
       "html/template"

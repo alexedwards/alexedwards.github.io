@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-gb">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,7 +7,7 @@
     <meta name="author" content="Alex Edwards">
     <meta name="copyright" content="Copyright Alex Edwards 2018">
     <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
-    <title>Understanding Mutexes</title>
+    <title>Understanding Mutexes - Alex Edwards</title>
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
     <link rel="stylesheet" href="/static/stylesheets/main.css">
     <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
@@ -20,47 +20,39 @@
       <nav class="wrapper clearfix">
         <div class="breadcrumbs">
           <a href="/">Alex Edwards</a>
-          <span class="crumbs">
-            
-              <span class="separator">&rsaquo;</span>
-              <a href="/blog/">Blog</a>
-            
-            
-              <span class="separator">&rsaquo;</span>
-              Understanding Mutexes
-            
-          </span>
         </div>
         <div class="pages">
           <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
           <a href="/static/feed.rss">RSS</a>
         </div>
       </nav>
     </header>
-    <section class="wrapper clearfix">
-      <article class="primary">
+    <main class="wrapper clearfix">
+      <div class="lets-go clearfix">
+	<div>
+		
+		
+			<h3>Not sure how to structure your Go web application?</h3>
+			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+		
+	</div>
+	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+</div>
+<article>
 	<h1>Understanding Mutexes</h1>
 	<div class="metadata">
 		<span class="dates">
-			<span class="label">Posted on:</span> 4th October 2013
 			
-			&middot; Updated 22nd January 2018
+			Last updated: 22nd January 2018
 			
-		</span>
-		<span class="share">
-			<span class="label">Share with:</span>
-			<a
-			class="share-button share-button-twitter" href="http://twitter.com/share?url=https://www.alexedwards.net/blog/understanding-mutexes&text=Understanding Mutexes">Twitter</a>
-			<a
-			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=https://www.alexedwards.net/blog/understanding-mutexes">Google+</a>
-				<a
-			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=https://www.alexedwards.net/blog/understanding-mutexes&p[title]=Understanding Mutexes">Facebook</a>
-			<a
-			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=https://www.alexedwards.net/blog/understanding-mutexes&title=Understanding Mutexes&source=https://www.alexedwards.net">LinkedIn</a>
 		</span>
 		
 		<span class="tags">
-			<span class="label">Filed under:</span> <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
 		</span>
 		
 	</div>
@@ -231,27 +223,12 @@ func (c *currency) Display() string {
   return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
 }
 </pre></code></figure>
-	<!-- <form id="newsgroup" method="POST" action="https://lets-go.alexedwards.net/newsgroup/tips/subscribe">
-	  <h3>Boost Your Go Knowledge&hellip;</h3>
-	  <p>Get my weekly <em>Golang Tips</em> email containing useful shortcuts, hints, tips and tricks for working with Go.</p>
-	  <input type="email" name="email" placeholder="Your email address" required>
-	  <button type="submit">Get Golang Tips &raquo;</button>
-	  <p class="small">No spam. Unsubscribe anytime.</p>
-	</form> -->
 	<div class="footer">
-		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
 	</div>
 </article>
-<div class="sidebar">
-	<div class="lets-go clearfix">
-		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
-		
-		
-			<p><strong>Not sure how to structure your Go web application?</strong> My new book guides you step-by-step through building a clear, idiomatic and secure real-world web application. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-			<!-- <p><strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><a href="https://lets-go.alexedwards.net/">Take a look!</a></p> -->
-		
-	</div>
-</div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
@@ -259,12 +236,10 @@ func (c *currency) Display() string {
     $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
 </script>
-
-
-    </section>
+    </main>
     <footer>
       <div class="wrapper">
-        <div><span class="copyright">&copy;</span> Alex Edwards 2018</div>
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2018</div>
       </div>
     </footer>
     <script type="text/javascript">

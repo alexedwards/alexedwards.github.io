@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-gb">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,7 +7,7 @@
     <meta name="author" content="Alex Edwards">
     <meta name="copyright" content="Copyright Alex Edwards 2018">
     <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
-    <title>Configuring sql.DB for Better Performance</title>
+    <title>Configuring sql.DB for Better Performance - Alex Edwards</title>
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
     <link rel="stylesheet" href="/static/stylesheets/main.css">
     <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
@@ -20,47 +20,39 @@
       <nav class="wrapper clearfix">
         <div class="breadcrumbs">
           <a href="/">Alex Edwards</a>
-          <span class="crumbs">
-            
-              <span class="separator">&rsaquo;</span>
-              <a href="/blog/">Blog</a>
-            
-            
-              <span class="separator">&rsaquo;</span>
-              Configuring sql.DB for Better Performance
-            
-          </span>
         </div>
         <div class="pages">
           <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
           <a href="/static/feed.rss">RSS</a>
         </div>
       </nav>
     </header>
-    <section class="wrapper clearfix">
-      <article class="primary">
+    <main class="wrapper clearfix">
+      <div class="lets-go clearfix">
+	<div>
+		
+		
+			<h3>Not sure how to structure your Go web application?</h3>
+			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+		
+	</div>
+	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+</div>
+<article>
 	<h1>Configuring sql.DB for Better Performance</h1>
 	<div class="metadata">
 		<span class="dates">
-			<span class="label">Posted on:</span> 5th February 2018
 			
-			&middot; Updated 27th October 2018
+			Last updated: 27th October 2018
 			
-		</span>
-		<span class="share">
-			<span class="label">Share with:</span>
-			<a
-			class="share-button share-button-twitter" href="http://twitter.com/share?url=https://www.alexedwards.net/blog/configuring-sqldb&text=Configuring sql.DB for Better Performance">Twitter</a>
-			<a
-			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=https://www.alexedwards.net/blog/configuring-sqldb">Google+</a>
-				<a
-			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=https://www.alexedwards.net/blog/configuring-sqldb&p[title]=Configuring sql.DB for Better Performance">Facebook</a>
-			<a
-			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=https://www.alexedwards.net/blog/configuring-sqldb&title=Configuring sql.DB for Better Performance&source=https://www.alexedwards.net">LinkedIn</a>
 		</span>
 		
 		<span class="tags">
-			<span class="label">Filed under:</span> <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
 		</span>
 		
 	</div>
@@ -80,8 +72,7 @@
 
 <p>By default there's no limit on the number of connections that can be open at the same time. But you can implement your own limit via the <code>SetMaxOpenConns()</code> method like so:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -90,21 +81,18 @@ if err != nil {
 // Set the maximum number of concurrently open connections to 5. Setting this
 // to less than or equal to 0 will mean there is no maximum limit (which
 // is also the default setting).
-db.SetMaxOpenConns(5)
-</pre></code></figure>
+db.SetMaxOpenConns(5)</pre></code></figure>
 
 <p>In this example code the pool now has a maximum limit of 5 concurrently open connections. If 5 connections are already open and another new connection is needed, then the application will be forced to wait until one of the 5 open connections is freed up and becomes idle.</p>
 
 <p>To illustrate the impact of changing <code>MaxOpenConns</code> I ran a benchmark test with the maximum open connections set to 1, 2, 5, 10 and unlimited. The benchmark executes parallel <code>INSERT</code> statements on a PostgreSQL database and you can find the code in <a href="https://gist.github.com/alexedwards/5d1db82e6358b5b6efcb038ca888ab07">this gist</a>. Here's the results:</p>
 
-<figure class="plain"><code><pre>
-BenchmarkMaxOpenConns1-8                 500       3129633 ns/op         478 B/op         10 allocs/op
+<figure class="plain"><code><pre>BenchmarkMaxOpenConns1-8                 500       3129633 ns/op         478 B/op         10 allocs/op
 BenchmarkMaxOpenConns2-8                1000       2181641 ns/op         470 B/op         10 allocs/op
 BenchmarkMaxOpenConns5-8                2000        859654 ns/op         493 B/op         10 allocs/op
 BenchmarkMaxOpenConns10-8               2000        545394 ns/op         510 B/op         10 allocs/op
 BenchmarkMaxOpenConnsUnlimited-8        2000        531030 ns/op         479 B/op          9 allocs/op
-PASS
-</pre></code></figure>
+PASS</pre></code></figure>
 
 <p><strong>Edit:</strong> To make clear, the purpose of this benchmark is not to simulate 'real-life' behaviour of an application. It's solely to help illustrate how <code>sql.DB</code> behaves behind the scenes and the impact of changing <code>MaxOpenConns</code> on that behaviour.</p>
 
@@ -115,8 +103,7 @@ PASS
 
 <p>By default <code>sql.DB</code> allows a maximum of 2 idle connections to be retained in the connection pool. You can change this via  the <code>SetMaxIdleConns()</code> method like so:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -124,21 +111,18 @@ if err != nil {
 
 // Set the maximum number of concurrently idle connections to 5. Setting this
 // to less than or equal to 0 will mean that no idle connections are retained.
-db.SetMaxIdleConns(5)
-</pre></code></figure>
+db.SetMaxIdleConns(5)</pre></code></figure>
 
 <p>In theory, allowing a higher number of idle connections in the pool will improve performance because it makes it less likely that a new connection will need to be established from scratch &mdash; therefore helping to save resources.</p>
 
 <p>Lets take a look at the same benchmark with the maximum idle connections is set to none, 1, 2, 5 and 10 (and the number of open connections is unlimited):</p>
 
-<figure class="plain"><code><pre>
-BenchmarkMaxIdleConnsNone-8          300       4567245 ns/op       58174 B/op        625 allocs/op
+<figure class="plain"><code><pre>BenchmarkMaxIdleConnsNone-8          300       4567245 ns/op       58174 B/op        625 allocs/op
 BenchmarkMaxIdleConns1-8            2000        568765 ns/op        2596 B/op         32 allocs/op
 BenchmarkMaxIdleConns2-8            2000        529359 ns/op         596 B/op         11 allocs/op
 BenchmarkMaxIdleConns5-8            2000        506207 ns/op         451 B/op          9 allocs/op
 BenchmarkMaxIdleConns10-8           2000        501639 ns/op         450 B/op          9 allocs/op
-PASS
-</pre></code></figure>
+PASS</pre></code></figure>
 
 <p>When <code>MaxIdleConns</code> is set to none, a new connection has to be created from scratch for each <code>INSERT</code> and we can see from the benchmarks that the average runtime and memory usage is comparatively high.</p>
 
@@ -164,8 +148,7 @@ PASS
 
 <p>You use it like this:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -174,8 +157,7 @@ if err != nil {
 // Set the maximum lifetime of a connection to 1 hour. Setting it to 0
 // means that there is no maximum lifetime and the connection is reused
 // forever (which is the default behavior).
-db.SetConnMaxLifetime(time.Hour)
-</pre></code></figure>
+db.SetConnMaxLifetime(time.Hour)</pre></code></figure>
 
 <p>In this example all our connections will 'expire' 1 hour after they were first created, and cannot be reused after they've expired. But note:</p>
 
@@ -193,14 +175,12 @@ db.SetConnMaxLifetime(time.Hour)
 
 <p>To illustrate this I ran the benchmarks with <code>ConnMaxLifetime</code> set to 100ms, 200ms, 500ms, 1000ms and unlimited (reused forever), with the default settings of unlimited open connections and 2 idle connections. These time periods are obviously much, much shorter than you'd use in most applications but they help illustrate the behaviour well.</p>
 
-<figure class="plain"><code><pre>
-BenchmarkConnMaxLifetime100-8               2000        637902 ns/op        2770 B/op         34 allocs/op
+<figure class="plain"><code><pre>BenchmarkConnMaxLifetime100-8               2000        637902 ns/op        2770 B/op         34 allocs/op
 BenchmarkConnMaxLifetime200-8               2000        576053 ns/op        1612 B/op         21 allocs/op
 BenchmarkConnMaxLifetime500-8               2000        558297 ns/op         913 B/op         14 allocs/op
 BenchmarkConnMaxLifetime1000-8              2000        543601 ns/op         740 B/op         12 allocs/op
 BenchmarkConnMaxLifetimeUnlimited-8         3000        532789 ns/op         412 B/op          9 allocs/op
-PASS
-</pre></code></figure>
+PASS</pre></code></figure>
 
 <p>In these particular benchmarks we can see that memory usage was more than 3 times greater with a 100ms lifetime compared to an unlimited lifetime, and the average runtime for each <code>INSERT</code> was also slightly longer.</p>
 
@@ -210,26 +190,21 @@ PASS
 
 <p>As an illustration, I'll change my <code>postgresql.conf</code> file so only a total of 5 connections are permitted (the default is 100)...</p>
 
-<figure class="plain"><code><pre>
-max_connections = 5
-</pre></code></figure>
+<figure class="plain"><code><pre>max_connections = 5</pre></code></figure>
 
 <p>And then rerun the benchmark test with unlimited open connections...</p>
 
-<figure class="plain"><code><pre>
-BenchmarkMaxOpenConnsUnlimited-8    --- FAIL: BenchmarkMaxOpenConnsUnlimited-8
+<figure class="plain"><code><pre>BenchmarkMaxOpenConnsUnlimited-8    --- FAIL: BenchmarkMaxOpenConnsUnlimited-8
     main_test.go:14: pq: sorry, too many clients already
     main_test.go:14: pq: sorry, too many clients already
     main_test.go:14: pq: sorry, too many clients already
-FAIL
-</pre></code></figure>
+FAIL</pre></code></figure>
 
 <p>As soon as the hard limit of 5 connections is hit my database driver (<a href="https://github.com/lib/pq">pq</a>) immediately returns a <code>sorry, too many clients already</code> error message instead of completing the <code>INSERT</code>.</p>
 
 <p>To prevent this error we need to set the <em>total</em> maximum of open and idle connections in <code>sql.DB</code> to comfortably below 5. Like so:</p>
 
-<figure class="go"><code><pre>
-// Initialise a new connection pool
+<figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
 if err != nil {
     log.Fatal(err)
@@ -237,35 +212,19 @@ if err != nil {
 
 // Set the number of open and idle connection to a maximum total of 3.
 db.SetMaxOpenConns(2)
-db.SetMaxIdleConns(1)
-</pre></code></figure>
+db.SetMaxIdleConns(1)</pre></code></figure>
 
 <p>Now there will only ever be a maximum of 3 connections created by <code>sql.DB</code> and the benchmark should run without any errors.</p>
 
 <p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free.</p>
 
 <p>For some applications that behavior might be fine, but for others it might not. For example, in a web application it could arguably be better to immediately log the error message and send a <code>500 Internal Server Error</code> to the user, rather than having their HTTP request hang and potentially timeout while waiting for a free connection.</p>
-	<!-- <form id="newsgroup" method="POST" action="https://lets-go.alexedwards.net/newsgroup/tips/subscribe">
-	  <h3>Boost Your Go Knowledge&hellip;</h3>
-	  <p>Get my weekly <em>Golang Tips</em> email containing useful shortcuts, hints, tips and tricks for working with Go.</p>
-	  <input type="email" name="email" placeholder="Your email address" required>
-	  <button type="submit">Get Golang Tips &raquo;</button>
-	  <p class="small">No spam. Unsubscribe anytime.</p>
-	</form> -->
 	<div class="footer">
-		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
 	</div>
 </article>
-<div class="sidebar">
-	<div class="lets-go clearfix">
-		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
-		
-		
-			<p><strong>Not sure how to structure your Go web application?</strong> My new book guides you step-by-step through building a clear, idiomatic and secure real-world web application. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-			<!-- <p><strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><a href="https://lets-go.alexedwards.net/">Take a look!</a></p> -->
-		
-	</div>
-</div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
@@ -273,12 +232,10 @@ db.SetMaxIdleConns(1)
     $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
 </script>
-
-
-    </section>
+    </main>
     <footer>
       <div class="wrapper">
-        <div><span class="copyright">&copy;</span> Alex Edwards 2018</div>
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2018</div>
       </div>
     </footer>
     <script type="text/javascript">

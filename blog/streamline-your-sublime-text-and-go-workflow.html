@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-gb">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,7 +7,7 @@
     <meta name="author" content="Alex Edwards">
     <meta name="copyright" content="Copyright Alex Edwards 2018">
     <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
-    <title>Streamline Your Sublime Text + Go Workflow</title>
+    <title>Streamline Your Sublime Text + Go Workflow - Alex Edwards</title>
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
     <link rel="stylesheet" href="/static/stylesheets/main.css">
     <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
@@ -20,45 +20,39 @@
       <nav class="wrapper clearfix">
         <div class="breadcrumbs">
           <a href="/">Alex Edwards</a>
-          <span class="crumbs">
-            
-              <span class="separator">&rsaquo;</span>
-              <a href="/blog/">Blog</a>
-            
-            
-              <span class="separator">&rsaquo;</span>
-              Streamline Your Sublime Text + Go Workflow
-            
-          </span>
         </div>
         <div class="pages">
           <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
           <a href="/static/feed.rss">RSS</a>
         </div>
       </nav>
     </header>
-    <section class="wrapper clearfix">
-      <article class="primary">
+    <main class="wrapper clearfix">
+      <div class="lets-go clearfix">
+	<div>
+		
+		
+			<h3>Not sure how to structure your Go web application?</h3>
+			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+		
+	</div>
+	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+</div>
+<article>
 	<h1>Streamline Your Sublime Text + Go Workflow</h1>
 	<div class="metadata">
 		<span class="dates">
-			<span class="label">Posted on:</span> 5th June 2018
 			
-		</span>
-		<span class="share">
-			<span class="label">Share with:</span>
-			<a
-			class="share-button share-button-twitter" href="http://twitter.com/share?url=https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow&text=Streamline Your Sublime Text + Go Workflow">Twitter</a>
-			<a
-			class="share-button share-button-googleplus" href="https://plus.google.com/share?url=https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow">Google+</a>
-				<a
-			class="share-button share-button-facebook" href="http://www.facebook.com/sharer.php?u=https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow&p[title]=Streamline Your Sublime Text + Go Workflow">Facebook</a>
-			<a
-			class="share-button share-button-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&url=https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow&title=Streamline Your Sublime Text + Go Workflow&source=https://www.alexedwards.net">LinkedIn</a>
+			Posted on: 5th June 2018
+			
 		</span>
 		
 		<span class="tags">
-			<span class="label">Filed under:</span> <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
 		</span>
 		
 	</div>
@@ -85,11 +79,9 @@
 
 <p>Accordingly my bash <code>~/.profile</code> configuration includes these lines:</p>
 
-<figure class="plain"><code><pre>
-...
+<figure class="plain"><code><pre>...
 export GOPATH=/home/alex/Code/go
-export PATH=$PATH:$GOPATH/bin
-</pre></code></figure>
+export PATH=$PATH:$GOPATH/bin</pre></code></figure>
 
 <p>You'll also need to <a href="https://packagecontrol.io/installation">install Package Control</a>, if you haven't already. In the latest version of  Sublime Text the easiest way to do that by going to <code>Tools &gt; Install Package Control&hellip;</code>.</p>
 
@@ -120,7 +112,7 @@ export PATH=$PATH:$GOPATH/bin
 
 <p>When you run these commands they will open and execute in a panel <em>within</em> Sublime Text. As an example, here's a screenshot of output from the <code>Build With: Go - Test</code> command:</p>
 
-<img src="/static/images/sublime-1.png">
+<p><img src="/static/images/sublime-1.png"></p>
 
 <h2>Automatic formatting</h2>
 
@@ -138,23 +130,19 @@ export PATH=$PATH:$GOPATH/bin
 
 <p>To set this up you'll need to install <code>goimports</code> and make sure it's available on your system path:</p>
 
-<figure class="shell"><code><pre>
-$ go get golang.org/x/tools/cmd/goimports
+<figure class="shell"><code><pre>$ go get golang.org/x/tools/cmd/goimports
 $ which goimports
-<samp>/home/alex/Code/go/bin/goimports</samp>
-</pre></code></figure>
+<samp>/home/alex/Code/go/bin/goimports</samp></pre></code></figure>
 
 <p>When that's installed, you'll then need to change the <code>Gofmt</code> plugin settings in Sublime Text by opening
 <code>Preferences &gt; Package Settings &gt; Gofmt &gt; Settings - User</code> and adding the following configuration settings:</p>
 
-<figure class="json"><code><pre>
-{
+<figure class="json"><code><pre>{
   "cmds": [
     ["goimports"]
   ],
   "format_on_save": true
-}
-</pre></code></figure>
+}</pre></code></figure>
 
 <p>(You'll probably need to restart Sublime Text for this to take effect.)</p>
 
@@ -172,12 +160,10 @@ $ which goimports
 
 <p>The next step is to install an actual linter. I'm using <a href="https://github.com/alecthomas/gometalinter">gometalinter</a>, which acts as a wrapper around a bunch of <a href="https://github.com/alecthomas/gometalinter#supported-linters">different linters</a> and picks up more potential problems and inefficiencies than using <code>go vet</code> and <code>golint</code> alone. You can install it with the commands:</p>
 
-<figure class="shell"><code><pre>
-$ go get github.com/alecthomas/gometalinter
+<figure class="shell"><code><pre>$ go get github.com/alecthomas/gometalinter
 $ which gometalinter
 <samp>/home/alex/Code/go/bin/gometalinter</samp>
-$ gometalinter --install
-</pre></code></figure>
+$ gometalinter --install</pre></code></figure>
 
 <p>Once that's done, you'll need to install the <a href="https://github.com/alecthomas/SublimeLinter-contrib-gometalinter">SublimeLinter-contrib-gometalinter</a> plugin. This acts as the bridge between SublimeLinter and gometalinter.</p>
 
@@ -189,14 +175,12 @@ $ gometalinter --install
 
 <p>By default the linter will run in the background as you type, and errors will be shown in the Sublime Text status bar at the bottom of the screen. But I've found suits me more to only lint when saving a file and to display all errors at once in a panel. If you want to do the same, go to <code>Preferences &gt; Package Settings &gt; SublimeLinter &gt; Settings</code> and add the following settings to the <code>SublimeLinter Settings - User</code> file:</p>
 
-<figure class="json"><code><pre>
-{
+<figure class="json"><code><pre>{
     "show_panel_on_save": "window",
     "lint_mode": "save",
-}
-</pre></code></figure>
+}</pre></code></figure>
 
-<img src="/static/images/sublime-2.png">
+<p><img src="/static/images/sublime-2.png"></p>
 
 <p>I should mention that the <code>SublimeLinter-contrib-gometalinter</code> plugin only executes the 'fast' linters included in <code>gometalinter</code>. You can see exactly which ones are run by checking the <a href="https://github.com/alecthomas/gometalinter/blob/322f0639d93eafd502424842597e73f8c3ae43d8/linters.go#L205">source code</a>.</p>
 
@@ -204,49 +188,41 @@ $ gometalinter --install
 
 <p>For autocompletion I'm using the <a href="https://github.com/mdempsky/gocode">gocode</a> package, which provides a deamon for code completion. You can install it like so:</p>
 
-<figure class="shell"><code><pre>
-$ go get github.com/mdempsky/gocode
+<figure class="shell"><code><pre>$ go get github.com/mdempsky/gocode
 $ which gocode
-<samp>/home/alex/Code/go/bin/gocode</samp>
-</pre></code></figure>
+<samp>/home/alex/Code/go/bin/gocode</samp></pre></code></figure>
 
 <p>There isn't currently a <code>gocode</code> plugin available via Sublime Text package control (I might add one soon!)&hellip; but there is a plugin included in the <code>subl3</code> directory <em>within</em> the <code>gocode</code> source itself.</p>
 
 <p>You should be able to copy it into your Sublime Text <code>Packages</code> directory with the following command:</p>
 
-<figure class="shell"><code><pre>
-$ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Packages/gocode
-</pre></code></figure>
+<figure class="shell"><code><pre>$ cp -r $GOPATH/src/github.com/mdempsky/gocode/subl3 ~/.config/sublime-text-3/Packages/gocode</pre></code></figure>
 
 <p>If you open the command palette and run <code>Package Control: List Packages</code> you should see a <code>gocode</code> entry in the list.</p>
 
-<img src="/static/images/sublime-3.png">
+<p><img src="/static/images/sublime-3.png"></p>
 
 <p>By default Sublime Text will make autocomplete suggestions whenever a letter is pressed. But when working with Go I like also to display potential method names whenever I hit the <code>.</code> character. You can make that happen by going to <code>Preferences &gt; Settings</code> and adding a new trigger in the <code>Preferences.sublime-settings - User</code> file:</p>
 
-<figure class="json"><code><pre>
-{
+<figure class="json"><code><pre>{
     ...
     "auto_complete_triggers": [
         {"selector": "text.html", "characters": "&lt;"},
         {"selector": "source.go", "characters": "."}
     ],
-}
-</pre></code></figure>
+}</pre></code></figure>
 
 <p>You'll need to then restart Sublime Text for the settings to take effect. Once you have, you should have autocomplete working nicely and looking something like this:</p>
 
-<img src="/static/images/sublime-4.png">
+<p><img src="/static/images/sublime-4.png"></p>
 
 <h2>Code navigation</h2>
 
 <p>To help with navigating code I use the <a href="golang.org/x/tools/cmd/guru">guru</a> tool, which you can install with the following command:</p>
 
-<figure class="shell"><code><pre>
-$ go get golang.org/x/tools/cmd/guru
+<figure class="shell"><code><pre>$ go get golang.org/x/tools/cmd/guru
 $ which guru
-<samp>/home/alex/Code/go/bin/guru</samp>
-</pre></code></figure>
+<samp>/home/alex/Code/go/bin/guru</samp></pre></code></figure>
 
 <p>To integrate this with Sublime Text you'll also need to install the <a href="https://github.com/alvarolm/GoGuru">GoGuru</a> plugin like so:</p>
 
@@ -280,7 +256,7 @@ $ which guru
 
 <p>As an illustration, here's a screenshot of running <code>GoGuru: callers</code> on the <code>Sum</code> function:</p>
 
-<img src="/static/images/sublime-5.png">
+<p><img src="/static/images/sublime-5.png"></p>
 
 <h2>Snippets</h2>
 
@@ -288,8 +264,7 @@ $ which guru
 
 <p>My most frequently-used snippet is probably this one for creating a HTTP handler function:</p>
 
-<figure class="html"><code><pre>
-&lt;snippet&gt;
+<figure class="html"><code><pre>&lt;snippet&gt;
     &lt;content&gt;&lt;![CDATA[
 func ${1:name}(w http.ResponseWriter, r *http.Request) {
     ${2:}
@@ -297,8 +272,7 @@ func ${1:name}(w http.ResponseWriter, r *http.Request) {
 ]]&gt;&lt;/content&gt;
     &lt;tabTrigger&gt;hf&lt;/tabTrigger&gt;
     &lt;scope&gt;source.go&lt;/scope&gt;
-&lt;/snippet&gt;
-</pre></code></figure>
+&lt;/snippet&gt;</pre></code></figure>
 
 <p>One thing that bugged me for a while was the <em>built-in snippets</em> for Go that Sublime Text ships with. In particular I didn't like the way that the <code>main()</code> snippet kept triggering whenever I wrote out <code>"package main"</code>.</p>
 
@@ -314,27 +288,12 @@ func ${1:name}(w http.ResponseWriter, r *http.Request) {
 
 <p><em>Hint:</em> You can also use PackageResourceViewer to edit your own custom snippets without leaving SublimeText. If &ndash; for example &ndash; your custom snippets are saved under your <code>Packages/User</code> directory, you can open them by running <code>PackageResourceViewer: Open Resource</code> and navigating to the <code>User</code> folder.</p>
 
-	<!-- <form id="newsgroup" method="POST" action="https://lets-go.alexedwards.net/newsgroup/tips/subscribe">
-	  <h3>Boost Your Go Knowledge&hellip;</h3>
-	  <p>Get my weekly <em>Golang Tips</em> email containing useful shortcuts, hints, tips and tricks for working with Go.</p>
-	  <input type="email" name="email" placeholder="Your email address" required>
-	  <button type="submit">Get Golang Tips &raquo;</button>
-	  <p class="small">No spam. Unsubscribe anytime.</p>
-	</form> -->
 	<div class="footer">
-		<p class="mit"><img src="https://opensource.org/files/osi_symbol.png" height="30px">All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
 	</div>
 </article>
-<div class="sidebar">
-	<div class="lets-go clearfix">
-		<a href="https://lets-go.alexedwards.net/"><img src="/static/images/cover.png"></a>
-		
-		
-			<p><strong>Not sure how to structure your Go web application?</strong> My new book guides you step-by-step through building a clear, idiomatic and secure real-world web application. <a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-			<!-- <p><strong>Found this post useful?</strong> My new book has a heap more step-by-step guidance on how to build a fast, secure and maintainable web application with Go.<br><a href="https://lets-go.alexedwards.net/">Take a look!</a></p> -->
-		
-	</div>
-</div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
@@ -342,12 +301,10 @@ func ${1:name}(w http.ResponseWriter, r *http.Request) {
     $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
   });
 </script>
-
-
-    </section>
+    </main>
     <footer>
       <div class="wrapper">
-        <div><span class="copyright">&copy;</span> Alex Edwards 2018</div>
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2018</div>
       </div>
     </footer>
     <script type="text/javascript">
