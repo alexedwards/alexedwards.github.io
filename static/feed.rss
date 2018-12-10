@@ -4,8 +4,393 @@
   <title>Alex Edwards</title>
   <link>https://www.alexedwards.net/blog</link>
   <language>en-gb</language>
-  <lastBuildDate>Tue, 5 Jun 2018 13:00:00 GMT</lastBuildDate>
-     <item>
+  <lastBuildDate>Mon, 10 Dec 2018 18:00:00 GMT</lastBuildDate>
+<item>
+    <pubDate>Mon, 10 Dec 2018 18:00:00 GMT</pubDate>
+    <link>https://www.alexedwards.net/blog/how-to-hash-and-verify-passwords-with-argon2-in-go</link>
+    <guid>https://www.alexedwards.net/blog/how-to-hash-and-verify-passwords-with-argon2-in-go</guid>
+    <title>How to Hash and Verify Passwords With Argon2 in Go</title>
+    <description><![CDATA[
+<p><em>Thanks to <a href="https://twitter.com/_aead_">Andreas Auernhammer</a>, author of the <a href="https://godoc.org/golang.org/x/crypto/argon2">golang.org/x/crypto/argon2</a> package, for checking over this post before publication.</em></p>
+
+<p>If you're planning to store user passwords it's good practice (essential really) to hash them using a computationally expensive key-derivation function (KDF) like Bcrypt, Scrypt or Argon2.</p>
+
+<p>Hashing and verifying passwords in Go with Bcrypt and Scrypt is already easy to do thanks to the <a href="https://godoc.org/golang.org/x/crypto/bcrypt">golang.org/x/crypto/bcrypt</a> package and Matt Silverlock's <a href="https://github.com/elithrar/simple-scrypt">elithrar/simple-scrypt</a> package. I recommend them both.</p>
+
+<p>If you want to use Argon2 &mdash; which is widely considered to be the <a href="https://password-hashing.net/">best in class</a> KDF for hashing passwords &mdash; then you've got a couple of choices.</p>
+
+<p>The <a href="https://github.com/tvdburgt/go-argon2">tvdburgt/go-argon2</a> package provides Go bindings to the <code>libargon2</code> C library, or you can implement a pure Go solution by wrapping the <a href="https://godoc.org/golang.org/x/crypto/argon2">golang.org/x/crypto/argon2</a> package with helpers for hashing and verifying passwords. In the rest of this post I'm going to explain exactly how to use this pure Go approach.</p>
+
+<h2 id="abriefintroductiontoargon2">A Brief Introduction to Argon2</h2>
+
+<p>But first, a little bit of background.</p>
+
+<p>It's important to explain that the <a href="https://tools.ietf.org/html/draft-irtf-cfrg-argon2-04">Argon2 algorithm</a> has 3 variants which work slightly differently: Argon2d, Argon2i and Argon2id. In general, for password hashing you should use the Argon2id variant. This is essentially a hybrid of the Argon2d and Argon2i algorithms and uses a combination of data-independent memory access (for resistance against side-channel timing attacks) and data-depending memory access (for resistance against GPU cracking attacks).</p>
+
+<p>The Argon2 algorithm accepts a number of configurable parameters:</p>
+
+<ul>
+<li>Memory &mdash; The amount of memory used by the algorithm (in <a href="https://en.wikipedia.org/wiki/Kibibyte">kibibytes</a>).</li>
+
+<li>Iterations &mdash; The number of iterations (or <em>passes</em>) over the memory.</li>
+
+<li>Parallelism &mdash; The number of threads (or <em>lanes</em>) used by the algorithm.</li>
+
+<li>Salt length &mdash; Length of the random salt. <a href="https://tools.ietf.org/html/draft-irtf-cfrg-argon2-04#section-3.1">16 bytes is recommended</a> for password hashing.</li>
+
+<li>Key length &mdash; Length of the generated key (or <em>password hash</em>). 16 bytes or more is recommended.</li>
+</ul>
+
+<p>The <em>memory</em> and <em>iterations</em> parameters control the <em>computational cost</em> of hashing the password. The higher these figures are, the greater the cost of generating the hash. It also follows that the greater the cost will be for any attacker trying to guess the password.</p>
+
+<p>But there's a balance that you need to strike. As you increase the cost, the time taken to generate the hash also increases. If you're generating the hash in response to a user action (like signing up or logging in to a website) then you probably want to keep the runtime to less than 500ms to avoid a negative user experience.</p>
+
+<p>If the Argon2 algorithm is running on a machine with multiple cores, then one way to decrease the runtime <em>without</em> reducing the cost is to increase the  <em>parallelism</em> parameter. This controls the number of threads that the work is spread across. There's an important thing to note here though: <em>changing the value of the parallelism parameter changes the output of the algorithm</em>. So &mdash; for example &mdash; running Argon2 with a parallelism parameter of 2 will result in a different password hash to running it with a parallelism parameter of 4.</p>
+
+<h2 id="choosingparameters">Choosing Parameters</h2>
+
+<p>Picking the right parameters for Argon2 depends heavily on the machine that the algorithm is running on, and you'll probably need to do some experimentation in order to set them appropriately.</p>
+
+<p><a href="https://tools.ietf.org/html/draft-irtf-cfrg-argon2-04#section-4">The recommended process </a> for choosing the parameters can be paraphrased as follows:</p>
+
+<ol>
+<li>Set the parallelism and memory parameters to the largest amount you are willing to afford, bearing in mind that you probably don't want to max these out completely unless your machine is dedicated to password hashing.</li>
+
+<li>Increase the number of iterations until you reach your maximum runtime limit (for example, 500ms).</li>
+
+<li>If you're already exceeding the your maximum runtime limit with the number of iterations = 1, then you should reduce the memory parameter.</li>
+</ol>
+
+<h2 id="hashingpasswords">Hashing Passwords</h2>
+
+<p>Now that those explanations are out of the way let's jump into writing the code to hash a password with Argon2.</p>
+
+<p>First, you'll need to <code>go get</code> the <a href="https://godoc.org/golang.org/x/crypto/argon2">golang.org/x/crypto/argon2</a> package which implements the Argon2 algorithm:</p>
+
+<figure class="shell"><code><pre>$ go get golang.org/x/crypto/argon2
+</pre></code></figure>
+
+<p>And you can use it to hash a specific password like so:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+    "crypto/rand"
+    "fmt"
+    "log"
+
+    "golang.org/x/crypto/argon2"
+)
+
+type params struct {
+    memory      uint32
+    iterations  uint32
+    parallelism uint8
+    saltLength  uint32
+    keyLength   uint32
+}
+
+func main() {
+    // Establish the parameters to use for Argon2.
+    p := &amp;params{
+        memory:      64 * 1024,
+        iterations:  3,
+        parallelism: 2,
+        saltLength:  16,
+        keyLength:   32,
+    }
+
+    // Pass the plaintext password and parameters to our generateFromPassword
+    // helper function.
+    hash, err := generateFromPassword("password123", p)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(hash)
+}
+
+func generateFromPassword(password string, p *params) (hash []byte, err error) {
+    // Generate a cryptographically secure random salt.
+    salt, err := generateRandomBytes(p.saltLength)
+    if err != nil {
+        return nil, err
+    }
+
+    // Pass the plaintext password, salt and parameters to the argon2.IDKey
+    // function. This will generate a hash of the password using the Argon2id
+    // variant.
+    hash = argon2.IDKey([]byte(password), salt, p.iterations, p.memory, p.parallelism, p.keyLength)
+
+    return hash, nil
+}
+
+func generateRandomBytes(n uint32) ([]byte, error) {
+    b := make([]byte, n)
+    _, err := rand.Read(b)
+    if err != nil {
+        return nil, err
+    }
+
+    return b, nil
+}
+</pre></code></figure>
+
+<p>A quick note on terminology and naming. Formally, Argon2 is a <em>key-derivation function</em> and it produces a <em>key</em> derived from the provided password and salt. This derived key is our 'hashed password'.</p>
+
+<p>The other important thing to point out here is the <code>generateRandomBytes()</code> function. In this we're using Go's <a href="https://golang.org/pkg/crypto/rand/">crypto/rand</a> package to generate a cryptographically secure random salt, rather than using a fixed salt or a pseudo-random salt.</p>
+
+<p>If you run the program at this point it should print a slice containing the bytes of the hashed password, similar to this:</p>
+
+<figure class="shell"><code><pre>$ go run main.go
+[9 18 35 54 101 221 120 189 57 241 229 248 140 1 102 58 93 211 115 49 131 162 24 50 167 142 227 198 85 186 200 248]
+</pre></code></figure>
+
+<p>Each time you run the program you'll see that it results in a completely different output for the same password, thanks to the addition of our random salt.</p>
+
+<h2 id="storingpasswords">Storing Passwords</h2>
+
+<p>So, creating a hashed password with some specific parameters is straightforward enough. But in most cases you'll want to store the salt and specific parameters that you used <em>alongside</em> the hashed password, so that it can be reproducibly verified at a later point.</p>
+
+<p>The <a href="https://github.com/P-H-C/phc-winner-argon2#command-line-utility">standard way</a> to do this is to create an encoded representation of the hashed password which looks like this:</p>
+
+<figure class="plain"><code><pre>$argon2id$v=19$m=65536,t=3,p=2$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG
+</pre></code></figure>
+
+<p>Let's break down what this represents:</p>
+
+<ul>
+<li><code>$argon2id</code> &mdash; the variant of Argon2 being used.</li>
+
+<li><code>$v=19</code> &mdash; the version of Argon2 being used.</li>
+
+<li><code>$m=65536,t=3,p=2</code> &mdash; the memory (<code>m</code>), iterations (<code>t</code>) and parallelism (<code>p</code>) parameters being used.</li>
+
+<li><code>$c29tZXNhbHQ</code> &mdash; the base64-encoded salt, using standard base64-encoding and no padding.</li>
+
+<li><code>$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG</code> &mdash; the base64-encoded hashed password (derived key), using standard base64-encoding and no padding.</li>
+</ul>
+
+<p>Let's update the <code>generateHash()</code> function so that it returns a string in this format:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+    "crypto/rand"
+    "encoding/base64"
+    "fmt"
+    "log"
+
+    "golang.org/x/crypto/argon2"
+)
+
+...
+
+func generateFromPassword(password string, p *params) (encodedHash string, err error) {
+    salt, err := generateRandomBytes(p.saltLength)
+    if err != nil {
+        return "", err
+    }
+
+    hash := argon2.IDKey([]byte(password), salt, p.iterations, p.memory, p.parallelism, p.keyLength)
+
+    // Base64 encode the salt and hashed password.
+    b64Salt := base64.RawStdEncoding.EncodeToString(salt)
+    b64Hash := base64.RawStdEncoding.EncodeToString(hash)
+
+    // Return a string using the standard encoded hash representation.
+    encodedHash = fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version, p.memory, p.iterations, p.parallelism, b64Salt, b64Hash)
+
+    return encodedHash, nil
+}
+
+...
+</pre></code></figure>
+
+<p>And if you run the code again now, the output should look similar to this:</p>
+
+<figure class="shell"><code><pre>$ go run run.go
+<samp>$argon2id$v=19$m=65536,t=3,p=2$Woo1mErn1s7AHf96ewQ8Uw$D4TzIwGO4XD2buk96qAP+Ed2baMo/KbTRMqXX00wtsU</samp>
+</pre></code></figure>
+
+<h2 id="verifyingpasswords">Verifying Passwords</h2>
+
+<p>The final aspect to cover is how to verify passwords.</p>
+
+<p>In most cases, you'll take the encoded password hash that we've just produced and store it in a database of some kind. Then at a later point, you'll want to check <em>whether a plaintext password provided by a user matches the one represented by the encoded password hash</em>.</p>
+
+<p>In essence, the steps to do this check are:</p>
+
+<ol>
+<li>Extract the salt and parameters from the encoded password hash stored in the database.</li>
+
+<li>Derive the hash of the plaintext password using the exact same Argon2 variant, version, salt and parameters.</li>
+
+<li>Check whether this new hash is the same as the original one.</li>
+</ol>
+
+<p>You can implement this like so:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+    "crypto/rand"
+    "crypto/subtle"
+    "encoding/base64"
+    "errors"
+    "fmt"
+    "log"
+    "strings"
+
+    "golang.org/x/crypto/argon2"
+)
+
+var (
+    ErrInvalidHash         = errors.New("the encoded hash is not in the correct format")
+    ErrIncompatibleVersion = errors.New("incompatible version of argon2")
+)
+
+type params struct {
+    memory      uint32
+    iterations  uint32
+    parallelism uint8
+    saltLength  uint32
+    keyLength   uint32
+}
+
+func main() {
+    p := &amp;params{
+        memory:      64 * 1024,
+        iterations:  3,
+        parallelism: 2,
+        saltLength:  16,
+        keyLength:   32,
+    }
+
+    encodedHash, err := generateFromPassword("password123", p)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    match, err := comparePasswordAndHash("password123", encodedHash)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("Match: %v\n", match)
+}
+
+...
+
+func comparePasswordAndHash(password, encodedHash string) (match bool, err error) {
+    // Extract the parameters, salt and derived key from the encoded password
+    // hash.
+    p, salt, hash, err := decodeHash(encodedHash)
+    if err != nil {
+        return false, err
+    }
+
+    // Derive the key from the other password using the same parameters.
+    otherHash := argon2.IDKey([]byte(password), salt, p.iterations, p.memory, p.parallelism, p.keyLength)
+
+    // Check that the contents of the hashed passwords are identical. Note
+    // that we are using the subtle.ConstantTimeCompare() function for this
+    // to help prevent timing attacks.
+    if subtle.ConstantTimeCompare(hash, otherHash) == 1 {
+        return true, nil
+    }
+    return false, nil
+}
+
+func decodeHash(encodedHash string) (p *params, salt, hash []byte, err error) {
+    vals := strings.Split(encodedHash, "$")
+    if len(vals) != 6 {
+        return nil, nil, nil, ErrInvalidHash
+    }
+
+    var version int
+    _, err = fmt.Sscanf(vals[2], "v=%d", &amp;version)
+    if err != nil {
+        return nil, nil, nil, err
+    }
+    if version != argon2.Version {
+        return nil, nil, nil, ErrIncompatibleVersion
+    }
+
+    p = &amp;params{}
+    _, err = fmt.Sscanf(vals[3], "m=%d,t=%d,p=%d", &amp;p.memory, &amp;p.iterations, &amp;p.parallelism)
+    if err != nil {
+        return nil, nil, nil, err
+    }
+
+    salt, err = base64.RawStdEncoding.DecodeString(vals[4])
+    if err != nil {
+        return nil, nil, nil, err
+    }
+    p.saltLength = uint32(len(salt))
+
+    hash, err = base64.RawStdEncoding.DecodeString(vals[5])
+    if err != nil {
+        return nil, nil, nil, err
+    }
+    p.keyLength = uint32(len(hash))
+
+    return p, salt, hash, nil
+}
+</pre></code></figure>
+
+<p>If you run this code now, you should get a positive match when comparing the plaintext and hashed password and see output like this:</p>
+
+<figure class="shell"><code><pre>$ go run main.go
+<samp>Match: true</samp>
+</pre></code></figure>
+
+<p>If you change the plaintext password used in one of the function calls, like so:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+...
+
+func main() {
+    p := &amp;params{
+        memory:      64 * 1024,
+        iterations:  3,
+        parallelism: 2,
+        saltLength:  16,
+        keyLength:   32,
+    }
+
+    encodedHash, err := generateFromPassword("password123", p)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Use a different password...
+    match, err := comparePasswordAndHash("pa$$word", encodedHash)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("Match: %v\n", match)
+}
+
+...
+</pre></code></figure>
+
+<p>Then running the code should result in a negative match:</p>
+
+<figure class="shell"><code><pre>$ go run main.go
+<samp>Match: false</samp>
+</pre></code></figure>
+
+<p>The complete sample code for this post is available in <a href="https://gist.github.com/alexedwards/34277fae0f48abe36822b375f0f6a621">this gist</a>.</p>
+    ]]></description>
+  </item>
+  <item>
     <pubDate>Tue, 5 Jun 2018 13:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow</link>
     <guid>https://www.alexedwards.net/blog/streamline-your-sublime-text-and-go-workflow</guid>

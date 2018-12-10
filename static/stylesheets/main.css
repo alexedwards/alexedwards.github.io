@@ -554,6 +554,10 @@ section#contact p:last-child {
   color: #D88200;
 }
 
+samp .hljs-variable{
+  color: #969896;
+}
+
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-type {
