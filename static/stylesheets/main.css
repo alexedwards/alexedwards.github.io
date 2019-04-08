@@ -661,6 +661,10 @@ var {
     main {
       min-height: calc(100vh - 65px - 65px); /*Sticky footer*/
     }
+
+    p code, li code {
+    white-space: normal;
+  }
 }
 
 /*@media only screen and (max-width: 730px) {
@@ -740,4 +744,6 @@ var {
     margin-left: auto;
     margin-right: auto;
   }
+
+
 }

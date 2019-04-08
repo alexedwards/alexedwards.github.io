@@ -603,6 +603,7 @@ $ aws apigateway test-invoke-method --rest-api-id <var>rest-api-id</var> --resou
 }</samp>
 </pre></code></figure>
 <p>Ah. So that hasn't quite worked. If you take a look through the outputted log information you should see that the problem appears to be:</p>
+
 <p><code>Execution failed due to configuration error: Invalid permissions on Lambda function</code></p>
 <p>This is happening because our <code>bookstore</code> API gateway <em>doesn't have permissions to execute our lambda function.</em></p>
 </li>
