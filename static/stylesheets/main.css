@@ -664,8 +664,11 @@ var {
     }
 
     p code, li code {
-    white-space: normal;
-  }
+      white-space: normal;
+    }
+    article ol li {
+      margin-bottom: 8px;
+    }
 }
 
 /*@media only screen and (max-width: 730px) {
