@@ -40,6 +40,7 @@ a:hover {
 main {
   padding: 2em 0;
   min-height: calc(100vh - 77px - 77px); /*Sticky footer*/
+  overflow-x: hidden;
 }
 
 /*.primary {
@@ -662,7 +663,6 @@ var {
     main {
       min-height: calc(100vh - 65px - 65px); /*Sticky footer*/
     }
-
     p code, li code {
       white-space: normal;
     }
@@ -748,6 +748,4 @@ var {
     margin-left: auto;
     margin-right: auto;
   }
-
-
 }
