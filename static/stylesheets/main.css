@@ -241,6 +241,28 @@ article ul ul {
   margin-top: 0.5em;
 }
 
+article ol.toc {
+  padding-left: 0;
+  list-style-position: inside;
+}
+
+ol.toc li{
+  position: relative;
+  padding-left: 0;
+}
+ol.toc > li a {
+  position: absolute;
+  left: 30px;
+}
+
+article ol.toc ul {
+  margin-bottom: 0.25em;
+}
+
+article ol.toc ul li {
+  margin-left: 0.75em;
+}
+
 article blockquote {
   font-style: italic;
   border-left: solid 9px #E8E8E8;
@@ -748,4 +770,8 @@ var {
     margin-left: auto;
     margin-right: auto;
   }
+}
+
+.bash .hljs-string, .bash .hljs-literal {
+  color: #fff;
 }

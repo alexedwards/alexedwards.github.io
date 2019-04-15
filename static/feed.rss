@@ -3,9 +3,816 @@
 <channel>
   <title>Alex Edwards</title>
   <link>https://www.alexedwards.net/blog</link>
-  <language>en-gb</language>
-  <lastBuildDate>Mon, 10 Dec 2018 18:00:00 GMT</lastBuildDate>
-<item>
+  <language>en-us</language>
+  <lastBuildDate>Mon, 15 Apr 2019 18:00:00 GMT</lastBuildDate>
+  <item>
+    <pubDate>Mon, 15 Apr 2019 18:00:00 GMT</pubDate>
+    <link>https://www.alexedwards.net/blog/an-overview-of-go-tooling</link>
+    <guid>https://www.alexedwards.net/blog/an-overview-of-go-tooling</guid>
+    <title>An Overview of Go's Tooling</title>
+    <description><![CDATA[
+<p>Occasionally I get asked <em>&ldquo;why do you like using Go?&rdquo;</em> And one of the things I often mention is the thoughtful tooling that exists alongside the language as part of the <code>go</code> command. There are some tools that I use everyday &mdash; like <code>go fmt</code> and <code>go build</code> &mdash; and others like <code>go tool pprof</code> that I only use to help solve a specific issue. But in all cases I appreciate the fact that they make managing and maintaining my projects easier.</p>
+
+<p>In this post I hope to provide a little background and context about the tools I find most useful, and importantly, explain how they can fit into the workflow of a typical project. I hope it'll give you a good start if you're new to Go.</p>
+
+<p>Or if you've been working with Go for a while, and that stuff's not applicable to you, hopefully you'll still discover a command or flag that you didn't know existed before : )</p>
+	
+<p>The information in this post is written for Go 1.12 and assumes that you're working on a project which has <a href="https://github.com/golang/go/wiki/Modules#quick-start">modules enabled</a>.</p>
+
+<ol class="toc">
+<li><strong><a href="#installing-tooling">Installing Tooling</a></strong></li>
+<li><strong><a href="#viewing-environment-information">Viewing Environment Information</a></strong></li>
+<li><strong><a href="#development">Development</a></strong></li>
+<ul>
+<li><a href="#running-code">Running Code</a></li>
+<li><a href="#fetching-dependencies">Fetching Dependencies</a></li>
+<li><a href="#refactoring-code">Refactoring Code</a></li>
+<li><a href="#viewing-go-documentation">Viewing Go Documentation</a></li>
+</ul></li>
+<li><strong><a href="#testing">Testing</a></strong></li>
+<ul>
+<li><a href="#running-tests">Running Tests</a></li>
+<li><a href="#profiling-test-coverage">Profiling Test Coverage</a></li>
+<li><a href="#stress-testing">Stress Testing</a></li>
+<li><a href="#testing-all-dependencies">Testing all Dependencies</a></li>
+</ul></li>
+<li><strong><a href="#pre-commit-checks">Pre-Commit Checks</a></strong></li>
+<ul>
+<li><a href="#formatting-code">Formatting Code</a></li>
+<li><a href="#performing-static-analysis">Performing Static Analysis</a></li>
+<li><a href="#linting-code">Linting Code</a></li>
+<li><a href="#tidying-and-verifying-your-dependencies">Tidying and Verifying your Dependencies</a></li>
+</ul></li>
+<li><strong><a href="#build-and-deployment">Build and Deployment</a></strong></li>
+<ul>
+<li><a href="#building-an-executable">Building an Executable</a></li>
+<li><a href="#cross-compilation">Cross-Compilation</a></li>
+<li><a href="#using-compiler-and-linker-flags">Using Compiler and Linker Flags</a></li>
+</ul></li>
+<li><strong><a href="#diagnosing-problems-and-making-optimizations">Diagnosing Problems and Making Optimizations</a></strong></li>
+<ul>
+<li><a href="#running-and-comparing-benchmarks">Running and Comparing Benchmarks</a></li>
+<li><a href="#profiling-and-tracing">Profiling and Tracing</a></li>
+<li><a href="#checking-for-race-conditions">Checking for Race Conditions</a></li>
+</ul></li>
+<li><strong><a href="#managing-dependencies">Managing Dependencies</a></strong></li>
+<li><strong><a href="#upgrading-to-a-new-go-release">Upgrading to a New Go Release</a></strong></li>
+<li><strong><a href="#reporting-bugs">Reporting Bugs</a></strong></li>
+</ol>
+
+<h2 id="installing-tooling">Installing Tooling</h2>
+
+<p>In this post I'll mainly be focusing on tools that are a part of the <code>go</code> command. But there are a few I'll be mentioning which aren't part of the standard Go 1.12 release.</p>
+
+<p>To install these while using Go 1.12 you'll first need to make sure that you're <em>outside</em> of a module-enabled directory (I usually just change into <code>/tmp</code>). Then you can use the <code>GO111MODULE=on go get</code> command to install the tool. For example:</p>
+
+<figure class="shell"><code><pre>
+$ cd /tmp
+$ GO111MODULE=on go get golang.org/x/tools/cmd/stress
+</pre></code></figure>
+
+<p>This will download the relevant package and dependencies, build the executable and add it to your <code>GOBIN</code> directory. If you haven't explicitly set a <code>GOBIN</code> directory, then the executable will be added to your <code>GOPATH/bin</code> folder. Either way, you should make sure that the appropriate directory is on your system path.</p>
+
+<p>Note: This process is a bit clunky and will hopefully improve in future versions of Go. <a href="https://github.com/golang/go/issues/30515">Issue 30515</a> is tracking the discussion about this.</p>
+
+<h2 id="viewing-environment-information">Viewing Environment Information</h2>
+
+<p>You can use the <code>go env</code> tool to display information about your current Go operating environment. This can be particularly useful if you're working on an unfamiliar machine.</p>
+
+<figure class="shell"><code><pre>
+$ go env
+<samp>GOARCH="amd64"
+GOBIN=""
+GOCACHE="/home/alex/.cache/go-build"
+GOEXE=""
+GOFLAGS=""
+GOHOSTARCH="amd64"
+GOHOSTOS="linux"
+GOOS="linux"
+GOPATH="/home/alex/go"
+GOPROXY=""
+GORACE=""
+GOROOT="/usr/local/go"
+GOTMPDIR=""
+GOTOOLDIR="/usr/local/go/pkg/tool/linux_amd64"
+GCCGO="gccgo"
+CC="gcc"
+CXX="g++"
+CGO_ENABLED="1"
+GOMOD=""
+CGO_CFLAGS="-g -O2"
+CGO_CPPFLAGS=""
+CGO_CXXFLAGS="-g -O2"
+CGO_FFLAGS="-g -O2"
+CGO_LDFLAGS="-g -O2"
+PKG_CONFIG="pkg-config"
+GOGCCFLAGS="-fPIC -m64 -pthread -fmessage-length=0 -fdebug-prefix-map=/tmp/go-build245740092=/tmp/go-build -gno-record-gcc-switches"</samp>
+</pre></code></figure>
+
+<p>If there are specific values that you're interested in, you can pass them as arguments to <code>go env</code>. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go env GOPATH GOOS GOARCH
+<samp>/home/alex/go
+linux
+amd64</samp>
+</pre></code></figure>
+
+<p>To show documentation for all <code>go env</code> variables and values you can run:</p>
+<figure class="shell"><code><pre>
+$ go help environment
+</pre></code></figure>
+
+<h2 id="development">Development</h2>
+
+<h3 id="running-code">Running Code</h3>
+
+<p>During development the <code>go run</code> tool is a convenient way to try out your code. It's essentially a shortcut that compiles your code, creates an executable binary in your <code>/tmp</code> directory, and then runs this binary in one step.</p>
+
+<figure class="shell"><code><pre>
+$ go run .          # Run the package in the current directory
+$ go run ./cmd/foo  # Run the package in the ./cmd/foo directory
+</pre></code></figure>
+
+<p>Note: As of Go 1.11 you can pass the <a href="https://golang.org/doc/go1.11#run">path of a package</a> to <code>go run</code>, like we have above. This means that you no longer have to use workarounds like <code>go run *.go</code> wildcard expansion to run multiple files. I like this improvement a lot!</p>
+
+<h3 id="fetching-dependencies">Fetching Dependencies</h3>
+
+<p>Assuming that you've got <a href="https://github.com/golang/go/wiki/Modules#quick-start">modules enabled</a>, when you use <code>go run</code> (or <code>go test</code> or <code>go build</code> for that matter) any external dependencies will automatically (and recursively) be downloaded to fulfill the <code>import</code> statements in your code. By default the latest tagged release of the dependency will be downloaded, or if no tagged releases are available, then the dependency at the latest commit.</p>
+
+<p>If you know in advance that you need a specific version of a dependency (instead of the one that Go would fetch by default) you can use <code>go get</code> with the relevant version number or commit hash. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go get github.com/foo/bar@v1.2.3
+$ go get github.com/foo/bar@8e1b8d3
+</pre></code></figure>
+
+<p>If the dependency being fetched has a <code>go.mod</code> file, then <em>its dependencies</em> won't be listed in <em>your</em> <code>go.mod</code> file. In contrast, if the dependency you're downloading doesn't have a <code>go.mod</code> file, then it's dependencies <em>will</em> be listed in your <code>go.mod</code> file with an <code>// indirect</code> comment next to them.</p>
+
+<p>So that means your <code>go.mod</code> file doesn't necessarily show all the dependencies for your project in one place. Instead, you can view them all using the <code>go list</code> tool like so:</p>
+
+<figure class="shell"><code><pre>
+$ go list -m all
+</pre></code></figure>
+
+<p>Sometimes you might wonder <em>why is <u>that</u> a dependency?</em> You can answer this with the <code>go mod why</code> command, which will show you the shortest path from a package in your main module to a given dependency. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go mod why -m golang.org/x/sys
+<samp># golang.org/x/sys
+github.com/alexedwards/argon2id
+golang.org/x/crypto/argon2
+golang.org/x/sys/cpu</samp>
+</pre></code></figure>
+
+<p>Note: The <code>go mod why</code> command will return an answer for most, but not all, dependencies. <a href="https://github.com/golang/go/issues/27900">Issue 27900</a> is tracking this.</p>
+
+<p>If you're interested in analyzing or visualizing the dependencies for your application, then you might want to also check out the <code>go mod graph</code> tool. There's a great tutorial and example code for generating visualizations <a href="https://github.com/go-modules-by-example/index/tree/master/018_go_list_mod_graph_why">here</a>.</p>
+
+<p>Lastly, downloaded dependencies are stored in the <em>module cache</em> located at <code>GOPATH/pkg/mod</code>. If you ever need to clear the module cache you can use the <code>go clean</code> tool. But be aware: this will remove the downloaded dependencies for <em>all projects</em> on your machine.</p>
+
+<figure class="shell"><code><pre>
+$ go clean -modcache
+</pre></code></figure>
+
+<h3 id="refactoring-code">Refactoring Code</h3>
+
+<p>Chances are you're probably familiar with using the <code>gofmt</code> tool to automatically format your code. But it also supports <em>rewrite rules</em> that you can use to help refactor your code. I'll demonstrate.</p>
+
+<p>Let's say that you have the following code and you want to change the <code>foo</code> variable to <code>Foo</code> so it is exported.</p>
+
+<figure class="file"><code><pre>var foo int
+
+func bar() {
+    foo = 1
+	fmt.Println(&#34;foo&#34;)
+}
+</pre></code></figure>
+
+<p>To do this you can use <code>gofmt</code>  with the <code>-r</code> flag to implement a rewrite rule, the <code>-d</code> flag to display a diff of the changes, and the <code>-w</code> flag to make the changes <em>in place</em>,  like so:</p>
+
+<figure class="shell"><code><pre>
+$ gofmt -d -w -r &#39;foo -&gt; Foo&#39; .
+<samp>-var foo int
++var Foo int
+
+ func bar() {
+-	foo = 1
++	Foo = 1
+ 	fmt.Println(&#34;foo&#34;)
+ }</samp>
+</pre></code></figure>
+
+<p>Notice how this is smarter than a find-and-replace? The <code>foo</code> variable has been changed, but the <code>&quot;foo&quot;</code> string in the <code>fmt.Println()</code> statement has been left unchanged. Another thing to note is that the <code>gofmt</code> command works recursively, so the above command will run on all <code>*.go</code> files in your current directory and subdirectories.</p>
+
+<p>If you want to use this functionality, I recommend running rewrite rules <em>without</em> the <code>-w</code> flag first, and checking the diff first to make sure that the changes to the code are what you expect.</p>
+
+<p>Let's take a look at a slightly more complicated example. Say you want to update your code to use the new Go 1.12 <a href="https://golang.org/pkg/strings/#ReplaceAll">strings.ReplaceAll()</a> function instead of <a href="https://golang.org/pkg/strings/#Replace">strings.Replace()</a>. To make this change you can run:</p>
+
+<figure class="shell"><code><pre>
+$ gofmt -w -r &#39;strings.Replace(a, b, c, -1) -&gt; strings.ReplaceAll(a, b, c)&#39; .
+</pre></code></figure>
+
+<p>In rewrite rules, single lowercase characters act as wildcards matching arbitrary expressions, and those expressions will be substituted-in in the replacement.</p>
+
+<h3 id="viewing-go-documentation">Viewing Go Documentation</h3>
+
+<p>You can view documentation for the standard library packages via your terminal using the <code>go doc</code> tool. I often use this during development to quickly check something &mdash; like the name or signature of a specific function. I find it faster than navigating the <a href="https://golang.org/pkg">web-based documentation</a> and it's always available offline too.</p>
+
+<figure class="shell"><code><pre>
+$ go doc strings            # View simplified documentation for the strings package
+$ go doc -all strings       # View full documentation for the strings package
+$ go doc strings.Replace    # View documentation for the strings.Replace function
+$ go doc sql.DB             # View documentation for the database/sql.DB type
+$ go doc sql.DB.Query       # View documentation for the database/sql.DB.Query method
+</pre></code></figure>
+
+<p>You can also include the <code>-src</code> flag to display the relevant Go source code. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go doc -src strings.Replace   # View the source code for the strings.Replace function
+</pre></code></figure>
+
+<h2 id="testing">Testing</h2>
+
+<h3 id="running-tests">Running Tests</h3>
+
+<p>You can use the <code>go test</code> tool to run tests in your project like so:</p>
+
+<figure class="shell"><code><pre>
+$ go test .          # Run all tests in the current directory
+$ go test ./...      # Run all tests in the current directory and sub-directories
+$ go test ./foo/bar  # Run all tests in the ./foo/bar directory
+</pre></code></figure>
+
+<p>Typically I run my tests with  Go's <a href="https://golang.org/doc/articles/race_detector.html">race detector</a> enabled, which can help pick up <em>some</em> of the data races that might occur in real-life usage. Like so:</p>
+
+<figure class="shell"><code><pre>
+$ go test -race ./...
+</pre></code></figure>
+
+<p>It's important to note that enabling the race detector will increase the overall running time of your tests. So if you're running tests very frequently part of a TDD workflow, you might prefer to save using this for a pre-commit test run only.</p>
+
+<p>Since 1.10, Go <a href="https://golang.org/doc/go1.10#test">caches test results</a> at the package-level. If a package hasn't changed between test runs &mdash; and you're using the same, cachable, flags for <code>go test</code> &mdash; then the cached test result will be displayed with a <code>&quot;(cached)&quot;</code> next to it. This is hugely helpful in speeding up the test runtime for large codebases. If you want force your tests to run in full (and avoid the cache) you can use the <code>-count=1</code> flag, or clear all cached test results by using the <code>go clean</code> tool.</p>
+
+<figure class="shell"><code><pre>
+$ go test -count=1 ./...    # Bypass the test cache when running tests
+$ go clean -testcache       # Delete all cached test results
+</pre></code></figure>
+
+<p>Note: Cached test results are stored alongside cached build results in your <code>GOCACHE</code> directory. Check <code>go env GOCACHE</code> if you're not sure where this is on your machine.</p>
+
+<p>You can limit <code>go test</code> to running specific tests (and sub-tests) by using the <code>-run</code>  flag. This accepts a regular expression, and only tests which have names that match the regular expression will be run. I like to combine this with the <code>-v</code> flag to enable verbose mode, so the names of running tests and sub-tests are displayed. It means I can check that the tests (and only the tests) I expect are be run and I haven't screwed up the regexp!</p>
+
+<figure class="shell"><code><pre>
+$ go test -v -run=^TestFooBar$ .          # Run the test with the exact name TestFooBar
+$ go test -v -run=^TestFoo .              # Run tests whose names start with TestFoo
+$ go test -v -run=^TestFooBar$/^Baz$ .    # Run the Baz subtest of the TestFooBar test only
+</pre></code></figure>
+
+
+<p>A couple more flags that it's good to be aware of are <code>-short</code> (which you can use to <a href="https://golang.org/pkg/testing/#hdr-Skipping">skip long-running tests</a>) and <code>-failfast</code> (which will stop running further tests after the first failure). Note that <code>-failfast</code> will prevent test results from being cached.</p>
+
+<figure class="shell"><code><pre>
+$ go test -short ./...      # Skip long running tests
+$ go test -failfast ./...   # Don&#39;t run further tests after a failure.
+</pre></code></figure>
+
+<h3 id="profiling-test-coverage">Profiling Test Coverage</h3>
+
+<p>You can enable coverage analysis when running tests by using the <code>-cover</code> flag. This will display the percentage of code covered by the tests in the output for each package, similar to this:</p>
+
+<figure class="shell"><code><pre>
+$ go test -cover ./...
+<samp>ok  	github.com/alexedwards/argon2id	0.467s	coverage: 78.6% of statements</samp>
+</pre></code></figure>
+
+<p>You can also generate a <em>coverage profile</em> using the <code>-coverprofile</code> flag and view it in your web browser by using the <code>go tool cover -html</code> command like so:</p>
+
+<figure class="shell"><code><pre>
+$ go test -coverprofile=/tmp/profile.out ./...
+$ go tool cover -html=/tmp/profile.out
+</pre></code></figure>
+
+<p><img src="/static/images/tooling-1.png"></p>
+
+<p>This will gives you a navigable listing of all the test files, with code covered by the tests displayed in green, and uncovered code in red.</p>
+
+<p>If you want you can go a step further and set the <code>-covermode=count</code> flag to make the coverage profile record the exact <em>number of times</em> that each statement is executed during the tests.</p>
+
+<figure class="shell"><code><pre>
+$ go test -covermode=count -coverprofile=/tmp/profile.out ./...
+$ go tool cover -html=/tmp/profile.out
+</pre></code></figure>
+
+<p>When viewed in the browser, statements which are executed more frequently are shown in a more saturated shade of green, similar to this:</p>
+
+<p><img src="/static/images/tooling-2.png"></p>
+
+<p>Note: If you’re using the <code>t.Parallel()</code> command in any of your tests, then you should use the flag <code>-covermode=atomic</code> instead of <code>-covermode=count</code> instead to ensure an accurate count.</p>
+
+<p>Lastly, if you don't have a web browser available to view a coverage profile, you can see a breakdown of test coverage by function/method in your terminal with the command:</p>
+
+<figure class="shell"><code><pre>
+$ go tool cover -func=/tmp/profile.out
+<samp>github.com/alexedwards/argon2id/argon2id.go:77:		CreateHash		87.5%
+github.com/alexedwards/argon2id/argon2id.go:96:		ComparePasswordAndHash	85.7%
+...</samp>
+</pre></code></figure>
+
+<h3 id="stress-testing">Stress Testing</h3>
+
+<p>You can use the <code>go test -count</code> command to run a test multiple times in succession, which can be useful if you want to check for sporadic or intermittent failures. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go test -run=^TestFooBar$ -count=500 .
+</pre></code></figure>
+
+<p>In this example, the <code>TestFooBar</code> test will be repeated 500 times in a row. But it's important to note that the test will be repeated <em>in serial</em> &mdash; even if it contains a <code>t.Parallel()</code> instruction. So if your test is doing something relatively slow, like making a round trip to a database, hard disk or the internet, running a large number of tests can take quite a long time.</p>
+
+<p>In that case you might want to use the <a href="golang.org/x/tools/cmd/stress"><code>stress</code></a> tool to repeat the same test multiple times <em>in parallel</em> instead. You can install it like so:</p>
+
+<figure class="shell"><code><pre>
+$ cd /tmp
+$ GO111MODULE=on go get golang.org/x/tools/cmd/stress
+</pre></code></figure>
+
+<p>To use the <code>stress</code> tool, you'll first need to compile a <em>test binary</em> for the specific package you want to test. You can do using the <code>go test -c</code> command. For example, to create a test binary for the package in your current directory:</p>
+
+<figure class="shell"><code><pre>
+$ go test -c -o=/tmp/foo.test .
+</pre></code></figure>
+
+<p>In this example, the test binary will be outputted to <code>/tmp/foo.test</code>. You can then use the <code>stress</code> tool to execute a specific test in the test binary like so:</p>
+
+<figure class="shell"><code><pre>
+$ stress -p=4 /tmp/foo.test -test.run=^TestFooBar$
+<samp>60 runs so far, 0 failures
+120 runs so far, 0 failures
+...</samp>
+</pre></code></figure>
+
+<p>Note: In the example above I've used the <code>-p</code> flag to restrict the number of parallel processes used by <code>stress</code> to 4. Without this flag, the tool will default to using a number of processes equal to <code>runtime.NumCPU()</code>.</p>
+
+<h3 id="testing-all-dependencies">Testing all Dependencies</h3>
+
+<p>Before you build an executable for release or deployment, or distribute your code publicly, you may want to run the <code>go test all</code> command:</p>
+
+<figure class="shell"><code><pre>
+$ go test all
+</pre></code></figure>
+
+<p>This will run tests on all packages in your module and all dependencies &mdash; include testing <em>test dependencies</em> and the necessary <em>standard library packages</em> &mdash; and it can help validate that the exact versions of the dependencies being used are compatible with each other. This can take quite a long time to run, but the results cache well so any subsequent tests should be faster in the future. If you want, you could also use <code>go test -short all</code> to skip any long-running tests.</p>
+
+<h2 id="pre-commit-checks">Pre-Commit Checks</h2>
+
+<h3 id="formatting-code">Formatting Code</h3>
+
+<p>Go provides two tools to automatically format your code according to the Go conventions: <code>gofmt</code> and <code>go fmt</code>. Using these helps keep your code consistent across your files and projects, and &mdash; if you use them before committing code &mdash; helps reduce noise when examining a diff between file versions.</p>
+
+<p>I like to use the <code>gofmt</code> tool with the following flags:</p>
+
+<figure class="shell"><code><pre>
+$ gofmt -w -s -d foo.go  # Format the foo.go file
+$ gofmt -w -s -d .       # Recursively format all files in the current directory and sub-directories
+</pre></code></figure>
+
+<p>In these commands, the <code>-w</code> flag instructs the tool to rewrite files in place, the <code>-s</code> instructs the tool to apply <a href="https://golang.org/cmd/gofmt/#hdr-The_simplify_command">simplifications</a> to the code where possible, and the <code>-d</code> flag instructs the tool to output diffs of the changes (because I'm curious to see what is changed). If you want to only display the names of changed files, instead of diffs, you can swap this for the <code>-l</code> flag instead.</p>
+
+<p>Note: The <code>gofmt</code> command works recursively. If you pass a directory like <code>.</code> or <code>./cmd/foo</code> it'll format all <code>.go</code> files under the directory.</p>
+
+<p>The other formatting tool &mdash; <code>go fmt</code> &mdash; tool is a wrapper which essentially calls <code>gofmt -l -w</code> on a specified file or directory. You can use it like this:</p>
+
+<figure class="shell"><code><pre>
+$ go fmt ./...
+</pre></code></figure>
+
+<h3 id="performing-static-analysis">Performing Static Analysis</h3>
+
+<p>The <code>go vet</code> tool carries out static analysis of your code and warns you of things which <em>might</em> be wrong with your code but wouldn't be picked up by the compiler. Issues like unreachable code, unnecessary assignments and badly-formed build tags. You can use it like so:</p>
+
+<figure class="shell"><code><pre>
+$ go vet foo.go     # Vet the foo.go file
+$ go vet .          # Vet all files in the current directory
+$ go vet ./...      # Vet all files in the current directory and sub-directories
+$ go vet ./foo/bar  # Vet all files in the ./foo/bar directory
+</pre></code></figure>
+
+<p>Behind the scenes, <code>go vet</code> runs a bunch of different analyzers which are <a href="https://golang.org/cmd/vet/">listed here</a> and you can disable specific ones on a case-by-case basis. For example to disable the <code>composite</code> analyzer you can use:</p>
+
+<figure class="shell"><code><pre>
+$ go vet -composites=false ./...
+</pre></code></figure>
+
+<p>There are a couple of experimental analyzers in <a href="https://godoc.org/golang.org/x/tools">golang.org/x/tools</a> which you might want to try: <a href="https://godoc.org/golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness">nilness</a> (which checks for redundant or impossible nil comparisons) and <a href="https://godoc.org/golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow">shadow</a> (which check for possible unintended shadowing of variables). If you want to use these, you'll need to install and run them separately. For example, to install <code>nilness</code> you would run:</p>
+
+<figure class="shell"><code><pre>
+$ cd /tmp
+$ GO111MODULE=on go get golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness
+</pre></code></figure>
+
+<p>And you can then use it like so:</p>
+
+<figure class="shell"><code><pre>
+$ go vet -vettool=$(which nilness) ./...
+</pre></code></figure>
+
+<p>Note: when the <code>-vettool</code>  flag is used it will <em>only</em> run the specified analyzer &mdash; all the other <code>go vet</code> analyzers won't be run.</p>
+
+<p>As a side note, since Go 1.10 the <code>go test</code> tool automatically executes a small, high-confidence, subset of the <code>go vet</code> checks before running any tests. You can turn this behavior off when running tests like so:</p>
+
+<figure class="shell"><code><pre>
+$ go test -vet=off ./...
+</pre></code></figure>
+
+<h3 id="linting-code">Linting Code</h3>
+
+<p>You can use the <code>golint</code> tool to identify <em>style mistakes</em> in your code. Unlike <code>go vet</code>, this isn't concerned with <em>correctness</em> of the code, but helps you to align your code with the style conventions in <a href="https://golang.org/doc/effective_go.html">Effective Go</a> and the Go <a href="https://golang.org/wiki/CodeReviewComments">CodeReviewComments</a>.</p>
+
+<p>It's not part of the standard library, so you'll need to install it like so:</p>
+
+<figure class="shell"><code><pre>
+$ cd /tmp
+$ GO111MODULE=on go get golang.org/x/lint/golint
+</pre></code></figure>
+
+<p>You can then run it as follows:</p>
+
+<figure class="shell"><code><pre>
+$ golint foo.go     # Lint the foo.go file
+$ golint .          # Lint all files in the current directory
+$ golint ./...      # Lint all files in the current directory and sub-directories
+$ golint ./foo/bar  # Lint all files in the ./foo/bar directory
+</pre></code></figure>
+
+<h3 id="tidying-and-verifying-your-dependencies">Tidying and Verifying your Dependencies</h3>
+
+<p>Before you commit any changes to your code I recommend running the following two commands to tidy and verify your dependencies:</p>
+
+<figure class="shell"><code><pre>
+$ go mod tidy
+$ go mod verify
+</pre></code></figure>
+
+<p>The <code>go mod tidy</code> command will prune any unused dependencies from your <code>go.mod</code> and <code>go.sum</code> files, and update the files to include dependencies for all possible build tags/OS/architecture combinations (note: <code>go run</code>, <code>go test</code>, <code>go build</code> etc are &lsquo;lazy' and will only fetch packages needed for the current build tags/OS/architecture). Running this before each commit will make it easier to determine which of your code changes were responsible for adding or removing which dependencies when looking at the version control history.</p>
+
+<p>I also recommend using the <code>go mod verify</code> command to check that the dependencies on your computer haven't accidentally (or purposely) been changed since they were downloaded and that they match the cryptographic hashes in your <code>go.sum</code> file. Running this helps ensure that the dependencies being used are the exact ones that you expect, and  any build for that commit will be reproducible at a later point.</p>
+
+<h2 id="build-and-deployment">Build and Deployment</h2>
+
+<h3 id="building-an-executable">Building an Executable</h3>
+
+<p>To compile a <code>main</code> package and create an executable binary you can use the <code>go build</code> tool. Typically I use it in conjunction with the <code>-o</code> flag, which let's you explicitly set the output directory and name of the binary like so:</p>
+
+<figure class="shell"><code><pre>
+$ go build -o=/tmp/foo .            # Compile the package in the current directory
+$ go build -o=/tmp/foo ./cmd/foo    # Compile the package in the ./cmd/foo directory
+</pre></code></figure>
+
+<p>In these examples, <code>go build</code> will <em>compile</em> the specified package (and any dependent packages), then invoke the <em>linker</em> to generate an executable binary, and output this to <code>/tmp/foo</code>.</p>
+
+<p>It's important to note that, as of Go 1.10, the <code>go build</code> tool caches build output in the <em><a href="https://golang.org/cmd/go/#hdr-Build_and_test_caching">build cache</a></em>. This cached output will be reused again in future builds where appropriate, which can significantly speed up the overall build time. This new caching behavior means that the <a href="https://peter.bourgon.org/go-best-practices-2016/#build-and-deploy">old maxim</a> of &ldquo;prefer <code>go install</code> to <code>go build</code> to improve caching&rdquo; no longer applies.</p>
+
+<p>If you're not sure where your build cache is, you can check by running the <code>go env GOCACHE</code> command:</p>
+
+<figure class="shell"><code><pre>
+$ go env GOCACHE
+<samp>/home/alex/.cache/go-build</samp>
+</pre></code></figure>
+
+<p>Using the build cache comes with one <a href="https://golang.org/pkg/cmd/go/internal/help/">important caveat</a> &mdash; it does not detect changes to C libraries imported with <code>cgo</code>. So if your code imports a C library via <code>cgo</code> and you've made changes to it since the last build, you'll need to use the <code>-a</code> flag which forces all packages to be rebuilt. Alternatively, you could use <code>go clean</code> to purge the cache:</p>
+
+<figure class="shell"><code><pre>
+$ go build -a -o=/tmp/foo .     # Force all packages to be rebuilt
+$ go clean -cache               # Remove everything from the build cache
+</pre></code></figure>
+
+<p>Note: Running <code>go clean -cache</code> will delete cached test results too.</p>
+
+<p>If you're interested in what <code>go build</code> is doing behind the scenes, you might like to use the following commands:</p>
+
+<figure class="shell"><code><pre>
+$ go list -deps . | sort -u     # List all packages that are used to build the executable
+$ go build -a -x -o=/tmp/foo .  # Rebuild everything and show the commands that are run
+</pre></code></figure>
+
+<p>Finally, if you run <code>go build</code> on a non-<code>main</code> package, it will be compiled in a temporary location and again, the result will be stored in the build cache. No executable is produced.</p>
+
+<h3 id="cross-compilation">Cross-Compilation</h3>
+
+<p>This is one of my favorite features of Go.</p>
+
+<p>By default <code>go build</code> will output a binary suitable for use on your current operating system and architecture. But it also supports cross-compilation, so you can generate a binary suitable for use on a different machine. This is particularly useful if you're developing on one operating system and deploying on another.</p>
+
+<p>You can specify the operating system and architecture that you want to create the binary for by setting the <code>GOOS</code> and <code>GOARCH</code> environment variables respectively. For example:</p>
+
+<figure class="shell"><code><pre>
+$ GOOS=linux GOARCH=amd64 go build -o=/tmp/linux_amd64/foo .
+$ GOOS=windows GOARCH=amd64 go build -o=/tmp/windows_amd64/foo.exe .
+</pre></code></figure>
+
+<p>To see a list of all supported OS/architecture combinations you can run <code>go tool dist list</code>:</p>
+
+<figure class="shell"><code><pre>
+$ go tool dist list
+<samp>aix/ppc64
+android/386
+android/amd64
+android/arm
+android/arm64
+darwin/386
+darwin/amd64
+...</samp>
+</pre></code></figure>
+
+<p>Hint: You can use Go's cross-compilation to <a href="https://github.com/golang/go/wiki/WebAssembly">create WebAssembly binaries</a>.</p>
+
+<p>For a bit more in-depth information about cross compilation I recommend reading <a href="https://rakyll.org/cross-compilation/">this excellent post</a>.</p>
+
+<h3 id="using-compiler-and-linker-flags">Using Compiler and Linker Flags</h3>
+
+<p>When building your executable you can use the <code>-gcflags</code> flag to change the behavior of the compiler and see more information about what it's doing. You can see a complete list of available compiler flags by running:</p>
+
+<figure class="shell"><code><pre>
+$ go tool compile -help
+</pre></code></figure>
+
+<p>One flag that you might find interesting is <code>-m</code>, which triggers the printing of information about optimization decisions made during compilation. You can use it like this:</p>
+
+<figure class="shell"><code><pre>
+$ go build -gcflags="-m -m" -o=/tmp/foo . # Print information about optimization decisions
+</pre></code></figure>
+
+<p>In the above example I used the <code>-m</code> flag twice to indicate that I want to print decision information two-levels deep. You can get simpler output by using just one.
+	
+<p>Also, as of Go 1.10, compiler flags only apply to the specific packages passed to <code>go build</code> &mdash; which in the example above is the package in the current directory (represented by <code>.</code>). If you want to print optimization decisions for all packages including dependencies can use this command instead:</p>
+
+<figure class="shell"><code><pre>
+$ go build -gcflags="all=-m" -o=/tmp/foo .
+</pre></code></figure>
+
+<p>As of Go 1.11, you should find it <a href="https://golang.org/doc/go1.11#debugging">easier to debug optimized binaries</a> than before. However, you can still use the flags <code>-N</code> to disable optimizations and <code>-l</code> to disable inlining if you need to. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go build -gcflags="all=-N -l" -o=/tmp/foo .  # Disable optimizations and inlining
+</pre></code></figure>
+
+<p>You can see a list of available linker flags by running:</p>
+
+<figure class="shell"><code><pre>
+$ go tool link -help
+</pre></code></figure>
+
+<p>Probably the most well-known of these is the <code>-X</code> flag, which allows you to "burn in" a (string) value to a specific variable in your application. This is commonly used to <a href="https://blog.alexellis.io/inject-build-time-vars-golang/">add a version number or commit hash</a>. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go build -ldflags="-X main.version=1.2.3" -o=/tmp/foo .
+</pre></code></figure>
+
+<p>For more information about the <code>-X</code> flag and some sample code see <a href="">this StackOverflow question</a> and this post and <a href="https://blog.alexellis.io/inject-build-time-vars-golang/">this post</a>.</p>
+
+<p>You may also be interested in using the <code>-s</code> and <code>-w</code> flags to strip debugging information from the binary. This typically shaves about 25% off the final size. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go build -ldflags="-s -w" -o=/tmp/foo .  # Strip debug information from the binary
+</pre></code></figure>
+
+<p>Note: If binary size is something that you need to optimize for you might want to use <a href="https://upx.github.io/">upx</a> to compress it. See <a href="https://blog.filippo.io/shrink-your-go-binaries-with-this-one-weird-trick/">this post</a> for more information.</p>
+
+
+<h2 id="diagnosing-problems-and-making-optimizations">Diagnosing Problems and Making Optimizations</h2>
+
+<h3 id="running-and-comparing-benchmarks">Running and Comparing Benchmarks</h3>
+
+<p>A nice feature of Go is that it makes it easy to benchmark your code. If you're not familiar with the general process for writing benchmarks there are good guides <a href="https://dave.cheney.net/2013/06/30/how-to-write-benchmarks-in-go">here</a> and <a href="https://dave.cheney.net/2013/06/30/how-to-write-benchmarks-in-go">here</a>.</p>
+
+<p>To run benchmarks you'll need to use the <code>go test</code> tool, with the <code>-bench</code> flag set to a regular expression that matches the benchmarks you want to execute. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go test -bench=. ./...                        # Run all benchmarks and tests
+$ go test -run=^$ -bench=. ./...                # Run all benchmarks (and no tests)
+$ go test -run=^$ -bench=^BenchmarkFoo$ ./...   # Run only the BenchmarkFoo benchmark (and no tests)
+</pre></code></figure>
+
+<p>I almost always run benchmarks using the <code>-benchmem</code> flag, which forces memory allocation statistics to be included in the output.</p>
+
+<figure class="shell"><code><pre>
+$  go test -bench=. -benchmem ./...
+</pre></code></figure>
+
+<p>By default, each benchmark test will be run for <em>a minimum</em> of 1 second, once only. You can change this with the <code>-benchtime</code> and <code>-count</code> flags:</p>
+
+<figure class="shell"><code><pre>
+$ go test -bench=. -benchtime=5s ./...       # Run each benchmark test for at least 5 seconds
+$ go test -bench=. -benchtime=500x /....     # Run each benchmark test for exactly 500 iterations
+$ go test -bench=. -count=3 ./...            # Repeat each benchmark test 3 times over
+</pre></code></figure>
+
+<p>If the code that your benchmarking uses concurrency, you can use the <code>-cpu</code> flag to see the performance impact of changing your <code>GOMAXPROCS</code> value (essentially, the number of OS threads that can execute your Go code simultaneously). For example, to run benchmarks with <code>GOMAXPROCS</code> set to 1, 4 and 8:</p>
+
+<figure class="shell"><code><pre>
+$ go test -bench=. -cpu=1,4,8 ./...
+</pre></code></figure>
+
+<p>To compare changes between benchmarks you might want to use the <a href="https://godoc.org/golang.org/x/tools/cmd/benchcmp">benchcmp</a> tool. This isn't part of the standard <code>go</code> command, so you'll need to install it like so:</p>
+
+<figure class="shell"><code><pre>
+$ cd /tmp
+$ GO111MODULE=on go get golang.org/x/tools/cmd/benchcmp
+</pre></code></figure>
+
+<p>You can then use it like this:</p>
+
+<figure class="shell"><code><pre>
+$ go test -run=^$ -bench=. -benchmem ./... &gt; /tmp/old.txt
+<samp># make changes</samp>
+$ go test -run=^$ -bench=. -benchmem ./... &gt; /tmp/new.txt
+$ benchcmp /tmp/old.txt /tmp/new.txt
+<samp>benchmark              old ns/op     new ns/op     delta
+BenchmarkExample-8     21234         5510          -74.05%
+
+benchmark              old allocs     new allocs     delta
+BenchmarkExample-8     17             11             -35.29%
+
+benchmark              old bytes     new bytes     delta
+BenchmarkExample-8     8240          3808          -53.79%</samp>
+</pre></code></figure>
+
+<h3 id="profiling-and-tracing">Profiling and Tracing</h3>
+
+<p>Go makes it possible to create diagnostic <em>profiles</em> for CPU use, memory use, goroutine blocking and mutex contention. You can use these to dig a bit deeper and see exactly how your application is using (or waiting on) resources.</p>
+
+<p>There are three ways to generate profiles:</p>
+
+<ul>
+	<li>If you have a web application you can import the <a href="https://golang.org/pkg/net/http/pprof/"><code>net/http/pprof</code></a> package. This will register some handlers with the <code>http.DefaultServeMux</code> which you can then use to generate and download profiles for your running application. <a href="https://artem.krylysov.com/blog/2017/03/13/profiling-and-optimizing-go-web-applications/">This post</a> provides a good explanation and some sample code.</li>
+	<li>For other types of applications, you can profile your running application using the <code>pprof.StartCPUProfile()</code> and <code>pprof.WriteHeapProfile()</code> functions. See the <a href="https://golang.org/pkg/runtime/pprof/"><code>runtime/pprof</code></a> documentation for sample code.</li>
+	<li>Or you can generate profiles while running benchmarks or tests by using the various <code>-***profile</code> flags like so:</li>
+</ul>
+
+<figure class="shell"><code><pre>
+$ go test -run=^$ -bench=^BenchmarkFoo$ -cpuprofile=/tmp/cpuprofile.out .
+$ go test -run=^$ -bench=^BenchmarkFoo$ -memprofile=/tmp/memprofile.out .
+$ go test -run=^$ -bench=^BenchmarkFoo$ -blockprofile=/tmp/blockprofile.out .
+$ go test -run=^$ -bench=^BenchmarkFoo$ -mutexprofile=/tmp/mutexprofile.out .
+</pre></code></figure>
+
+<p>Note: Using the <code>-***profile</code> flags when running benchmarks or tests will result in a test binary being outputted to your current directory. If you want to output this to an alternative location you should use the <code>-o</code> flag like so:</p>
+
+<figure class="shell"><code><pre>
+$ go test -run=^$ -bench=^BenchmarkFoo$ -o=/tmp/foo.test -cpuprofile=/tmp/cpuprofile.out .
+</pre></code></figure>
+
+<p>Whichever way you choose to create a profile, when profiling is enabled your Go program will stop about 100 times per second and take a snapshot at that moment in time. These <em>samples</em> are collected together to form a <em>profile</em> that you can analyze using the <code>pprof</code> tool.</p>
+
+<p>My favourite way to inspect a profile is to use the <code>go tool pprof -http</code> command to open it in a web browser. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go tool pprof -http=:5000 /tmp/cpuprofile.out
+</pre></code></figure>
+
+<p><img src="/static/images/tooling-3.png"></p>
+
+<p>This will default to displaying a <em>graph</em> showing the execution tree for the sampled aspects of your application, which makes it possible to quickly get a feel for any resource usage 'hotspots'. In the graph above, we can see that the hotspots in terms of CPU usage are two system calls originating from <code>ioutil.ReadFile()</code>.</p>
+
+<p>You can also navigate to other <em>views</em> of the profile including top usage by function and source code.</p>
+
+<p><img src="/static/images/tooling-4.png"></p>
+
+<p>If the amount of information is overwhelming, you might want to use the <code>--nodefraction</code> flag to ignore nodes that account for less than a certain percentage of samples. For example to ignore nodes that use appear in less than 10% of samples you can run <code>pprof</code> like so:</p>
+
+<figure class="shell"><code><pre>
+$ go tool pprof --nodefraction=0.1 -http=:5000 /tmp/cpuprofile.out
+</pre></code></figure>
+
+<p><img src="/static/images/tooling-5.png"></p>
+
+<p>This makes the graph a lot less 'noisy' and if you <a href="/static/images/tooling-5b.svg">zoom in on this screenshot</a>, it's now much clearer to see and understand where the CPU usage hotspots are.</p>
+
+<p>Profiling and optimizing resource usage is big, nuanced, topic and I've barely scratched the surface here. If you're interested in knowing more then I encourage you to read the following blog posts:</p>
+
+<ul>
+<li><a href="https://artem.krylysov.com/blog/2017/03/13/profiling-and-optimizing-go-web-applications/">Profiling and optimizing Go web applications</a></li>
+<li><a href="https://github.com/golang/go/wiki/Performance">Debugging performance issues in Go programs</a></li>
+<li><a href="https://medium.com/@hackintoshrao/daily-code-optimization-using-benchmarks-and-profiling-in-golang-gophercon-india-2016-talk-874c8b4dc3c5">Daily code optimization using benchmarks and profiling</a></li>
+<li><a href="https://jvns.ca/blog/2017/09/24/profiling-go-with-pprof/">Profiling Go programs with pprof</a></li>
+</ul>
+
+<p>Another tool that you can use to help diagnose issues is the <em>runtime execution tracer</em>. This gives you a view of how Go is creating and scheduling goroutines to run, when the garbage collector is running, and information about blocking syscall/network/sync operations.</p>
+
+<p>Again, you can generate trace from your tests or benchmarks, or use <code>net/http/pprof</code> to create and download a trace for your web application. You can then use <code>go tool trace</code> to view the output in your web browser like so:</p>
+
+<figure class="shell"><code><pre>
+$ go test -run=^$ -bench=^BenchmarkFoo$ -trace=/tmp/trace.out .
+$ go tool trace /tmp/trace.out
+</pre></code></figure>
+
+<p>Important: This is currently only viewable in Chrome/Chromium.</p>
+
+<p><img src="/static/images/tooling-6.png"></p>
+
+<p>For more information about Go's execution tracer and how to interpret the output please see <a href="https://www.youtube.com/watch?v=mmqDlbWk_XA">Rhys Hiltner's dotGo 2016 talk</a> and this<a href="https://making.pusher.com/go-tool-trace/"> excellent blog post</a>.</p>
+
+<h3 id="checking-for-race-conditions">Checking for Race Conditions</h3>
+
+<p>I talked earlier about enabling Go's race detector during tests by using <code>go test -race</code>. But you can also enable it for running programs when building a executable, like so:</p>
+
+<figure class="shell"><code><pre>
+$ go build -race -o=/tmp/foo .
+</pre></code></figure>
+
+<p>It's critical to note that race-detector-enabled binaries will use more CPU and memory than normal, so you shouldn't use the <code>-race</code> flag when building binaries for production under normal circumstances.</p>
+
+<p>But you may want to deploy a race-detector-enabled binary on one server within a pool of many. Or use it to help track down a suspected race-condition by using a load-test tool to throw traffic concurrently at a race-detector-enabled binary.</p>
+	
+<p>By default, if any races are detected while the binary is running a log will be written to <code>stderr</code>. You can change this by using the <code>GORACE</code> environment variable if necessary. For example, to run the binary located at <code>/tmp/foo</code> and output any race logs to <code>/tmp/race.&lt;pid&gt;</code> you can use:</p>
+
+<figure class="shell"><code><pre>
+$ GORACE=&#34;log_path=/tmp/race&#34; /tmp/foo
+</pre></code></figure>
+
+<h2 id="managing-dependencies">Managing Dependencies</h2>
+
+<p>You can use the <code>go list</code> tool to check whether a specific dependency has a newer version available like so:</p>
+
+<figure class="shell"><code><pre>
+$ go list -m -u github.com/alecthomas/chroma
+<samp>github.com/alecthomas/chroma v0.6.2 [v0.6.3]</samp>
+</pre></code></figure>
+
+<p>This will output the dependency name and version that you're currently using, followed by the latest version in square brackets <code>[]</code>, if a newer one exists. You can also use <code>go list</code> to check for updates to all dependencies (and sub-dependencies) like so:</p>
+
+<figure class="shell"><code><pre>
+$ go list -m -u all
+</pre></code></figure>
+
+<p>You can upgrade (or downgrade) a dependency to the latest version, specific tagged-release or commit hash with the <code>go get</code> command like so:</p>
+
+<figure class="shell"><code><pre>
+$ go get github.com/foo/bar@latest
+$ go get github.com/foo/bar@v1.2.3
+$ go get github.com/foo/bar@7e0369f
+</pre></code></figure>
+
+<p>If the dependency you're updating has a <code>go.mod</code> file, then based on the information in this <code>go.mod</code> file, updates to any <em>sub-dependencies</em> will also be downloaded if necessary. If you use the <code>go get -u</code> flag, the contents of the <code>go.mod</code> file will be ignored and all sub-dependencies will be upgraded to their latest minor/patch version&hellip; even if the <code>go.mod</code> specifies a different version.</p>
+
+<p>After upgrading or downgrading any dependencies it's a good idea to tidy your modfiles. And you might also want to run the tests for all packages to help check for incompatibilities. Like so:</p>
+
+<figure class="shell"><code><pre>
+$ go mod tidy
+$ go test all
+</pre></code></figure>
+
+<p>Occasionally you might want to use a local version of a dependency (for example, you need to use a local fork until a patch is merged upstream). To do this, you can use the <code>go mod edit</code> command to replace a dependency in your <code>go.mod</code> file with a local version. For example:</p>
+
+<figure class="shell"><code><pre>
+$ go mod edit -replace=github.com/alexedwards/argon2id=/home/alex/code/argon2id
+</pre></code></figure>
+
+<p>This will add a <em>replace rule</em> to your <code>go.mod</code> file like so, and any future invocations of <code>go run</code>, <code>go build</code> etc will use the local version.</p>
+
+<figure class="file"><figcaption>File: go.mod</figcaption><code><pre>
+module alexedwards.net/example
+
+go 1.12
+
+require github.com/alexedwards/argon2id v0.0.0-20190109181859-24206601af6c
+
+replace github.com/alexedwards/argon2id =&gt; /home/alex/Projects/playground/argon2id
+</pre></code></figure>
+
+<p>Once it's no longer necessary, you can remove the replace rule with the command:</p>
+
+<figure class="shell"><code><pre>
+$ go mod edit -dropreplace=github.com/alexedwards/argon2id
+</pre></code></figure>
+
+<p>You can use the <a href="https://github.com/golang/go/wiki/Modules#can-i-work-entirely-outside-of-vcs-on-my-local-filesystem">same general technique</a> to import packages that exist <em>only</em> on your own file system. This can be useful if you're working on multiple modules in development at the same time, one of which depends on the other.</p>
+
+<p>Note: If you don't want to use the <code>go mod edit</code> command, you can edit your <code>go.mod</code> file manually to make these changes. Either way will work.</p>
+
+<h2 id="upgrading-to-a-new-go-release">Upgrading to a New Go Release</h2>
+
+<p>The <code>go fix</code> tool was originally released back in 2011 (when regular changes were still being made to Go's API) to help users automatically update their old code to be compatible with the latest version of Go. Since then, Go's <a href="https://golang.org/doc/go1compat">compatibility promise</a> means if you're upgrading from one Go 1.x version to a newer 1.x version everything should Just Work and using <code>go fix</code> should generally be unnecessary.</p>
+
+<p>However, there are a handful of very specific issues that it does deal with. You can see a summary of them by running <code>go tool fix -help</code>. If you decide that you want or need to run <code>go fix</code> after upgrading, you should you run the following command, then inspect a diff of the changes before you commit them.</p>
+
+<figure class="shell"><code><pre>
+$ go fix ./...
+</pre></code></figure>
+
+<h2 id="reporting-bugs">Reporting Bugs</h2>
+
+<p>If you're confident that you've found an unreported issue with Go's standard library, tooling or documentation, you can use the <code>go bug</code> command to create a new Github issue.</p>
+
+<figure class="shell"><code><pre>
+$ go bug
+</pre></code></figure>
+
+<p>This will open a browser window containing an issue pre-filled with your system information and reporting template.</p>
+    ]]></description>
+  </item>
+  <item>
     <pubDate>Mon, 10 Dec 2018 18:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/how-to-hash-and-verify-passwords-with-argon2-in-go</link>
     <guid>https://www.alexedwards.net/blog/how-to-hash-and-verify-passwords-with-argon2-in-go</guid>
