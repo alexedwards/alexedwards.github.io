@@ -61,7 +61,7 @@
 <p>In this post I hope to provide a little background and context about the tools I find most useful, and importantly, explain how they can fit into the workflow of a typical project. I hope it'll give you a good start if you're new to Go.</p>
 
 <p>Or if you've been working with Go for a while, and that stuff's not applicable to you, hopefully you'll still discover a command or flag that you didn't know existed before : )</p>
-	
+
 <p>The information in this post is written for Go 1.12 and assumes that you're working on a project which has <a href="https://github.com/golang/go/wiki/Modules#quick-start">modules enabled</a>.</p>
 
 <ol class="toc">
@@ -588,7 +588,7 @@ $ go build -gcflags="-m -m" -o=/tmp/foo . # Print information about optimization
 </pre></code></figure>
 
 <p>In the above example I used the <code>-m</code> flag twice to indicate that I want to print decision information two-levels deep. You can get simpler output by using just one.
-	
+
 <p>Also, as of Go 1.10, compiler flags only apply to the specific packages passed to <code>go build</code> &mdash; which in the example above is the package in the current directory (represented by <code>.</code>). If you want to print optimization decisions for all packages including dependencies can use this command instead:</p>
 
 <figure class="shell"><code><pre>
@@ -648,7 +648,7 @@ $  go test -bench=. -benchmem ./...
 
 <figure class="shell"><code><pre>
 $ go test -bench=. -benchtime=5s ./...       # Run each benchmark test for at least 5 seconds
-$ go test -bench=. -benchtime=500x /....     # Run each benchmark test for exactly 500 iterations
+$ go test -bench=. -benchtime=500x ./...     # Run each benchmark test for exactly 500 iterations
 $ go test -bench=. -count=3 ./...            # Repeat each benchmark test 3 times over
 </pre></code></figure>
 
@@ -768,7 +768,7 @@ $ go build -race -o=/tmp/foo .
 <p>It's critical to note that race-detector-enabled binaries will use more CPU and memory than normal, so you shouldn't use the <code>-race</code> flag when building binaries for production under normal circumstances.</p>
 
 <p>But you may want to deploy a race-detector-enabled binary on one server within a pool of many. Or use it to help track down a suspected race-condition by using a load-test tool to throw traffic concurrently at a race-detector-enabled binary.</p>
-	
+
 <p>By default, if any races are detected while the binary is running a log will be written to <code>stderr</code>. You can change this by using the <code>GORACE</code> environment variable if necessary. For example, to run the binary located at <code>/tmp/foo</code> and output any race logs to <code>/tmp/race.&lt;pid&gt;</code> you can use:</p>
 
 <figure class="shell"><code><pre>
