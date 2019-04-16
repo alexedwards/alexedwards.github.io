@@ -262,14 +262,13 @@ $ go clean -testcache       # Delete all cached test results
 
 <p>Note: Cached test results are stored alongside cached build results in your <code>GOCACHE</code> directory. Check <code>go env GOCACHE</code> if you're not sure where this is on your machine.</p>
 
-<p>You can limit <code>go test</code> to running specific tests (and sub-tests) by using the <code>-run</code>  flag. This accepts a regular expression, and only tests which have names that match the regular expression will be run. I like to combine this with the <code>-v</code> flag to enable verbose mode, so the names of running tests and sub-tests are displayed. It means I can check that the tests (and only the tests) I expect are be run and I haven't screwed up the regexp!</p>
+<p>You can limit <code>go test</code> to running specific tests (and sub-tests) by using the <code>-run</code>  flag. This accepts a regular expression, and only tests which have names that match the regular expression will be run. I like to combine this with the <code>-v</code> flag to enable verbose mode, so the names of running tests and sub-tests are displayed. It's a useful way to make sure that I haven't screwed up the regexp and that the tests I expect are actually being run!</p>
 
 <figure class="shell"><code><pre>
 $ go test -v -run=^TestFooBar$ .          # Run the test with the exact name TestFooBar
 $ go test -v -run=^TestFoo .              # Run tests whose names start with TestFoo
 $ go test -v -run=^TestFooBar$/^Baz$ .    # Run the Baz subtest of the TestFooBar test only
 </pre></code></figure>
-
 
 <p>A couple more flags that it's good to be aware of are <code>-short</code> (which you can use to <a href="https://golang.org/pkg/testing/#hdr-Skipping">skip long-running tests</a>) and <code>-failfast</code> (which will stop running further tests after the first failure). Note that <code>-failfast</code> will prevent test results from being cached.</p>
 
@@ -379,7 +378,7 @@ $ gofmt -w -s -d .       # Recursively format all files in the current directory
 
 <p>In these commands, the <code>-w</code> flag instructs the tool to rewrite files in place, the <code>-s</code> instructs the tool to apply <a href="https://golang.org/cmd/gofmt/#hdr-The_simplify_command">simplifications</a> to the code where possible, and the <code>-d</code> flag instructs the tool to output diffs of the changes (because I'm curious to see what is changed). If you want to only display the names of changed files, instead of diffs, you can swap this for the <code>-l</code> flag instead.</p>
 
-<p>Note: The <code>gofmt</code> command works recursively. If you pass a directory like <code>.</code> or <code>./cmd/foo</code> it'll format all <code>.go</code> files under the directory.</p>
+<p>Note: The <code>gofmt</code> command works recursively. If you pass it a directory like <code>.</code> or <code>./cmd/foo</code> it'll format all <code>.go</code> files under the directory.</p>
 
 <p>The other formatting tool &mdash; <code>go fmt</code> &mdash; tool is a wrapper which essentially calls <code>gofmt -l -w</code> on a specified file or directory. You can use it like this:</p>
 
@@ -608,7 +607,7 @@ $ go test -bench=. -benchtime=500x /....     # Run each benchmark test for exact
 $ go test -bench=. -count=3 ./...            # Repeat each benchmark test 3 times over
 </pre></code></figure>
 
-<p>If the code that your benchmarking uses concurrency, you can use the <code>-cpu</code> flag to see the performance impact of changing your <code>GOMAXPROCS</code> value (essentially, the number of OS threads that can execute your Go code simultaneously). For example, to run benchmarks with <code>GOMAXPROCS</code> set to 1, 4 and 8:</p>
+<p>If the code that you're benchmarking uses concurrency, you can use the <code>-cpu</code> flag to see the performance impact of changing your <code>GOMAXPROCS</code> value (essentially, the number of OS threads that can execute your Go code simultaneously). For example, to run benchmarks with <code>GOMAXPROCS</code> set to 1, 4 and 8:</p>
 
 <figure class="shell"><code><pre>
 $ go test -bench=. -cpu=1,4,8 ./...
