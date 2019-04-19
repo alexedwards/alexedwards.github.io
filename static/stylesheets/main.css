@@ -119,7 +119,7 @@ footer span.copyright {
 
 /* ===================================================== */
 
-article > img {
+article > img, article a img {
     max-width: 100%;
     border: solid 1px #E8E8E8;
 }
