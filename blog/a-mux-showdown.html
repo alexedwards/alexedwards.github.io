@@ -237,7 +237,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 
 <p>In both tests I measured the number of successful requests across a ten second period, and took the average over 50 iterations, all running on my local machine.</p>
 
-<p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the <a href="https://gist.github.com/alexedwards/6404944">code samples</a> and results:</p>
+<p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the results:</p>
 
 <figure class="chart">
   <img src="/static/images/muxer-performance-comparison.png" alt="">
@@ -245,7 +245,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 
 <p>In this test the best performing package appeared to be Pat by a large margin. It handled around 30% more requests than Routes and Gorilla Mux, which were very evenly matched.</p>
 
-<p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the <a href="https://gist.github.com/alexedwards/6414164">code samples</a> and results:</p>
+<p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the  results:</p>
 
 <figure class="chart">
   <img src="/static/images/muxer-performance-comparison-2.png" alt="">

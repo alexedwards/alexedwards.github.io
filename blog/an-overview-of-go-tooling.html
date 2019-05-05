@@ -375,7 +375,7 @@ $ go test -run=^TestFooBar$ -count=500 .
 
 <p>In this example, the <code>TestFooBar</code> test will be repeated 500 times in a row. But it's important to note that the test will be repeated <em>in serial</em> &mdash; even if it contains a <code>t.Parallel()</code> instruction. So if your test is doing something relatively slow, like making a round trip to a database, hard disk or the internet, running a large number of tests can take quite a long time.</p>
 
-<p>In that case you might want to use the <a href="golang.org/x/tools/cmd/stress"><code>stress</code></a> tool to repeat the same test multiple times <em>in parallel</em> instead. You can install it like so:</p>
+<p>In that case you might want to use the <a href="https://godoc.org/golang.org/x/tools/cmd/stress"><code>stress</code></a> tool to repeat the same test multiple times <em>in parallel</em> instead. You can install it like so:</p>
 
 <figure class="shell"><code><pre>
 $ cd /tmp
