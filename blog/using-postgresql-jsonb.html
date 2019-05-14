@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2019">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>Using PostgreSQL JSONB with Go - Alex Edwards</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="https://www.alexedwards.net/blog/using-postgresql-jsonb"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <main class="wrapper clearfix">
+      
+<div class="lets-go clearfix">
+	<div>
+		
+			<h3>Not sure how to structure your Go web application?</h3>
+			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+		
+	</div>
+	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+</div>
+<article>
+	<h1>Using PostgreSQL JSONB with Go</h1>
+	<div class="metadata">
+		<span class="dates">
+			
+			Posted on: 14th May 2019
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	<p>PostgreSQL provides two JSON-related data types that you can use &mdash; <code>JSON</code> and <code>JSONB</code>. The principal differences are:</p>
+
+<ul>
+<li><code>JSON</code> stores an <em>exact copy</em> of the JSON input.</li>
+
+<li><code>JSONB</code> stores a <em>binary representation</em> of the JSON input. This makes it slower to insert but faster to query. It may change the key order, and will remove whitespace and delete duplicate keys. <code>JSONB</code> also supports the <code>?</code> (existence) and <code>@&gt;</code> (containment) operators, whereas <code>JSON</code> doesn't.</li>
+</ul>
+
+<p>The <a href="https://www.postgresql.org/docs/9.4/datatype-json.html">PostgreSQL documentation</a> recommends that you should generally use <code>JSONB</code>, unless you have a specific reason not too (like needing to preserve key order).</p>
+
+<p>Here's a cribsheet for the essential commands:</p>
+
+<figure class="plain"><code class="sql"><pre>
+-- Create a table with a JSONB column.
+CREATE TABLE items (
+    id SERIAL PRIMARY KEY,
+    attrs JSONB
+);
+
+-- You can insert any well-formed json input into the column. Note that only
+-- lowercase `true` and `false` spellings are accepted.
+INSERT INTO items (attrs) VALUES ('{
+   "name": "Pasta",
+   "ingredients": ["Flour", "Eggs", "Salt", "Water"],
+   "organic": true,
+   "dimensions": {
+      "weight": 500.00
+   }
+}');
+
+-- Create an index on all key/value pairs in the JSONB column.
+CREATE INDEX idx_items_attrs ON items USING gin (attrs);
+
+-- Create an index on a specific key/value pair in the JSONB column.
+CREATE INDEX idx_items_attrs_organic ON items USING gin ((attrs-&gt;'organic'));
+
+-- The -&gt; operator is used to get the value for a key. The returned value has
+-- the type JSONB.
+SELECT attrs-&gt;'dimensions' FROM items;
+SELECT attrs-&gt;'dimensions'-&gt;'weight' FROM items;
+
+-- Or you can use -&gt;&gt; to do the same thing, but this returns a TEXT value
+-- instead.
+SELECT attrs-&gt;&gt;'dimensions' FROM items;
+
+-- You can use the returned values as normal, although you may need to type
+-- cast them first.
+SELECT * FROM items WHERE attrs-&gt;&gt;'name' ILIKE 'p%';
+SELECT * FROM items WHERE (attrs-&gt;'dimensions'-&gt;&gt;'weight')::numeric &lt; 100.00;
+
+-- Use ? to check for the existence of a specific key.
+SELECT * FROM items WHERE attrs ? 'ingredients';
+
+-- The ? operator only works at the top level. If you want to check for the
+-- existence of a nested key you can do this:
+SELECT * FROM items WHERE attrs-&gt;'dimensions' ? 'weight';
+
+-- The ? operator can also be used to check for the existence of a specific
+-- text value in json arrays.
+SELECT * FROM items WHERE attrs-&gt;'ingredients' ? 'Salt';
+
+-- Use @&gt; to check if the JSONB column contains some specific json. This can
+-- be useful to filter for a specific key/value pair like so:
+SELECT * FROM items WHERE attrs @&gt; '{"organic": true}'::jsonb;
+SELECT * FROM items WHERE attrs @&gt; '{"dimensions": {"weight": 10}}'::jsonb;
+
+-- Note that @&gt; looks for *containment*, not for an exact match. The
+-- followingquery will return records which have both "Flour" and "Water"
+-- as ingredients, rather than *only* "Flour" and "Water" as the ingredients.
+SELECT * FROM items WHERE attrs @&gt; '{"ingredients": ["Flour", "Water"]}'::jsonb;
+</pre></code></figure>
+
+<p>For a full description of all available operators please see the official <a href="https://www.postgresql.org/docs/9.4/functions-json.html">JSON Functions and Operators</a> documentation.</p>
+
+<h2 id="usingwithgo">Using with Go</h2>
+
+<p>If your not familiar with the general patterns for working with SQL databases in Go, you might want to read my <a href="https://www.alexedwards.net/blog/practical-persistence-sql">introduction to the <code>database/sql</code></a> package before continuing.</p>
+
+<h3 id="knownjsonfields">Known JSON fields</h3>
+
+<p>When the fields in a JSON/JSONB column are known in advance, you can map the contents of the JSON/JSONB column to and from a struct. To do this, you'll need make sure the struct implements:</p>
+
+<ul>
+<li><p>The <a href="https://golang.org/pkg/database/sql/driver/#Valuer"><code>driver.Valuer</code></a> interface, such that it marshals the object into a JSON byte slice that can be understood by the database.</p></li>
+
+<li><p>The <a href="https://golang.org/pkg/database/sql/#Scanner"><code>sql.Scanner</code></a> interface, such that it unmarshals a JSON byte slice from the database into the struct fields.</p></li>
+</ul>
+
+<p>Here's a demonstration:</p>
+
+<figure class="file"><code class="go"><pre>
+package main
+
+import (
+    "database/sql"
+    "database/sql/driver"
+    "encoding/json"
+    "errors"
+    "log"
+
+    _ "github.com/lib/pq"
+)
+
+type Item struct {
+    ID    int
+    Attrs Attrs
+}
+
+// The Attrs struct represents the data in the JSON/JSONB column. We can use
+// struct tags to control how each field is encoded.
+type Attrs struct {
+    Name        string   `json:"name,omitempty"`
+    Ingredients []string `json:"ingredients,omitempty"`
+    Organic     bool     `json:"organic,omitempty"`
+    Dimensions  struct {
+        Weight float64 `json:"weight,omitempty"`
+    } `json:"dimensions,omitempty"`
+}
+
+// Make the Attrs struct implement the driver.Valuer interface. This method
+// simply returns the JSON-encoded representation of the struct.
+func (a Attrs) Value() (driver.Value, error) {
+    return json.Marshal(a)
+}
+
+// Make the Attrs struct implement the sql.Scanner interface. This method
+// simply decodes a JSON-encoded value into the struct fields.
+func (a *Attrs) Scan(value interface{}) error {
+    b, ok := value.([]byte)
+    if !ok {
+        return errors.New("type assertion to []byte failed")
+    }
+
+    return json.Unmarshal(b, &amp;a)
+}
+
+func main() {
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Initialize a new Attrs struct and add some values.
+    attrs := new(Attrs)
+    attrs.Name = "Pesto"
+    attrs.Ingredients = []string{"Basil", "Garlic", "Parmesan", "Pine nuts", "Olive oil"}
+    attrs.Organic = false
+    attrs.Dimensions.Weight = 100.00
+
+    // The database driver will call the Value() method and and marshall the
+    // attrs struct to JSON before the INSERT.
+    _, err = db.Exec("INSERT INTO items (attrs) VALUES($1)", attrs)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Similarly, we can also fetch data from the database, and the driver
+    // will call the Scan() method to unmarshal the data to an Attr struct.
+    item := new(Item)
+    err = db.QueryRow("SELECT id, attrs FROM items ORDER BY id DESC LIMIT 1").Scan(&amp;item.ID, &amp;item.Attrs)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // You can then use the struct fields as normal...
+    weightKg := item.Attrs.Dimensions.Weight / 1000
+    log.Printf("Item: %d, Name: %s, Weight: %.2fkg", item.ID, item.Attrs.Name, weightKg)
+}
+</pre></code></figure>
+
+<h3 id="unknownjsonfields">Unknown JSON fields</h3>
+
+<p>The above pattern works great if you know in advance what keys and values your JSON/JSONB data will contain. And it has the major advantage of being <em>type safe</em>.</p>
+
+<p>For the times that you don't know this in advance (for example, the data contains user-generated keys and values) you can map the contents of the JSON/JSONB column to and from a <code>map[string]interface{}</code> instead. The big downside of this is that you will need to type assert any values that you retrieve from the database in order to use them.</p>
+
+<p>Here's the same example, but re-written to use a <code>map[string]interface{}</code>:</p>
+
+<figure class="file"><code class="go"><pre>
+package main
+
+import (
+    "database/sql"
+    "database/sql/driver"
+    "encoding/json"
+    "errors"
+    "log"
+
+    _ "github.com/lib/pq"
+)
+
+type Item struct {
+    ID    int
+    Attrs Attrs
+}
+
+type Attrs map[string]interface{}
+
+func (a Attrs) Value() (driver.Value, error) {
+    return json.Marshal(a)
+}
+
+func (a *Attrs) Scan(value interface{}) error {
+    b, ok := value.([]byte)
+    if !ok {
+        return errors.New("type assertion to []byte failed")
+    }
+
+    return json.Unmarshal(b, &amp;a)
+}
+
+func main() {
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    item := new(Item)
+    item.Attrs = Attrs{
+        "name":        "Passata",
+        "ingredients": []string{"Tomatoes", "Onion", "Olive oil", "Garlic"},
+        "organic":     true,
+        "dimensions": map[string]interface{}{
+            "weight": 250.00,
+        },
+    }
+
+    _, err = db.Exec("INSERT INTO items (attrs) VALUES($1)", item.Attrs)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    item = new(Item)
+    err = db.QueryRow("SELECT id, attrs FROM items ORDER BY id DESC LIMIT 1").Scan(&amp;item.ID, &amp;item.Attrs)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    name, ok := item.Attrs["name"].(string)
+    if !ok {
+        log.Fatal("unexpected type for name")
+    }
+    dimensions, ok := item.Attrs["dimensions"].(map[string]interface{})
+    if !ok {
+        log.Fatal("unexpected type for dimensions")
+    }
+    weight, ok := dimensions["weight"].(float64)
+    if !ok {
+        log.Fatal("unexpected type for weight")
+    }
+    weightKg := weight / 1000
+    log.Printf("%s: %.2fkg", name, weightKg)
+}
+</pre></code></figure>
+
+
+	<div class="footer">
+		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+	</div>
+</article>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
+</script>
+    </main>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2019</div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
