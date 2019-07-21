@@ -402,6 +402,8 @@ article figure.shell code pre {
 code pre {
     padding: 1em;
     color: #333333;
+    -moz-tab-size: 4;
+    tab-size: 4;
 }
 
 article figcaption {

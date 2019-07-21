@@ -47,7 +47,7 @@
 	<div class="metadata">
 		<span class="dates">
 			
-			Last updated: 22nd January 2018
+			Last updated: 21st July 2019
 			
 		</span>
 		
@@ -56,91 +56,93 @@
 		</span>
 		
 	</div>
-	<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own Goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
+	<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
 
 <p>In case you're new to concurrent programming, I'll quickly explain the problem.</p>
 
-<p>Race conditions occur when two or more Goroutines try to use a piece of shared data at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
+<p>Race conditions can occur when two or more goroutines try to use a piece of shared data at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
 
-<p>As an illustration, here's an example where two Goroutines try to add money to a shared bank balance at the same time:</p>
+<p>As an illustration, here's an example where two goroutines try to add money to a shared bank balance at the same time:</p>
 
 <table>
 <tr><th>Instruction</th><th>Goroutine 1</th><th>Goroutine 2</th><th>Bank Balance</th></tr>
 <tr><td>1</td><td>Read balance &lArr; &pound;50</td><td></td><td>&pound;50</td></tr>
 <tr><td>2</td><td></td><td>Read balance &lArr; &pound;50</td><td>&pound;50</td></tr>
-<tr><td>3</td><td>Add &pound;100 to balance</td><td></td><td>&pound;50</td></tr>
-<tr><td>4</td><td></td><td>Add &pound;50 to balance</td><td>&pound;50</td></tr>
+<tr><td>3</td><td>Add &pound;100 to balance</td><td></td><td>&mdash;</td></tr>
+<tr><td>4</td><td></td><td>Add &pound;50 to balance</td><td>&mdash;</td></tr>
 <tr><td>5</td><td>Write balance &rArr; &pound;150</td><td></td><td>&pound;150</td></tr>
 <tr><td>6</td><td></td><td>Write balance &rArr; &pound;100</td><td>&pound;100</td></tr>
 </table>
 
-<p>Despite making two separate deposits, only the second one is reflected in the final balance because the two Goroutines were <em>racing</em> each other to make the change.</p>
+<p>Despite making two separate deposits, only the second one is reflected in the final balance because the two goroutines were <em>racing</em> each other to make the change.</p>
 
 <p>The Go blog describes the downsides:</p>
 
 <blockquote>Race conditions are among the most insidious and elusive programming errors. They typically cause erratic and mysterious failures, often long after the code has been deployed to production. While Go's concurrency mechanisms make it easy to write clean concurrent code, they don't prevent race conditions. Care, diligence, and testing are required.</blockquote>
 
-<p>Go provides a number of tools to help us avoid data races. These include <a href="http://golangtutorials.blogspot.co.uk/2011/06/channels-in-go.html">Channels</a> for communicating data between Goroutines, a <a href="http://www.goinggo.net/2013/09/detecting-race-conditions-with-go.html">Race Detector</a> for monitoring unsynchronized access to memory at runtime, and a variety of 'locking' features in the <a href="http://golang.org/pkg/sync/atomic/">Atomic</a> and <a href="http://golang.org/pkg/sync/">Sync</a> packages. One of these features are Mutual Exclusion locks, or <em>mutexes</em>, which we'll be looking at in the rest of this post.</p>
+<p>Go provides a number of tools to help us avoid data races. These include <a href="http://golangtutorials.blogspot.co.uk/2011/06/channels-in-go.html">Channels</a> for communicating data between goroutines, a <a href="http://www.goinggo.net/2013/09/detecting-race-conditions-with-go.html">Race Detector</a> for monitoring unsynchronized access to memory at runtime, and a variety of 'locking' features in the <a href="http://golang.org/pkg/sync/atomic/">Atomic</a> and <a href="http://golang.org/pkg/sync/">Sync</a> packages. One of these features are Mutual Exclusion locks, or <em>mutexes</em>, which we'll be looking at in the rest of this post.</p>
 
 <h2>Creating a Basic Mutex</h2>
 
 <p>Let's create some toy code to mimic the bank balance example:
 
 <figure class="go"><code><pre>
+package main
+
 import "strconv"
 
-var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+var myBalance = &balance{amount: 50.00, currency: "GBP"}
 
-type currency struct {
-  amount float64
-  code   string
+type balance struct {
+	amount   float64
+	currency string
 }
 
-func (c *currency) Add(i float64) {
-  // This is racy
-  c.amount += i
+func (b *balance) Add(i float64) {
+	// This is racy
+	b.amount += i
 }
 
-func (c *currency) Display() string {
-  // This is racy
-  return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+func (b *balance) Display() string {
+	// This is racy
+	return strconv.FormatFloat(b.amount, 'f', 2, 64) + " " + b.currency
 }
 </pre></code></figure>
 
-<p>We know that if there are multiple Goroutines using this code and calling <code>Balance.Add()</code> and <code>Balance.Display()</code>, then at some point a race condition is likely to occur.</p>
+<p>We know that if there are multiple goroutines using this code and calling <code>myBalance.Add()</code> and <code>myBalance.Display()</code>, then at some point a race condition is likely to occur.</p>
 
-<p>One way we could prevent a data race is to ensure that if one Goroutine is using the <code>Balance</code> variable, then all other Goroutines are prevented (or <em>mutually excluded</em>) from using it at the same time.</p>
+<p>One way we could prevent a data race is to ensure that if one goroutine is using the <code>myBalance</code> variable, then all other goroutines are prevented (or <em>mutually excluded</em>) from using it at the same time.</p>
 
-<p>We can do this by creating a <a href="http://golang.org/pkg/sync/#Mutex">Mutex</a> and setting a <em>lock</em> around particular lines of code with it. While one Goroutine holds the lock, all other Goroutines are prevented from executing any lines of code protected by the same mutex, and are forced to wait until the lock is yielded before they can proceed.</p>
+<p>We can do this by creating a <a href="http://golang.org/pkg/sync/#Mutex">Mutex</a> and setting a <em>lock</em> around particular lines of code with it. While one goroutine holds the lock, all other goroutines are prevented from executing any lines of code protected by the same mutex, and are forced to wait until the lock is yielded before they can proceed.</p>
 
 <p>In practice, it's more simple than it sounds:</p>
 
 <figure class="go"><code><pre>
 import (
-  "strconv"
-  "sync"
+	"strconv"
+	"sync"
 )
 
 var mu = &sync.Mutex{}
-var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+var myBalance = &balance{amount: 50.00, currency: "GBP"}
 
-type currency struct {
-  amount float64
-  code   string
+type balance struct {
+	amount   float64
+	currency string
 }
 
-func (c *currency) Add(i float64) {
-  mu.Lock()
-  c.amount += i
-  mu.Unlock()
+func (b *balance) Add(i float64) {
+	mu.Lock()
+	b.amount += i
+	mu.Unlock()
 }
 
-func (c *currency) Display() string {
-  mu.Lock()
-  amt := c.amount
-  cur := c.code
-  mu.Unlock()
-  return strconv.FormatFloat(amt, 'f', 2, 64) + " " + cur
+func (b *balance) Display() string {
+	mu.Lock()
+	amt := b.amount
+	cur := b.currency
+	mu.Unlock()
+	return strconv.FormatFloat(amt, 'f', 2, 64) + " " + cur
 }
 </pre></code></figure>
 
@@ -157,70 +159,70 @@ func (c *currency) Display() string {
 
 <figure class="go"><code><pre>
 import (
-  "strconv"
-  "sync"
+	"strconv"
+	"sync"
 )
 
-var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+var myBalance = &balance{amount: 50.00, currency: "GBP"}
 
-type currency struct {
-  amount float64
-  code   string
-  mu     sync.Mutex
+type balance struct {
+	amount   float64
+	currency string
+	mu       sync.Mutex
 }
 
-func (c *currency) Add(i float64) {
-  c.mu.Lock()
-  c.amount += i
-  c.mu.Unlock()
+func (b *balance) Add(i float64) {
+	b.mu.Lock()
+	b.amount += i
+	b.mu.Unlock()
 }
 
-func (c *currency) Display() string {
-  c.mu.Lock()
-  defer c.mu.Unlock()
-  return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+func (b *balance) Display() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return strconv.FormatFloat(b.amount, 'f', 2, 64) + " " + b.currency
 }
 </pre></code></figure>
 
 <p>So what's changed here?</p>
 
-<p>Because our mutex is only being used in the context of a <code>currency</code> object, it makes sense to embed it in the <code>currency</code> struct (an idea borrowed from Andrew Gerrard's excellent <a href="http://nf.wh3rd.net/10things/#1">
+<p>Because our mutex is only being used in the context of a <code>balance</code> object, it makes sense to embed it in the <code>balance</code> struct (an idea borrowed from Andrew Gerrard's excellent <a href="http://nf.wh3rd.net/10things/#1">
 10 things you (probably) don't know about Go</a> slideshow). If you look at a larger codebase with lots of mutexes, like Go's <a href="http://golang.org/src/pkg/net/http/server.go">HTTP Server</a>, you can see how this approach helps to keep locking rules nice and clear.</p>
 
 <p>We've also made use of the <a href="http://golang.org/doc/effective_go.html#defer">defer</a> statement, which ensures that the mutex gets unlocked immediately before the function executing it returns. This is common practice for functions that contain multiple return statements, or where the return statement itself is racy like in our example.</p>
 
 <h2>Read Write Mutexes</h2>
 
-<p>In our bank balance example, having a full mutex lock on the <code>Display()</code> function isn't strictly necessary. It would be OK for us to have multiple reads of <code>Balance</code> happening at the same time, so long as nothing is being written.</p>
+<p>In our bank balance example, having a full mutex lock on the <code>Display()</code> function isn't strictly necessary. It would be OK for us to have multiple reads of <code>myBalance</code> happening at the same time, so long as nothing is being written.</p>
 
-<p>We can achieve this using <a href="http://golang.org/pkg/sync/#RWMutex">RWMutex</a>, a reader/writer mutual exclusion lock which allows any number of readers to hold the lock <strong>or</strong> one writer. Depending on the nature of your application and ratio of reads to writes, this may be more efficient than using a full mutex.</p>
+<p>We can achieve this using <a href="http://golang.org/pkg/sync/#RWMutex">RWMutex</a>, a reader/writer mutual exclusion lock which allows any number of readers to hold the lock <strong>or</strong> one writer. This tends to be more efficient than using a full mutex in situations where you have a high ratio of reads to writes.</p>
 
 <p>Reader locks can be opened and closed with <code>RLock()</code> and <code>RUnlock()</code> like so:</p>
 
 <figure class="go"><code><pre>
 import (
-  "strconv"
-  "sync"
+	"strconv"
+	"sync"
 )
 
-var Balance = &amp;currency{amount: 50.00, code: "GBP"}
+var myBalance = &balance{amount: 50.00, currency: "GBP"}
 
-type currency struct {
-  amount float64
-  code   string
-  mu     sync.RWMutex
+type balance struct {
+	amount   float64
+	currency string
+	mu       sync.RWMutex
 }
 
-func (c *currency) Add(i float64) {
-  c.mu.Lock()
-  c.amount += i
-  c.mu.Unlock()
+func (b *balance) Add(i float64) {
+	b.mu.Lock()
+	b.amount += i
+	b.mu.Unlock()
 }
 
-func (c *currency) Display() string {
-  c.mu.RLock()
-  defer c.mu.RUnlock()
-  return strconv.FormatFloat(c.amount, 'f', 2, 64) + " " + c.code
+func (b *balance) Display() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return strconv.FormatFloat(b.amount, 'f', 2, 64) + " " + b.currency
 }
 </pre></code></figure>
 	<div class="footer">
