@@ -58,11 +58,7 @@
 	</div>
 	<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
 
-<p>In case you're new to concurrent programming, I'll quickly explain the problem.</p>
-
-<p>Race conditions can occur when two or more goroutines try to use a piece of shared data at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
-
-<p>As an illustration, here's an example where two goroutines try to add money to a shared bank balance at the same time:</p>
+<p>In case you're not familiar with race conditions, I'll quickly explain the risk with an example. Consider a situation where you have two goroutines try to add money to a shared bank balance at the same time, like so:</p>
 
 <table>
 <tr><th>Instruction</th><th>Goroutine 1</th><th>Goroutine 2</th><th>Bank Balance</th></tr>
@@ -79,6 +75,8 @@
 <p>The Go blog describes the downsides:</p>
 
 <blockquote>Race conditions are among the most insidious and elusive programming errors. They typically cause erratic and mysterious failures, often long after the code has been deployed to production. While Go's concurrency mechanisms make it easy to write clean concurrent code, they don't prevent race conditions. Care, diligence, and testing are required.</blockquote>
+
+<p>This specific type race condition is known as a <em>data race</em>. And they can occur when two or more goroutines try to use a piece of shared data (in this example the bank balance) at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
 
 <p>Go provides a number of tools to help us avoid data races. These include <a href="http://golangtutorials.blogspot.co.uk/2011/06/channels-in-go.html">Channels</a> for communicating data between goroutines, a <a href="http://www.goinggo.net/2013/09/detecting-race-conditions-with-go.html">Race Detector</a> for monitoring unsynchronized access to memory at runtime, and a variety of 'locking' features in the <a href="http://golang.org/pkg/sync/atomic/">Atomic</a> and <a href="http://golang.org/pkg/sync/">Sync</a> packages. One of these features are Mutual Exclusion locks, or <em>mutexes</em>, which we'll be looking at in the rest of this post.</p>
 
@@ -109,9 +107,9 @@ func (b *balance) Display() string {
 }
 </pre></code></figure>
 
-<p>We know that if there are multiple goroutines using this code and calling <code>myBalance.Add()</code> and <code>myBalance.Display()</code>, then at some point a race condition is likely to occur.</p>
+<p>We know that if there are multiple goroutines using this code and calling <code>myBalance.Add()</code> and <code>myBalance.Display()</code> frequently enough, then at some point a data race is likely to occur.</p>
 
-<p>One way we could prevent a data race is to ensure that if one goroutine is using the <code>myBalance</code> variable, then all other goroutines are prevented (or <em>mutually excluded</em>) from using it at the same time.</p>
+<p>One way we could prevent the data race is to ensure that if one goroutine is using the <code>myBalance</code> variable, then all other goroutines are prevented (or <em>mutually excluded</em>) from using it at the same time.</p>
 
 <p>We can do this by creating a <a href="http://golang.org/pkg/sync/#Mutex">Mutex</a> and setting a <em>lock</em> around particular lines of code with it. While one goroutine holds the lock, all other goroutines are prevented from executing any lines of code protected by the same mutex, and are forced to wait until the lock is yielded before they can proceed.</p>
 
@@ -192,6 +190,8 @@ func (b *balance) Display() string {
 <p>We've also made use of the <a href="http://golang.org/doc/effective_go.html#defer">defer</a> statement, which ensures that the mutex gets unlocked immediately before the function executing it returns. This is common practice for functions that contain multiple return statements, or where the return statement itself is racy like in our example.</p>
 
 <h2>Read Write Mutexes</h2>
+
+<p>It is important point to emphasize that data races aren't a concern if the only thing you are doing concurrently is <em>reading</em> the shared data.</p>
 
 <p>In our bank balance example, having a full mutex lock on the <code>Display()</code> function isn't strictly necessary. It would be OK for us to have multiple reads of <code>myBalance</code> happening at the same time, so long as nothing is being written.</p>
 
