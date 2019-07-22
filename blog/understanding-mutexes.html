@@ -76,7 +76,7 @@
 
 <blockquote>Race conditions are among the most insidious and elusive programming errors. They typically cause erratic and mysterious failures, often long after the code has been deployed to production. While Go's concurrency mechanisms make it easy to write clean concurrent code, they don't prevent race conditions. Care, diligence, and testing are required.</blockquote>
 
-<p>This specific type race condition is known as a <em>data race</em>. And they can occur when two or more goroutines try to use a piece of shared data (in this example the bank balance) at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
+<p>This specific type of race condition is known as a <em>data race</em>. And they can occur when two or more goroutines try to use a piece of shared data (in this example the bank balance) at the same time, but the result of their operations is dependent on the exact order that the scheduler executes their instructions.</p>
 
 <p>Go provides a number of tools to help us avoid data races. These include <a href="http://golangtutorials.blogspot.co.uk/2011/06/channels-in-go.html">Channels</a> for communicating data between goroutines, a <a href="http://www.goinggo.net/2013/09/detecting-race-conditions-with-go.html">Race Detector</a> for monitoring unsynchronized access to memory at runtime, and a variety of 'locking' features in the <a href="http://golang.org/pkg/sync/atomic/">Atomic</a> and <a href="http://golang.org/pkg/sync/">Sync</a> packages. One of these features are Mutual Exclusion locks, or <em>mutexes</em>, which we'll be looking at in the rest of this post.</p>
 
