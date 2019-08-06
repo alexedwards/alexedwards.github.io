@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2019">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>Interfaces Explained - Alex Edwards</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,700i,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="https://www.alexedwards.net/blog/interfaces-explained"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <main class="wrapper clearfix">
+      
+<div class="lets-go clearfix">
+	<div>
+		
+			<h3>Not sure how to structure your Go web application?</h3>
+			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+		
+	</div>
+	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+</div>
+<article>
+	<h1>Interfaces Explained</h1>
+	<div class="metadata">
+		<span class="dates">
+			
+			Posted on: 6th August 2019
+			
+		</span>
+		
+		<span class="tags">
+			Filed under: <a href="/blog/category/golang" rel="tag">golang</a><a href="/blog/category/tutorial" rel="tag">tutorial</a>
+		</span>
+		
+	</div>
+	<p>For the past few months I've been running <a href="https://goo.gl/forms/Wvh42OXhvCHco5cw2">a survey</a> which asks people what they're finding difficult about learning Go. And something that keeps coming up in the responses is the concept of <em>interfaces</em>.</p>
+
+<p>I get that. Go was the first language I ever used that had interfaces, and I remember at the time that the whole concept felt pretty confusing. So in this tutorial I want to do a few things:</p>
+
+<ol>
+<li>Provide a plain-English explanation of what interfaces are;</li>
+
+<li>Explain why they are useful and how you might want to use them in your code;</li>
+
+<li>Talk about what <code>interface{}</code> (the empty interface) is;</li>
+
+<li>And run through some of the helpful interface types that you'll find in the standard library.</li>
+</ol>
+
+<h2 id="what-is-an-interface">So what is an interface?</h2>
+
+<p>An interface type in Go is kind of like a <em>definition</em>. It defines and describes the exact methods that <em>some other type</em> must have.</p>
+
+<p>One example of an interface type from the standard library is the <a href="https://golang.org/pkg/fmt/#Stringer"><code>fmt.Stringer</code></a> interface, which looks like this:</p>
+
+<figure><code class="go"><pre>
+type Stringer interface {
+    String() string
+}
+</pre></code></figure>
+
+<p>We say that something <em>satisfies this interface</em> (or <em>implements this interface</em>) if it has a method with the exact signature <code>String() string</code>.</p>
+
+<p>For example, the following <code>Book</code> type satisfies the interface because it has a <code>String() string</code> method:</p>
+
+<figure><code class="go"><pre>
+type Book struct {
+    Title  string
+    Author string
+}
+
+func (b Book) String() string {
+    return fmt.Sprintf("Book: %s - %s", b.Title, b.Author)
+}
+</pre></code></figure>
+
+<p>It's not really important what this <code>Book</code> type is or does. The only thing that matters is that is has a method called <code>String()</code> which returns a <code>string</code> value.</p>
+
+<p>Or, as another example, the following <code>Count</code> type <em>also</em> satisfies the <code>fmt.Stringer</code> interface &mdash; again because it has a method with the exact signature <code>String() string</code>.</p>
+
+<figure><code class="go"><pre>
+type Count int
+
+func (c Count) String() string {
+    return strconv.Itoa(int(c))
+}
+</pre></code></figure>
+
+<p>The important thing to grasp is that we have two different types, <code>Book</code> and <code>Count</code>, which do different things. But the thing they have in common is that they both satisfy the <code>fmt.Stringer</code> interface.</p>
+
+<p>You can think of this the other way around too. If you know that an object satisfies the <code>fmt.Stringer</code> interface, you can rely on it having a method with the exact signature <code>String() string</code> that you can call.</p>
+
+<p>Now for the important part.</p>
+
+<p><em>Wherever you see declaration in Go (such as a variable, function parameter or struct field) which has an interface type, you can use an object of any type <strong>so long as it satisfies the interface</em></strong>.</p>
+
+<p>For example, let's say that you have the following function:</p>
+
+<figure><code class="go"><pre>
+func WriteLog(s fmt.Stringer) {
+    log.Println(s.String())
+}
+</pre></code></figure>
+
+<p>Because this <code>WriteLog()</code> function uses the <code>fmt.Stringer</code> interface type in its parameter declaration, we can pass in any object that satisfies the <code>fmt.Stringer</code> interface. For example, we could pass either of the <code>Book</code> and <code>Count</code> types that we made earlier to the <code>WriteLog()</code> method, and the code would work OK.</p>
+
+<p>Additionally, because the object being passed in satisfies the <code>fmt.Stringer</code> interface, we <em>know</em> that it has a <code>String() string</code> method that the <code>WriteLog()</code> function can safely call.</p>
+
+<p>Let's put this together in an example, which gives us a peek into the power of interfaces.</p>
+
+<figure><code class="go"><pre>
+package main
+
+import (
+    "fmt"
+    "strconv"
+    "log"
+)
+
+// Declare a Book type which satisfies the fmt.Stringer interface.
+type Book struct {
+    Title  string
+    Author string
+}
+
+func (b Book) String() string {
+    return fmt.Sprintf("Book: %s - %s", b.Title, b.Author)
+}
+
+// Declare a Count type which satisfies the fmt.Stringer interface.
+type Count int
+
+func (c Count) String() string {
+    return strconv.Itoa(int(c))
+}
+
+// Declare a WriteLog() function which takes any object that satisfies
+// the fmt.Stringer interface as a parameter.
+func WriteLog(s fmt.Stringer) {
+    log.Println(s.String())
+}
+
+func main() {
+    // Initialize a Count object and pass it to WriteLog().
+    book := Book{"Alice in Wonderland", "Lewis Carrol"}
+    WriteLog(book)
+
+    // Initialize a Count object and pass it to WriteLog().
+    count := Count(3)
+    WriteLog(count)
+}
+</pre></code></figure>
+
+<p>This is pretty cool. In the <code>main</code> function we've created different <code>Book</code> and <code>Count</code> types, but passed both of them to the <em>same</em> <code>WriteLog()</code> function. In turn, that calls their relevant <code>String()</code> functions and logs the result.</p>
+
+<p>If you <a href="https://play.golang.org/p/DDQOFHxfOF8">run the code</a>, you should get some output which looks like this:</p>
+
+<figure class="shell"><code><pre>
+2009/11/10 23:00:00 Book: Alice in Wonderland - Lewis Carrol
+2009/11/10 23:00:00 3
+</pre></code></figure>
+
+<p>I don't want to labor the point here too much. But the key thing to take away is that by using a interface type in our <code>WriteLog()</code> function declaration, we have made the function agnostic (or flexible) about the exact <em>type</em> of object it receives. All that matters is <em>what methods it has</em>. </p>
+
+<h2 id="why-are-interfaces-useful">Why are interfaces useful?</h2>
+
+<p>There are all sorts of reasons that you might end up using a interface in Go, but in my experience the three most common are:</p>
+
+<ol>
+<li>To help reduce duplication or boilerplate code.</li>
+<li>To make it easier to use mocks instead of real objects in unit tests.</li>
+<li>As an architectural tool, to help enforce decoupling between parts of your codebase.</li>
+</ol>
+
+<p>Let's step through these three use-cases and explore them in a bit more detail.</p>
+
+<h3 id="reducing-boilerplate-code">Reducing boilerplate code</h3>
+
+<p>OK, imagine that we have a <code>Customer</code> struct containing some data about a customer. In one part of our codebase we want to write the customer information to a <a href="https://golang.org/pkg/bytes/#Buffer"><code>bytes.Buffer</code></a>, and in another part of our codebase we want to write the customer information to an <a href="https://golang.org/pkg/os/#File"><code>os.File</code></a> on disk. But in both cases, we want to serialize the customer struct to JSON first.</p>
+
+<p>This is a scenario where we can use Go's interfaces to help reduce boilerplate code. </p>
+
+<p>The first thing you need to know is that Go has an <a href="https://golang.org/pkg/io/#Writer"><code>io.Writer</code></a> interface type which looks like this:</p>
+
+<figure><code class="go"><pre>
+type Writer interface {
+        Write(p []byte) (n int, err error)
+}
+</pre></code></figure>
+<p>And we can leverage the fact that both <a href="https://golang.org/pkg/os/#pkg-variables"><code>bytes.Buffer</code></a> and the <a href="https://golang.org/pkg/os/#File"><code>os.File</code></a> type satisfy this interface, due to them having the <a href="https://golang.org/pkg/bytes/#Buffer.Write"><code>bytes.Buffer.Write()</code></a> and <a href="https://golang.org/pkg/bytes/#Buffer.Write"><code>os.File.Write()</code></a> methods respectively. </p>
+
+<p>Let's take a look at a simple implementation:</p>
+
+<figure><code class="go"><pre>
+package main
+
+import (
+    "encoding/json"
+    "io"
+    "log"
+    "os"
+)
+
+// Create a Customer type
+type Customer struct {
+    Name string
+    Age  int
+}
+
+// Implement a WriteJSON method that takes an io.Writer as the parameter.
+// It marshals the customer struct to JSON, and if the marshal worked
+// successfully, then calls the relevant io.Writer's Write() method.
+func (c *Customer) WriteJSON(w io.Writer) error {
+    js, err := json.Marshal(c)
+    if err != nil {
+        return err
+    }
+
+    _, err = w.Write(js)
+    return err
+}
+
+func main() {
+    // Initialize a customer struct.
+    c := &amp;Customer{Name: "Alice", Age: 21}
+
+    // We can then call the WriteJSON method using a buffer...
+    var buf bytes.Buffer
+    err := c.WriteJSON(buf)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Or using a file.
+    f, err := os.Create("/tmp/customer")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer f.Close()
+
+
+    err = c.WriteJSON(f)
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+</pre></code></figure>
+
+<p>Of course, this is just a toy example (and there are other ways we could structure the code to achieve the same end result). But it nicely illustrates the benefit of using an interface &mdash; we can create the <code>Customer.WriteJSON()</code> method once, and we can call that method any time that we want to write to something that satisfies the <code>io.Writer</code> interface. </p>
+
+<p>But if you're new to Go, this still begs a couple of questions: <em>How do you know that the <code>io.Writer</code> interface even exists? And how do you know in advance that <code>bytes.Buffer</code> and <code>os.File</code> both satisfy it?</em></p>
+
+<p>There's no easy shortcut here I'm afraid &mdash; you simply need to build up experience and familiarity with the interfaces and different types in the standard library. Spending time thoroughly reading the standard library documentation, and looking at other people's code will help here. But as a quick-start I've included a list of some of the most useful interface types at the <a href="#useful-interface-types">end of this post</a>.</p>
+
+<p>But even if you don't use the interfaces from the standard library, there's nothing to stop you from creating and using <em>your own interface types</em>. We'll cover how to do that next.</p>
+
+<h3 id="unit-testing-and-mocking">Unit testing and mocking</h3>
+
+<p>To help illustrate how interfaces can be used to assist in unit testing, let's take a look at a slightly more complex example.</p>
+
+<p>Let's say you run a shop, and you store information about the number of customers and sales in a PostgreSQL database. You want to write some code that calculates the sales rate (i.e. sales per customer) for the past 24 hours, rounded to 2 decimal places.</p>
+
+<p>A minimal implementation of the code for that could look something like this: </p>
+
+<figure class="file"><code class="go"><pre>
+// File: main.go
+package main
+
+import (
+    "fmt"
+    "log"
+    "time"
+    "database/sql"
+    _ "github.com/lib/pq"
+)
+
+type ShopDB struct {
+    *sql.DB
+}
+
+func (sdb *ShopDB) CountCustomers(since time.Time) (int, error) {
+    var count int
+    err := sdb.QueryRow("SELECT count(*) FROM customers WHERE timestamp &gt; $1", since).Scan(&amp;count)
+    return count, err
+}
+
+func (sdb *ShopDB) CountSales(since time.Time) (int, error) {
+    var count int
+    err := sdb.QueryRow("SELECT count(*) FROM sales WHERE timestamp &gt; $1", since).Scan(&amp;count)
+    return count, err
+}
+
+func main() {
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
+
+    shopDB := &amp;ShopDB{db}
+    sr, err := calculateSalesRate(shopDB)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf(sr)
+}
+
+func calculateSalesRate(sdb *ShopDB) (string, error) {
+    since := time.Now().Sub(24 * time.Hour)
+
+    sales, err := sdb.CountSales(since)
+    if err != nil {
+        return "", err
+    }
+
+    customers, err := sdb.CountCustomers(since)
+    if err != nil {
+        return "", err
+    }
+
+    rate := float64(sales) / float64(customers)
+    return fmt.Sprintf("%.2f", rate), nil
+}
+</pre></code></figure>
+
+<p>Now, what if we want to create a unit test for the <code>calculateSalesRate()</code> function to make sure that the math logic in it is working correctly?</p>
+
+<p>Currently this is a bit of a pain. We would need to set up a test instance of our PostgreSQL database, along with setup and teardown scripts to scaffold the database with dummy data. That's quite lot of work when all we really want to do is test our math logic.</p>
+
+<p>So what can we do? You guessed it &mdash; interfaces to the rescue!</p>
+
+<p>A solution here is to create our own interface type which describes the <code>CountSales()</code> and <code>CountCustomers()</code> methods that the <code>calculateSalesRate()</code> function relies on. Then we can update the signature of <code>calculateSalesRate()</code> to use this custom interface type as a parameter, instead of the concrete <code>*ShopDB</code> type.</p>
+
+<p>Like so:</p>
+
+<figure class="file"><code class="go"><pre>
+// File: main.go
+package main
+
+import (
+    "fmt"
+    "log"
+    "time"
+    "database/sql"
+    _ "github.com/lib/pq"
+)
+
+// Create our own custom ShopModel interface. Notice that it is perfectly
+// fine for an interface to describe multiple methods, and that it should
+// describe input parameter types as well as return value types.
+type ShopModel interface {
+    CountCustomers(time.Time) (int, error)
+    CountSales(time.Time) (int, error)
+}
+
+// The ShopDB type satisfies our new custom ShopModel interface, because it
+// has the two necessary methods -- CountCustomers() and CountSales().
+type ShopDB struct {
+    *sql.DB
+}
+
+func (sdb *ShopDB) CountCustomers(since time.Time) (int, error) {
+    var count int
+    err := sdb.QueryRow("SELECT count(*) FROM customers WHERE timestamp &gt; $1", since).Scan(&amp;count)
+    return count, err
+}
+
+func (sdb *ShopDB) CountSales(since time.Time) (int, error) {
+    var count int
+    err := sdb.QueryRow("SELECT count(*) FROM sales WHERE timestamp &gt; $1", since).Scan(&amp;count)
+    return count, err
+}
+
+func main() {
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
+
+    shopDB := &amp;ShopDB{db}
+
+    sr := calculateSalesRate(shopDB)
+    fmt.Printf(sr)
+}
+
+// Swap this to use the ShopModel interface type as the parameter, instead of the
+// concrete *ShopDB type.
+func calculateSalesRate(sm ShopModel) string {
+    since := time.Now().Sub(24 * time.Hour)
+
+    sales, err := sm.CountSales(since)
+    if err != nil {
+        return "", err
+    }
+
+    customers, err := sm.CountCustomers(since)
+    if err != nil {
+        return "", err
+    }
+
+    rate := float64(sales) / float64(customers)
+    return fmt.Sprintf("%.2f", rate), nil
+}
+</pre></code></figure>
+
+<p>With that done, it's straightforward for us to create a mock which satisfies our <code>ShopModel</code> interface. We can then use that mock during unit tests to test that the math logic in our <code>calculateSalesRate()</code> function works correctly. Like so:</p>
+
+<figure class="file"><code class="go"><pre>
+// File: main_test.go
+package main
+
+import (
+    "testing"
+)
+
+type MockShopDB struct{}
+
+func (m *MockShopDB) CountCustomers() (int, error) {
+    return 1000, nil
+}
+
+func (m *MockShopDB) CountSales() (int, error) {
+    return 333, nil
+}
+
+func TestCalculateSalesRate(t *testing.T) {
+    // Initialize the mock.
+    m := &amp;MockShopDB{}
+    // Pass the mock to the calculateSalesRate() function.
+    sr := calculateSalesRate(m)
+
+    // Check that the return value is as expected, based on the mocked
+    // inputs.
+    exp := "0.33"
+    if sr != exp {
+        t.Fatalf("got %v; expected %v", sr, exp)
+    }
+}
+</pre></code></figure>
+
+<p>You could run that test now, everything should work fine.</p>
+
+<h3 id="application-architecture">Application architecture</h3>
+
+<p>In the previous examples, we've seen how interfaces can be used to decouple certain parts of your code from relying on concrete types. For instance, the <code>calculateSalesRate()</code> function is totally flexible about what you pass to it &mdash; the only thing that matters is that it satisfies the <code>ShopModel</code> interface.</p>
+
+<p>You can extend this idea to create decoupled 'layers' in larger projects. </p>
+
+<p>Let's say that you are building a web application which interacts with a database. If you create an interface that describes the exact methods for interacting with the database, you can refer to the interface throughout your HTTP handlers instead of a concrete type. Because the HTTP handlers only refer to an interface, this helps to decouple the HTTP layer and database-interaction layer. It makes it easier to work on the layers independently, and to swap out one layer in the future without affecting the other.</p>
+
+<p>I've written about this pattern in <a href="https://www.alexedwards.net/blog/organising-database-access">this previous blog post</a>, which goes into more detail and provides some practical example code.</p>
+
+<h2 id="what-is-the-empty-interface">What is the empty interface?</h2>
+
+<p>If you've been programming with Go for a while, you've probably come across the <em>empty interface type</em>: <code>interface{}</code>. This can be a bit confusing, but I'll try to explain it here.</p>
+
+<p>At the start of this blog post I said:</p>
+
+<blockquote>
+  <p>An interface type in Go is kind of like a <em>definition</em>. It defines and describes the exact methods that <em>some other type</em> must have.</p>
+</blockquote>
+
+<p>The empty interface type essentially <em>describes no methods</em>. It has no rules. And because of that, it follows that any and every object satisfies the empty interface.</p>
+
+<p>Or to put it in a more plain-English way, the empty interface type <code>interface{}</code> is kind of like a wildcard. Wherever you see it in a declaration (such as a variable, function parameter or struct field) you can use an object <em>of any type</em>.</p>
+
+<p>Take a look at the following code:</p>
+
+<figure><code class="go"><pre>
+package main
+
+import "fmt"
+
+
+func main() {
+    person := make(map[string]interface{}, 0)
+
+    person["name"] = "Alice"
+    person["age"] = 21
+    person["height"] = 167.64
+
+    fmt.Printf("%+v", person)
+}
+</pre></code></figure>
+
+<p>In this code snippet we initialize a <code>person</code> map, which uses the <code>string</code> type for keys and the empty interface type <code>interface{}</code> for values. We've assigned three different types as the map values (a <code>string</code>, <code>int</code> and <code>float32</code>) &mdash; and that's OK. Because objects of any and every type satisfy the empty interface, the code will work just fine.</p>
+
+<p>You can <a href="https://play.golang.org/p/GwxCQkLYNrq">give it a try here</a>, and when you run it you should see some output which looks like this:</p>
+
+<figure class="shell"><code><pre>
+map[age:21 height:167.64 name:Alice]
+</pre></code></figure>
+
+<p>But there's an important thing to point out when it comes to retrieving and using a value from this map.</p>
+
+<p>For example, let's say that we want to get the <code>"age"</code> value and increment it by 1. If you write something like the following code, it will fail to compile:</p>
+
+<figure><code class="go"><pre>
+package main
+
+import "log"
+
+func main() {
+    person := make(map[string]interface{}, 0)
+
+    person["name"] = "Alice"
+    person["age"] = 21
+    person["height"] = 167.64
+
+    person["age"] = person["age"] + 1
+
+    fmt.Printf("%+v", person)
+}
+</pre></code></figure>
+
+<p>And you'll get the following error message:</p>
+
+<figure class="shell"><code><pre>
+invalid operation: person["age"] + 1 (mismatched types interface {} and int)
+</pre></code></figure>
+
+<p>This happens because the value stored in the map takes on the type <code>interface{}</code>, and ceases to have it's original, underlying, type of <code>int</code>. Because it's no longer an <code>int</code> type we cannot add 1 to it.</p>
+
+<p>To get around this this, you need to type assert the value back to an <code>int</code> before using it. Like so:</p>
+
+<figure><code class="go"><pre>
+package main
+
+import "log"
+
+func main() {
+    person := make(map[string]interface{}, 0)
+
+    person["name"] = "Alice"
+    person["age"] = 21
+    person["height"] = 167.64
+
+    age, ok := person["age"].(int)
+    if !ok {
+        log.Fatal("could not assert value to int")
+        return
+    }
+
+    person["age"] = age + 1
+
+    log.Printf("%+v", person)
+}
+</pre></code></figure>
+
+<p>If you <a href="https://play.golang.org/p/3cB9emSdcRX">run this now</a>, everything should work as expected:</p>
+
+<figure class="shell"><code><pre>
+2009/11/10 23:00:00 map[age:22 height:167.64 name:Alice]
+</pre></code></figure>
+
+<p>So when should you use the empty interface type in your own code?</p>
+
+<p>The answer is <em>probably not that often</em>. If you find yourself reaching for it, pause and consider whether using <code>interface{}</code> is really the right option. As a general rule it's clearer, safer and more performant to use concrete types &mdash; or non-empty interface types &mdash; instead. In the code snippet above, it would have been more appropriate to define a <code>Person</code> struct with relevant typed fields similar to this:</p>
+
+<figure><code class="go"><pre>
+type Person struct {
+    Name   string
+    Age    int
+    Height float32
+}
+</pre></code></figure>
+
+<p>But that said, the empty interface is useful in situations where you need to accept and work with unpredictable or user-defined types. You'll see it used in a a number of places throughout the standard library for that exact reason, such as in the <a href="https://golang.org/pkg/encoding/gob/#Encoder.Encode"><code>gob.Encode</code></a>, <a href="https://golang.org/pkg/fmt/#Print"><code>fmt.Print</code></a> and <a href="https://golang.org/pkg/text/template/#Template.Execute"><code>template.Execute</code></a> functions.</p>
+
+<h2 id="useful-interface-types">Useful interface types</h2>
+
+<p>Lastly, here's a short list of some of the most common and useful interfaces in the standard library. If you're not familiar with them already, then I recommend taking out a bit of time to look at the relevant documentation for them.</p>
+
+<ul>
+<li><a href="https://golang.org/pkg/builtin/#error">builtin.Error</a></li>
+<li><a href="https://golang.org/pkg/fmt/#Stringer">fmt.Stringer</a></li>
+<li><a href="https://golang.org/pkg/io/#Reader">io.Reader</a></li>
+<li><a href="https://golang.org/pkg/io/#Writer">io.Writer</a></li>
+<li><a href="https://golang.org/pkg/io/#ReadWriteCloser">io.ReadWriteCloser</a></li>
+<li><a href="https://golang.org/pkg/net/http/#ResponseWriter">http.ResponseWriter</a></li>
+<li><a href="https://golang.org/pkg/net/http/#Handler">http.Handler</a></li>
+</ul>
+
+<p>There is also a longer and more comprehensive listing of standard libraries available in <a href="https://gist.github.com/asukakenji/ac8a05644a2e98f1d5ea8c299541fce9">this gist</a>.</p>
+	<div class="footer">
+		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+	</div>
+</article>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
+  });
+</script>
+    </main>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2019</div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
