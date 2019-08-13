@@ -173,6 +173,7 @@ type Writer interface {
 package main
 
 import (
+    "bytes"
     "encoding/json"
     "io"
     "log"
@@ -200,11 +201,11 @@ func (c *Customer) WriteJSON(w io.Writer) error {
 
 func main() {
     // Initialize a customer struct.
-    c := &amp;Customer{Name: "Alice", Age: 21}
+    c := &Customer{Name: "Alice", Age: 21}
 
     // We can then call the WriteJSON method using a buffer...
     var buf bytes.Buffer
-    err := c.WriteJSON(buf)
+    err := c.WriteJSON(&buf)
     if err != nil {
         log.Fatal(err)
     }
@@ -258,13 +259,13 @@ type ShopDB struct {
 
 func (sdb *ShopDB) CountCustomers(since time.Time) (int, error) {
     var count int
-    err := sdb.QueryRow("SELECT count(*) FROM customers WHERE timestamp &gt; $1", since).Scan(&amp;count)
+    err := sdb.QueryRow("SELECT count(*) FROM customers WHERE timestamp > $1", since).Scan(&count)
     return count, err
 }
 
 func (sdb *ShopDB) CountSales(since time.Time) (int, error) {
     var count int
-    err := sdb.QueryRow("SELECT count(*) FROM sales WHERE timestamp &gt; $1", since).Scan(&amp;count)
+    err := sdb.QueryRow("SELECT count(*) FROM sales WHERE timestamp > $1", since).Scan(&count)
     return count, err
 }
 
@@ -275,7 +276,7 @@ func main() {
     }
     defer db.Close()
 
-    shopDB := &amp;ShopDB{db}
+    shopDB := &ShopDB{db}
     sr, err := calculateSalesRate(shopDB)
     if err != nil {
         log.Fatal(err)
@@ -284,7 +285,7 @@ func main() {
 }
 
 func calculateSalesRate(sdb *ShopDB) (string, error) {
-    since := time.Now().Sub(24 * time.Hour)
+    since := time.Now().Add(-24 * time.Hour)
 
     sales, err := sdb.CountSales(since)
     if err != nil {
@@ -316,69 +317,72 @@ func calculateSalesRate(sdb *ShopDB) (string, error) {
 package main
 
 import (
-    "fmt"
-    "log"
-    "time"
-    "database/sql"
-    _ "github.com/lib/pq"
+	"database/sql"
+	"fmt"
+	"log"
+	"time"
+
+	_ "github.com/lib/pq"
 )
 
 // Create our own custom ShopModel interface. Notice that it is perfectly
 // fine for an interface to describe multiple methods, and that it should
 // describe input parameter types as well as return value types.
 type ShopModel interface {
-    CountCustomers(time.Time) (int, error)
-    CountSales(time.Time) (int, error)
+	CountCustomers(time.Time) (int, error)
+	CountSales(time.Time) (int, error)
 }
 
 // The ShopDB type satisfies our new custom ShopModel interface, because it
 // has the two necessary methods -- CountCustomers() and CountSales().
 type ShopDB struct {
-    *sql.DB
+	*sql.DB
 }
 
 func (sdb *ShopDB) CountCustomers(since time.Time) (int, error) {
-    var count int
-    err := sdb.QueryRow("SELECT count(*) FROM customers WHERE timestamp &gt; $1", since).Scan(&amp;count)
-    return count, err
+	var count int
+	err := sdb.QueryRow("SELECT count(*) FROM customers WHERE timestamp > $1", since).Scan(&count)
+	return count, err
 }
 
 func (sdb *ShopDB) CountSales(since time.Time) (int, error) {
-    var count int
-    err := sdb.QueryRow("SELECT count(*) FROM sales WHERE timestamp &gt; $1", since).Scan(&amp;count)
-    return count, err
+	var count int
+	err := sdb.QueryRow("SELECT count(*) FROM sales WHERE timestamp > $1", since).Scan(&count)
+	return count, err
 }
 
 func main() {
-    db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer db.Close()
+	db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
-    shopDB := &amp;ShopDB{db}
-
-    sr := calculateSalesRate(shopDB)
-    fmt.Printf(sr)
+	shopDB := &ShopDB{db}
+	sr, err := calculateSalesRate(shopDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf(sr)
 }
 
 // Swap this to use the ShopModel interface type as the parameter, instead of the
 // concrete *ShopDB type.
-func calculateSalesRate(sm ShopModel) string {
-    since := time.Now().Sub(24 * time.Hour)
+func calculateSalesRate(sm ShopModel) (string, error) {
+	since := time.Now().Add(-24 * time.Hour)
 
-    sales, err := sm.CountSales(since)
-    if err != nil {
-        return "", err
-    }
+	sales, err := sm.CountSales(since)
+	if err != nil {
+		return "", err
+	}
 
-    customers, err := sm.CountCustomers(since)
-    if err != nil {
-        return "", err
-    }
+	customers, err := sm.CountCustomers(since)
+	if err != nil {
+		return "", err
+	}
 
-    rate := float64(sales) / float64(customers)
-    return fmt.Sprintf("%.2f", rate), nil
+	rate := float64(sales) / float64(customers)
+	return fmt.Sprintf("%.2f", rate), nil
 }
 </pre></code></figure>
 
@@ -390,23 +394,27 @@ package main
 
 import (
     "testing"
+    "time"
 )
 
 type MockShopDB struct{}
 
-func (m *MockShopDB) CountCustomers() (int, error) {
+func (m *MockShopDB) CountCustomers(_ time.Time) (int, error) {
     return 1000, nil
 }
 
-func (m *MockShopDB) CountSales() (int, error) {
+func (m *MockShopDB) CountSales(_ time.Time) (int, error) {
     return 333, nil
 }
 
 func TestCalculateSalesRate(t *testing.T) {
     // Initialize the mock.
-    m := &amp;MockShopDB{}
+    m := &MockShopDB{}
     // Pass the mock to the calculateSalesRate() function.
-    sr := calculateSalesRate(m)
+    sr, err := calculateSalesRate(m)
+    if err != nil {
+        t.Fatal(err)
+    }
 
     // Check that the return value is as expected, based on the mocked
     // inputs.
