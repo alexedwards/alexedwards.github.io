@@ -47,7 +47,7 @@
 	<div class="metadata">
 		<span class="dates">
 			
-			Posted on: 26th February 2016
+			Last updated: 17th August 2019
 			
 		</span>
 		
@@ -64,21 +64,13 @@
 
 <p>First up we need to install a Go driver (or <em>client</em>) for Redis. A list of available drivers is located at <a href="http://redis.io/clients#go">http://redis.io/clients#go</a>.</p>
 
-<p>Throughout this post we'll be using the <a href="https://github.com/mediocregopher/radix.v2">Radix.v2</a> driver. It's well maintained, and I've found it's API clean and straightforward to use. If you're following along you'll need to <code>go get</code> it:</p>
+<p>The two drivers that I would recommend are <a href="https://github.com/gomodule/redigo">gomodule/redigo</a> and <a href="https://github.com/mediocregopher/radix">mediocregopher/radix</a>. They are both well designed and actively maintained.</p>
 
-<figure class="shell"><code><pre>
-$ go get github.com/mediocregopher/radix.v2
-</pre></code></figure>
+<p>The key differences are that Redigo is completely self-contained (with no external dependencies) and it has a smaller, simpler API than Radix. Radix, on the other hand, provides support for Redis sentinel and cluster implementations.</p>
 
-<p>Notice that the Radix.v2 package is broken up into 6 sub-packages (<code>cluster</code>, <code>pool</code>, <code>pubsub</code>, <code>redis</code>, <code>sentinel</code> and <code>util</code>). To begin with we'll only need the functionality in the <code>redis</code> package, so our import statements should look like:</p>
+<p>Throughout this post we'll be using the Redigo driver.</p>
 
-<figure class="plain"><code class="go"><pre>
-import (
-    "github.com/mediocregopher/radix.v2/redis"
-)
-</pre></code></figure>
-
-<h2>Getting started with Radix.v2 and Go</h2>
+<h2>Getting started with Redis and Go</h2>
 
 <p>As an example, let's say that we have an online record shop and want to store information about the albums for sale in Redis.</p>
 
@@ -91,126 +83,121 @@ import (
 <samp>OK</samp>
 </pre></code></figure>
 
-<p>To do the same thing from a Go application, we need to combine a couple of functions from the Radix.v2 <code>redis</code> package.</p>
+<p>To do the same thing from a Go application, we need to combine a couple of functions from the <code>gomodule/redigo/redis</code> package.</p>
 
-<p>The first is the <code>Dial()</code> function, which returns a new connection (or in Radix.v2 terms, <em>client</em>) to our Redis server.</p>
+<ul>
+<li>The first is the <code>Dial()</code> function, which returns a new connection to our Redis server.</li>
+<li>The second is the <code>Do()</code> method, which sends a command to our Redis server across the connection. This returns the reply from Redis as an <code>interface{}</code> type, along with any error if applicable.</li>
+</ul>
 
-<p>The second is the <code>client.Cmd()</code> method, which sends a command to our Redis server across the connection. This always returns a pointer to a <code>Resp</code> object, which holds the reply from our command (or any error message if it didn't work).</code></p>
-
-<p>It's quite straightforward in practice:</p>
+<p>Using them is quite straightforward in practice:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
-    "fmt"
-    // Import the Radix.v2 redis package.
-    "github.com/mediocregopher/radix.v2/redis"
-    "log"
+	"fmt"
+	"log"
+
+	// Import the redigo/redis package.
+	"github.com/gomodule/redigo/redis"
 )
 
 func main() {
-    // Establish a connection to the Redis server listening on port 6379 of the
-    // local machine. 6379 is the default port, so unless you've already
-    // changed the Redis configuration file this should work.
-    conn, err := redis.Dial("tcp", "localhost:6379")
-    if err != nil {
-        log.Fatal(err)
-    }
-    // Importantly, use defer to ensure the connection is always properly
-    // closed before exiting the main() function.
-    defer conn.Close()
+	// Establish a connection to the Redis server listening on port
+	// 6379 of the local machine. 6379 is the default port, so unless
+	// you've already changed the Redis configuration file this should
+	// work.
+	conn, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Importantly, use defer to ensure the connection is always
+	// properly closed before exiting the main() function.
+	defer conn.Close()
 
-    // Send our command across the connection. The first parameter to Cmd()
-    // is always the name of the Redis command (in this example HMSET),
-    // optionally followed by any necessary arguments (in this example the
-    // key, followed by the various hash fields and values).
-    resp := conn.Cmd("HMSET", "album:1", "title", "Electric Ladyland", "artist", "Jimi Hendrix", "price", 4.95, "likes", 8)
-    // Check the Err field of the *Resp object for any errors.
-    if resp.Err != nil {
-        log.Fatal(resp.Err)
-    }
+	// Send our command across the connection. The first parameter to
+	// Do() is always the name of the Redis command (in this example
+	// HMSET), optionally followed by any necessary arguments (in this
+	// example the key, followed by the various hash fields and values).
+	_, err = conn.Do("HMSET", "album:2", "title", "Electric Ladyland", "artist", "Jimi Hendrix", "price", 4.95, "likes", 8)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Println("Electric Ladyland added!")
+	fmt.Println("Electric Ladyland added!")
 }
 </pre></code></figure>
 
-<p>In this example we're not really interested in the reply from Redis (all successful <code>HMSET</code> commands just reply with the string "OK") so we don't do anything with the <code>*Resp</code> object apart from checking it for any errors.</p>
+<p>In this example we're not really interested in the reply from Redis (all successful <code>HMSET</code> commands just reply with the string "OK") so we don't do anything except check the return value from <code>Do()</code> for any errors.</p>
 
-<p>In such cases, it's common to chain the check against <code>Err</code> like so:</p>
-
-<figure class="plain"><code class="go"><pre>
-err = conn.Cmd("HMSET", "album:1", "title", "Electric Ladyland", "artist", "Jimi Hendrix", "price", 4.95, "likes", 8).Err
-if err != nil {
-    log.Fatal(err)
-}
-</pre></code></figure>
 <p><strong>Working with replies</strong></p>
 
-<p>When we are interested in the reply from Redis, the <code>Resp</code> object comes with some useful helper functions for converting the reply into a Go type we can easily work with. These are:</p>
+<p>When we <em>are</em> interested in the reply from Redis, the <code>gomodule/redigo/redis</code> package contains some useful helper functions for converting the reply (which has the type <code>interface{}</code>) into a Go type we can easily work with. These are:</p>
 
 <ul>
-    <li>Resp.Bytes() &ndash; converts a single reply to a byte slice (<code>[]byte</code>)</li>
-    <li>Resp.Float64() &ndash; converts a single reply to a <code>Float64</code></li>
-    <li>Resp.Int() &ndash; converts a single reply to a <code>int</code></li>
-    <li>Resp.Int64() &ndash; converts a single reply to a <code>int64</code></li>
-    <li>Resp.Str() &ndash; converts a single reply to a <code>string</code></li>
+    <li>redis.Bool() &ndash; converts a single reply to a <code>bool</code></li>
+    <li>redis.Bytes() &ndash; converts a single reply to a byte slice (<code>[]byte</code>)</li>
+    <li>redis.Float64()  &ndash; converts a single reply to a <code>float64</code></li>
+    <li>redis.Int() &ndash; converts a single reply to a <code>int</code></li>
+    <li>redis.String() &ndash; converts a single reply to a <code>string</code></li>
 </ul>
 <ul>
-    <li>Resp.Array() &ndash; converts an array reply to an slice of individual <code>Resp</code> objects<code> ([]*Resp)</code></li>
-    <li>Resp.List() &ndash; converts an array reply to an slice of strings <code>([]string)</code></li>
-    <li>Resp.ListBytes() &ndash; converts an array reply to an slice of byte slices <code>([][]byte)</code></li>
-    <li>Resp.Map() &ndash; converts an array reply to a map of strings, using each item in the array reply alternately as the keys and values for the map <code>(map[string]string)</code></li>
+    <li>redis.Values() &ndash; converts an array reply to an slice of individual replies</li>
+    <li>redis.Strings() &ndash; converts an array reply to an slice of strings <code>([]string)</code></li>
+    <li>redis.ByteSlices() &ndash; converts an array reply to an slice of byte slices <code>([][]byte)</code></li>
+    <li>redis.StringMap() &ndash;  converts an array of strings (alternating key, value) into a <code>map[string]string</code>. Useful for <code>HGETALL</code> etc</li>
 </ul>
 
-<p>Let's use some of these in conjunction with the <code>HGET</code> command to retrieve information from one of our album hashes:</p>
+<p>Let's use some of these in conjunction with the <code>HGET</code> command to retrieve information from one of the album hashes:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
-    "fmt"
-    "github.com/mediocregopher/radix.v2/redis"
-    "log"
+	"fmt"
+	"log"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 func main() {
-    conn, err := redis.Dial("tcp", "localhost:6379")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer conn.Close()
+	conn, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
 
-    // Issue a HGET command to retrieve the title for a specific album, and use
-    // the Str() helper method to convert the reply to a string.
-    title, err := conn.Cmd("HGET", "album:1", "title").Str()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Issue a HGET command to retrieve the title for a specific album,
+	// and use the Str() helper method to convert the reply to a string.
+	title, err := redis.String(conn.Do("HGET", "album:1", "title"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Similarly, get the artist and convert it to a string.
-    artist, err := conn.Cmd("HGET", "album:1", "artist").Str()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Similarly, get the artist and convert it to a string.
+	artist, err := redis.String(conn.Do("HGET", "album:1", "artist"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // And the price as a float64...
-    price, err := conn.Cmd("HGET", "album:1", "price").Float64()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// And the price as a float64...
+	price, err := redis.Float64(conn.Do("HGET", "album:1", "price"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // And the number of likes as an integer.
-    likes, err := conn.Cmd("HGET", "album:1", "likes").Int()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// And the number of likes as an integer.
+	likes, err := redis.Int(conn.Do("HGET", "album:1", "likes"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Printf("%s by %s: £%.2f [%d likes]\n", title, artist, price, likes)
+	fmt.Printf("%s by %s: £%.2f [%d likes]\n", title, artist, price, likes)
 }
 </pre></code></figure>
 
-<p>It's worth pointing out that, when we use these helper methods, the error they return could relate to one of two things: either the failed execution of the command (as stored in the <code>Resp</code> object's <code>Err</code> field), or the conversion of the reply data to the desired type (for example, we'd get an error if we tried to convert the reply "Jimi Hendrix" to a <code>Float64</code>).</code> There's no way of knowing which kind of error it is unless we examine the error message.</p>
+<p>It's worth pointing out that, when we use these helper methods, the error they return could relate to one of two things: either the failed execution of the command, or the conversion of the reply data to the desired type (for example, we'd get an error if we tried to convert the reply "Jimi Hendrix" to a <code>float64</code>).</code> There's no way of knowing which kind of error it is unless we examine the error message.</p>
 
 <p>If you run the code above you should get output which looks like:</p>
 
@@ -225,66 +212,67 @@ $ go run main.go
 package main
 
 import (
-    "fmt"
-    "github.com/mediocregopher/radix.v2/redis"
-    "log"
-    "strconv"
+	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 // Define a custom struct to hold Album data.
 type Album struct {
-    Title  string
-    Artist string
-    Price  float64
-    Likes  int
+	Title  string
+	Artist string
+	Price  float64
+	Likes  int
 }
 
 func main() {
-    conn, err := redis.Dial("tcp", "localhost:6379")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer conn.Close()
+	conn, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
 
-    // Fetch all album fields with the HGETALL command. Because HGETALL
-    // returns an array reply, and because the underlying data structure in
-    // Redis is a hash, it makes sense to use the Map() helper function to
-    // convert the reply to a map[string]string.
-    reply, err := conn.Cmd("HGETALL", "album:1").Map()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Fetch all album fields with the HGETALL command. Because HGETALL
+	// returns an array reply, and because the underlying data structure
+	// in Redis is a hash, it makes sense to use the Map() helper
+	// function to convert the reply to a map[string]string.
+	reply, err := redis.StringMap(conn.Do("HGETALL", "album:1"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Use the populateAlbum helper function to create a new Album object from
-    // the map[string]string.
-    ab, err := populateAlbum(reply)
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Use the populateAlbum helper function to create a new Album
+	// object from the map[string]string.
+	album, err := populateAlbum(reply)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Println(ab)
+	fmt.Printf("%+v", album)
 }
 
-// Create, populate and return a pointer to a new Album struct, based on data
-// from a map[string]string.
+// Create, populate and return a pointer to a new Album struct, based
+// on data from a map[string]string.
 func populateAlbum(reply map[string]string) (*Album, error) {
-    var err error
-    ab := new(Album)
-    ab.Title = reply["title"]
-    ab.Artist = reply["artist"]
-    // We need to use the strconv package to convert the 'price' value from a
-    // string to a float64 before assigning it.
-    ab.Price, err = strconv.ParseFloat(reply["price"], 64)
-    if err != nil {
-        return nil, err
-    }
-    // Similarly, we need to convert the 'likes' value from a string to an
-    // integer.
-    ab.Likes, err = strconv.Atoi(reply["likes"])
-    if err != nil {
-        return nil, err
-    }
-    return ab, nil
+	var err error
+	album := new(Album)
+	album.Title = reply["title"]
+	album.Artist = reply["artist"]
+	// We need to use the strconv package to convert the 'price' value
+	// from a string to a float64 before assigning it.
+	album.Price, err = strconv.ParseFloat(reply["price"], 64)
+	if err != nil {
+		return nil, err
+	}
+	// Similarly, we need to convert the 'likes' value from a string to
+	// an integer.
+	album.Likes, err = strconv.Atoi(reply["likes"])
+	if err != nil {
+		return nil, err
+	}
+	return album, nil
 }
 </pre></code></figure>
 
@@ -292,14 +280,68 @@ func populateAlbum(reply map[string]string) (*Album, error) {
 
 <figure class="shell"><code><pre>
 $ go run main.go
-<samp>&{Electric Ladyland Jimi Hendrix 4.95 8}</samp>
+<samp>&{Title:Electric Ladyland Artist:Jimi Hendrix Price:4.95 Likes:8}</samp>
 </pre></code></figure>
+
+<p>Or an alternative, and arguably neater, approach is to use the <code>redis.Values()</code> and <code>redis.ScanStruct()</code> functions to automatically unpack the data to the <code>Album</code> struct, like so:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/gomodule/redigo/redis"
+)
+
+// Define a custom struct to hold Album data. Notice the struct tags?
+// These indicate to redigo how to assign the data from the reply into
+// the struct.
+type Album struct {
+	Title  string  `redis:"title"`
+	Artist string  `redis:"artist"`
+	Price  float64 `redis:"price"`
+	Likes  int     `redis:"likes"`
+}
+
+func main() {
+	conn, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	// Fetch all album fields with the HGETALL command. Wrapping this
+	// in the redis.Values() function transforms the response into type
+	// []interface{}, which is the format we need to pass to
+	// redis.ScanStruct() in the next step.
+	values, err := redis.Values(conn.Do("HGETALL", "album:1"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create an instance of an Album struct and use redis.ScanStruct()
+	// to automatically unpack the data to the struct fields. This uses
+	// the struct tags to determine which data is mapped to which
+	// struct fields.
+	var album Album
+	err = redis.ScanStruct(values, &album)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%+v", album)
+}
+</pre></code></figure>
+
+<p>Note: Behind the scenes the <code>redis.ScanStruct()</code> function uses Go's <code>strconv</code> package to convert the values returned from Redis in to the appropriate Go type for the struct field &mdash; similar in principle to what we did in the previous example. By default this supports integer, float, boolean, string and []byte fields. If you need to automatically scan into a custom type, you can do so by implemeting the <a href="https://godoc.org/github.com/gomodule/redigo/redis#Scanner"><code>redis.Scanner()</code></a> interface on your custom type.</p>
 
 <h2>Using in a web application</h2>
 
-<p>One important thing to know about Radix.v2 is that the <code>redis</code> package (which we've used so far) is <strong>not safe for concurrent use</strong>.</p>
+<p>One important thing to know about <code>gomodule/redigo/redis</code> is that the <code>Conn</code> object (which is returned by the <code>Dial()</code> function we've been using so far) is <strong>not safe for concurrent use</strong>.</p>
 
-<p>If we want to access a single Redis server from multiple goroutines, as we would in a web application, we must use the <code>pool</code> package instead. This allows us to establish a pool of Redis connections and each time we want to use a connection we fetch it from the pool, execute our command on it, and return it too the pool.</p>
+<p>If we want to access a single Redis server from multiple goroutines, as we would in a web application, we must use establish a <em>pool of Redis connections</em>, and each time we want to use a connection we fetch it from the pool, execute our command on it, and return it too the pool.</p>
 
 <p>We'll illustrate this in a simple web application, building on the online record store example we've already used. Our finished app will support 3 functions:</p>
 
@@ -310,18 +352,18 @@ $ go run main.go
 <tr><td>GET</td><td>/popular</td><td>List the top 3 most liked albums in order</td></tr>
 </table>
 
-<p>If you'd like to follow along, head on over into your Go workspace and create a basic application scaffold&hellip;</p>
+<p>To avoid detracting from the main purpose of this blog post (which is talking about Redis) we'll use a deliberately over-simplified pattern for our web application. If you'd like to follow along, create a basic application scaffold like so&hellip;</p>
 
 <figure class="shell"><code><pre>
-$ cd $GOPATH/src
-$ mkdir -p recordstore/models
-$ cd recordstore
-$ touch main.go models/albums.go
+$ mkdir recordstore && cd recordstore
+$ go mod init example.com/recordstore
+<samp>go: creating new go.mod: module example.com/recordstore</samp>
+$ touch main.go albums.go
 $ tree
 <samp>.
-├── main.go
-└── models
-    └── albums.go</samp>
+├── albums.go
+├── go.mod
+└── main.go</samp>
 </pre></code></figure>
 
 <p>&hellip;And use the Redis CLI to add a few additional albums, along with a new <code>likes</code> sorted set. This sorted set will be used within the <code>GET /popular</code> route to help us quickly and efficiently retrieve the ids of albums with the most likes. Here's the commands to run:</p>
@@ -334,179 +376,150 @@ HMSET album:4 title "Nevermind" artist "Nirvana" price 5.95 likes 8
 ZADD likes 8 1 3 2 12 3 8 4
 </pre></code></figure>
 
-<p>We'll follow an MVC-ish pattern for our application and use the <code>models/albums.go</code> file for all our Redis-related logic.</p>
+<p>In the <code>albums.go</code> file we'll define a global variable to hold a Redis connection pool, and we'll re-purpose the code we wrote earlier into a <code>FindAlbum()</code> function that we can use from our HTTP handlers.</p>
 
-<p>In the <code>models/albums.go</code> file we'll use the <code>init()</code> function to establish a Redis connection pool on startup, and we'll repurpose the code we wrote earlier into a <code>FindAlbum()</code> function that we can use from our HTTP handlers.</p>
-
-<figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>
-package models
+<figure class="file"><figcaption>File: albums.go</figcaption><code><pre>
+package main
 
 import (
-    "errors"
-    // Import the Radix.v2 pool package, NOT the redis package.
-    "github.com/mediocregopher/radix.v2/pool"
-    "log"
-    "strconv"
+	"errors"
+
+	"github.com/gomodule/redigo/redis"
 )
 
-// Declare a global db variable to store the Redis connection pool.
-var db *pool.Pool
+// Declare a pool variable to hold the pool of Redis connections.
+var pool *redis.Pool
 
-func init() {
-    var err error
-    // Establish a pool of 10 connections to the Redis server listening on
-    // port 6379 of the local machine.
-    db, err = pool.New("tcp", "localhost:6379", 10)
-    if err != nil {
-        log.Panic(err)
-    }
-}
+var ErrNoAlbum = errors.New("no album found")
 
-// Create a new error message and store it as a constant. We'll use this
-// error later if the FindAlbum() function fails to find an album with a
-// specific id.
-var ErrNoAlbum = errors.New("models: no album found")
-
+// Define a custom struct to hold Album data.
 type Album struct {
-    Title  string
-    Artist string
-    Price  float64
-    Likes  int
-}
-
-func populateAlbum(reply map[string]string) (*Album, error) {
-    var err error
-    ab := new(Album)
-    ab.Title = reply["title"]
-    ab.Artist = reply["artist"]
-    ab.Price, err = strconv.ParseFloat(reply["price"], 64)
-    if err != nil {
-        return nil, err
-    }
-    ab.Likes, err = strconv.Atoi(reply["likes"])
-    if err != nil {
-        return nil, err
-    }
-    return ab, nil
+	Title  string  `redis:"title"`
+	Artist string  `redis:"artist"`
+	Price  float64 `redis:"price"`
+	Likes  int     `redis:"likes"`
 }
 
 func FindAlbum(id string) (*Album, error) {
-    // Use the connection pool's Get() method to fetch a single Redis
-    // connection from the pool.
-    conn, err := db.Get()
-    if err != nil {
-        return nil, err
-    }
-    // Importantly, use defer and the connection pool's Put() method to ensure
-    // that the connection is always put back in the pool before FindAlbum()
-    // exits.
-    defer db.Put(conn)
+	// Use the connection pool's Get() method to fetch a single Redis
+	// connection from the pool.
+	conn := pool.Get()
 
-    // Fetch the details of a specific album. If no album is found with the
-    // given id, the map[string]string returned by the Map() helper method
-    // will be empty. So we can simply check whether it's length is zero and
-    // return an ErrNoAlbum message if necessary.
-    reply, err := conn.Cmd("HGETALL", "album:"+id).Map()
-    if err != nil {
-        return nil, err
-    } else if len(reply) == 0 {
-        return nil, ErrNoAlbum
-    }
+	// Importantly, use defer and the connection's Close() method to
+	// ensure that the connection is always returned to the pool before
+	// FindAlbum() exits.
+	defer conn.Close()
 
-    return populateAlbum(reply)
+	// Fetch the details of a specific album. If no album is found
+	// the given id, the []interface{} slice returned by redis.Values
+	// will have a length of zero. So check for this and return an
+	// ErrNoAlbum error as necessary.
+	values, err := redis.Values(conn.Do("HGETALL", "album:"+id))
+	if err != nil {
+		return nil, err
+	} else if len(values) == 0 {
+		return nil, ErrNoAlbum
+	}
+
+	var album Album
+	err = redis.ScanStruct(values, &album)
+	if err != nil {
+		return nil, err
+	}
+
+	return &album, nil
 }
 </pre></code></figure>
 
-<p>Something worth elaborating on is the <code>pool.New()</code> function. In the above code we specify a pool size of 10, which simply limits the number of <em>idle</em> connections waiting in the pool to 10 at any one time. If all 10 connections are in use when an additional <code>pool.Get()</code> call is made a new connection will be created on the fly.</p>
-
-<p>When you're only issuing one command on a connection, like in the <code>FindAlbum()</code> function above, it's possible to use the <code>pool.Cmd()</code> shortcut. This will automatically get a new connection from the pool, execute a given command, and then put the connection back in the pool.</p>
-
-<p>Here's the <code>FindAlbum()</code> function re-written to use this shortcut:</p>
-
-<figure class="plain"><code><pre>
-func FindAlbum(id string) (*Album, error) {
-    reply, err := db.Cmd("HGETALL", "album:"+id).Map()
-    if err != nil {
-        return nil, err
-    } else if len(reply) == 0 {
-        return nil, ErrNoAlbum
-    }
-
-    return populateAlbum(reply)
-}
-</pre></code></figure>
-
-<p>Alright, let's head over to the <code>main.go</code> file and set up a simple web server and HTTP handler for the <code>GET /album</code> route.</p>
+<p>Alright, let's head over to the <code>main.go</code> file. In this we will initialize the connection pool and set up a simple web server and HTTP handler for the <code>GET /album</code> route.</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "recordstore/models"
-    "strconv"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
+
 func main() {
-    // Use the showAlbum handler for all requests with a URL path beginning
-    // '/album'.
-    http.HandleFunc("/album", showAlbum)
-    http.ListenAndServe(":3000", nil)
+	// Initialize a connection pool and assign it to the pool global
+	// variable.
+	pool = &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", "localhost:6379")
+		},
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/album", showAlbum)
+	log.Println("Listening on :4000...")
+	http.ListenAndServe(":4000", mux)
 }
 
 func showAlbum(w http.ResponseWriter, r *http.Request) {
-    // Unless the request is using the GET method, return a 405 'Method Not
-    // Allowed' response.
-    if r.Method != "GET" {
-        w.Header().Set("Allow", "GET")
-        http.Error(w, http.StatusText(405), 405)
-        return
-    }
+	// Unless the request is using the GET method, return a 405 'Method
+	// Not Allowed' response.
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, http.StatusText(405), 405)
+		return
+	}
 
-    // Retrieve the id from the request URL query string. If there is no id
-    // key in the query string then Get() will return an empty string. We
-    // check for this, returning a 400 Bad Request response if it's missing.
-    id := r.URL.Query().Get("id")
-    if id == "" {
-        http.Error(w, http.StatusText(400), 400)
-        return
-    }
-    // Validate that the id is a valid integer by trying to convert it,
-    // returning a 400 Bad Request response if the conversion fails.
-    if _, err := strconv.Atoi(id); err != nil {
-        http.Error(w, http.StatusText(400), 400)
-        return
-    }
+	// Retrieve the id from the request URL query string. If there is
+	// no id key in the query string then Get() will return an empty
+	// string. We check for this, returning a 400 Bad Request response
+	// if it's missing.
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
+	// Validate that the id is a valid integer by trying to convert it,
+	// returning a 400 Bad Request response if the conversion fails.
+	if _, err := strconv.Atoi(id); err != nil {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
 
-    // Call the FindAlbum() function passing in the user-provided id. If
-    // there's no matching album found, return a 404 Not Found response. In
-    // the event of any other errors, return a 500 Internal Server Error
-    // response.
-    bk, err := models.FindAlbum(id)
-    if err == models.ErrNoAlbum {
-        http.NotFound(w, r)
-        return
-    } else if err != nil {
-        http.Error(w, http.StatusText(500), 500)
-        return
-    }
+	// Call the FindAlbum() function passing in the user-provided id.
+	// If there's no matching album found, return a 404 Not Found
+	// response. In the event of any other errors, return a 500
+	// Internal Server Error response.
+	bk, err := FindAlbum(id)
+	if err == ErrNoAlbum {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
 
-    // Write the album details as plain text to the client.
-    fmt.Fprintf(w, "%s by %s: £%.2f [%d likes] \n", bk.Title, bk.Artist, bk.Price, bk.Likes)
+	// Write the album details as plain text to the client.
+	fmt.Fprintf(w, "%s by %s: £%.2f [%d likes] \n", bk.Title, bk.Artist, bk.Price, bk.Likes)
 }
 </pre></code></figure>
+
+<p>It's worth elaborating on the <code>redis.Pool</code> settings. In the above code we specify a <code>MaxIdle</code> size of 10, which simply limits the number of <em>idle</em> connections waiting in the pool to 10 at any one time. If all 10 connections are in use when an additional <code>pool.Get()</code> call is made a new connection will be created on the fly. The <code>IdleTimeout</code> setting is set to 240 seconds, which means that any connections that are idle for longer than that will be removed from the pool.</p>
 
 <p>If you run the application:
 
 <figure class="shell"><code><pre>
-$ go run main.go
+$ go run .
+<samp>2019/08/17 11:01:41 Listening on :4000...</samp>
 </pre></code></figure>
 
-<p>And make a request for one of the albums using cURL. You should get a response like:</p>
+<p>And make a request for one of the albums using cURL you should get a response like this:</p>
 
 <figure class="shell"><code><pre>
-$ curl -i localhost:3000/album?id=2
+$ curl -i localhost:4000/album?id=2
 <samp>HTTP/1.1 200 OK
 Content-Length: 42
 Content-Type: text/plain; charset=utf-8
@@ -520,139 +533,166 @@ Back in Black by AC/DC: £5.95 [3 likes]</samp>
 
 <p>When a user likes an album we need to issue two distinct commands: a <code>HINCRBY</code> to increment the <code>likes</code> field in the album hash, and a <code>ZINCRBY</code> to increment the relevant score in our <code>likes</code> sorted set.</p>
 
-<p>This creates a problem. Ideally we would want both keys to be incremented at exactly the same time as a single atomic action. Having one key updated after the other opens up the potential for data races to occur.</p>
+<p>This creates a problem. Ideally we would want both keys to be incremented at exactly the same time as a single atomic action. Having one key updated after the other opens up the potential for race conditions to occur.</p>
 
 <p>The solution to this is to use Redis transactions, which let us run multiple commands together as an atomic group. To do this we use the <code>MULTI</code> command to start a transaction, followed by the commands (in our case a <code>HINCRBY</code> and <code>ZINCRBY</code>), and finally the <code>EXEC</code> command (which then executes our both our commands together as an atomic group).</p>
 
-<p>Let's create a new <code>IncrementLikes()</code> function in the albums model which uses this technique.</p>
+<p>Let's create a new <code>IncrementLikes()</code> function in the <code>albums.go</code> file which uses this technique.</p>
 
-<figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>
+<figure class="file"><figcaption>File: albums.go</figcaption><code><pre>
 ...
+
 func IncrementLikes(id string) error {
-    conn, err := db.Get()
-    if err != nil {
-        return err
-    }
-    defer db.Put(conn)
+	conn := pool.Get()
+	defer conn.Close()
 
-    // Before we do anything else, check that an album with the given id
-    // exists. The EXISTS command returns 1 if a specific key exists
-    // in the database, and 0 if it doesn't.
-    exists, err := conn.Cmd("EXISTS", "album:"+id).Int()
-    if err != nil {
-        return err
-    } else if exists == 0 {
-        return ErrNoAlbum
-    }
+	// Before we do anything else, check that an album with the given
+	// id exists. The EXISTS command returns 1 if a specific key exists
+	// in the database, and 0 if it doesn't.
+	exists, err := redis.Int(conn.Do("EXISTS", "album:"+id))
+	if err != nil {
+		return err
+	} else if exists == 0 {
+		return ErrNoAlbum
+	}
 
-    // Use the MULTI command to inform Redis that we are starting a new
-    // transaction.
-    err = conn.Cmd("MULTI").Err
-    if err != nil {
-        return err
-    }
+	// Use the MULTI command to inform Redis that we are starting a new
+	// transaction. The conn.Send() method writes the command to the
+	// connection's output buffer -- it doesn't actually send it to the
+	// Redis server... despite it's name!
+	err = conn.Send("MULTI")
+	if err != nil {
+		return err
+	}
 
-    // Increment the number of likes in the album hash by 1. Because it
-    // follows a MULTI command, this HINCRBY command is NOT executed but
-    // it is QUEUED as part of the transaction. We still need to check
-    // the reply's Err field at this point in case there was a problem
-    // queueing the command.
-    err = conn.Cmd("HINCRBY", "album:"+id, "likes", 1).Err
-    if err != nil {
-        return err
-    }
-    // And we do the same with the increment on our sorted set.
-    err = conn.Cmd("ZINCRBY", "likes", 1, id).Err
-    if err != nil {
-        return err
-    }
+	// Increment the number of likes in the album hash by 1. Because it
+	// follows a MULTI command, this HINCRBY command is NOT executed but
+	// it is QUEUED as part of the transaction. We still need to check
+	// the reply's Err field at this point in case there was a problem
+	// queueing the command.
+	err = conn.Send("HINCRBY", "album:"+id, "likes", 1)
+	if err != nil {
+		return err
+	}
+	// And we do the same with the increment on our sorted set.
+	err = conn.Send("ZINCRBY", "likes", 1, id)
+	if err != nil {
+		return err
+	}
 
-    // Execute both commands in our transaction together as an atomic group.
-    // EXEC returns the replies from both commands as an array reply but,
-    // because we're not interested in either reply in this example, it
-    // suffices to simply check the reply's Err field for any errors.
-    err = conn.Cmd("EXEC").Err
-    if err != nil {
-        return err
-    }
-    return nil
+	// Execute both commands in our transaction together as an atomic
+	// group. EXEC returns the replies from both commands but, because
+	// we're not interested in either reply in this example, it
+	// suffices to simply check for any errors. Note that calling the
+	// conn.Do() method flushes the previous commands from the
+	// connection output buffer and sends them to the Redis server.
+	_, err = conn.Do("EXEC")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 </pre></code></figure>
 
 <p>We'll also update the <code>main.go</code> file to add an <code>addLike()</code> handler for the route:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gomodule/redigo/redis"
+)
+
 func main() {
-    http.HandleFunc("/album", showAlbum)
-    http.HandleFunc("/like", addLike)
-    http.ListenAndServe(":3000", nil)
+	pool = &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", "localhost:6379")
+		},
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/album", showAlbum)
+	mux.HandleFunc("/like", addLike)
+
+	log.Println("Listening on :4000...")
+	http.ListenAndServe(":4000", mux)
 }
+
 ...
+
 func addLike(w http.ResponseWriter, r *http.Request) {
-    // Unless the request is using the POST method, return a 405 'Method Not
-    // Allowed' response.
-    if r.Method != "POST" {
-        w.Header().Set("Allow", "POST")
-        http.Error(w, http.StatusText(405), 405)
-        return
-    }
+	// Unless the request is using the POST method, return a 405
+	// Method Not Allowed response.
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, http.StatusText(405), 405)
+		return
+	}
 
-    // Retreive the id from the POST request body. If there is no parameter
-    // named "id" in the request body then PostFormValue() will return an
-    // empty string. We check for this, returning a 400 Bad Request response
-    // if it's missing.
-    id := r.PostFormValue("id")
-    if id == "" {
-        http.Error(w, http.StatusText(400), 400)
-        return
-    }
-    // Validate that the id is a valid integer by trying to convert it,
-    // returning a 400 Bad Request response if the conversion fails.
-    if _, err := strconv.Atoi(id); err != nil {
-        http.Error(w, http.StatusText(400), 400)
-        return
-    }
+	// Retrieve the id from the POST request body. If there is no
+	// parameter named "id" in the request body then PostFormValue()
+	// will return an empty string. We check for this, returning a 400
+	// Bad Request response if it's missing.
+	id := r.PostFormValue("id")
+	if id == "" {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
+	// Validate that the id is a valid integer by trying to convert it,
+	// returning a 400 Bad Request response if the conversion fails.
+	if _, err := strconv.Atoi(id); err != nil {
+		http.Error(w, http.StatusText(400), 400)
+		return
+	}
 
-    // Call the IncrementLikes() function passing in the user-provided id. If
-    // there's no album found with that id, return a 404 Not Found response.
-    // In the event of any other errors, return a 500 Internal Server Error
-    // response.
-    err := models.IncrementLikes(id)
-    if err == models.ErrNoAlbum {
-        http.NotFound(w, r)
-        return
-    } else if err != nil {
-        http.Error(w, http.StatusText(500), 500)
-        return
-    }
+	// Call the IncrementLikes() function passing in the user-provided
+	// id. If there's no album found with that id, return a 404 Not
+	// Found response. In the event of any other errors, return a 500
+	// Internal Server Error response.
+	err := IncrementLikes(id)
+	if err == ErrNoAlbum {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
 
-    // Redirect the client to the GET /ablum route, so they can see the
-    // impact their like has had.
-    http.Redirect(w, r, "/album?id="+id, 303)
+	// Redirect the client to the GET /album route, so they can see the
+	// impact their like has had.
+	http.Redirect(w, r, "/album?id="+id, 303)
 }
 </pre></code></figure>
 
 <p>If you make a POST request to like one of the albums you should now get a response like:</p>
 
 <figure class="shell"><code><pre>
-$ curl -i -L -d "id=2" localhost:3000/like
+$ curl -i -L -d "id=2" localhost:4000/like
 <samp>HTTP/1.1 303 See Other
 Location: /album?id=2
-Date: Thu, 25 Feb 2016 17:08:19 GMT
+Date: Sat, 17 Aug 2019 16:50:49 GMT
 Content-Length: 0
-Content-Type: text/plain; charset=utf-8
 
 HTTP/1.1 200 OK
+Date: Sat, 17 Aug 2019 16:50:49 GMT
 Content-Length: 42
 Content-Type: text/plain; charset=utf-8
 
-Back in Black by AC/DC: £5.95 [4 likes]
-</samp>
+Back in Black by AC/DC: £5.95 [4 likes]</samp>
 </pre></code></figure>
 
 <h2>Using the Watch command</h2>
 
-<p>OK, on to our final route: <code>GET /popular</code>. This route will display the details of the top 3 albums with the most likes, so to facilitate this we'll create a <code>FindTopThree()</code> function in the <code>models/albums.go</code> file. In this function we need to:</p>
+<p>OK, on to our final route: <code>GET /popular</code>. This route will display the details of the top 3 albums with the most likes, so to facilitate this we'll create a <code>FindTopThree()</code> function in the <code>albums.go</code> file. In this function we need to:</p>
 
 <ol>
     <li>Use the <code>ZREVRANGE</code> command to fetch the 3 album ids with the highest score (i.e. most likes) from our <code>likes</code> sorted set.</li>
@@ -661,136 +701,147 @@ Back in Black by AC/DC: £5.95 [4 likes]
 
 <p>Again, it's possible to imagine a race condition occurring here. If a second client happens to like an album at the exact moment <em>between</em> our <code>ZREVRANGE</code> command and the <code>HGETALL</code>s for all 3 albums being completed, our user could end up being sent wrong or mis-ordered data.</p>
 
-<p>The solution here is to use the Redis <code>WATCH</code> command in conjunction with a transaction. <code>WATCH</code> instructs Redis to monitor a specific key for any changes. If another client modifies our watched key between our <code>WATCH</code> instruction and our subsequent transaction's <code>EXEC</code>, the transaction will fail and return a nil reply. If no client changes the value before our <code>EXEC</code>, the transaction will complete as normal. We can execute our code in a loop until the transaction is successful.</p>
+<p>The solution here is to use the Redis <code>WATCH</code> command in conjunction with a transaction. <code>WATCH</code> instructs Redis to monitor a specific key for any changes. If another client or connection modifies our watched key between our <code>WATCH</code> instruction and our subsequent transaction's <code>EXEC</code>, the transaction will fail and return a nil reply. If no client changes the value before our <code>EXEC</code>, the transaction will complete as normal. We can execute our code in a loop until the transaction is successful.</p>
 
-<figure class="file"><figcaption>File: models/albums.go</figcaption><code><pre>
-package models
+<figure class="file"><figcaption>File: albums.go</figcaption><code><pre>
+package main
 
-import (
-    "errors"
-    "github.com/mediocregopher/radix.v2/pool"
-    // Import the Radix.v2 redis package (we need access to its Nil type).
-    "github.com/mediocregopher/radix.v2/redis"
-    "log"
-    "strconv"
-)
 ...
+
+
 func FindTopThree() ([]*Album, error) {
-    conn, err := db.Get()
-    if err != nil {
-        return nil, err
-    }
-    defer db.Put(conn)
+	conn := pool.Get()
+	defer conn.Close()
 
-    // Begin an infinite loop.
-    for {
-        // Instruct Redis to watch the likes sorted set for any changes.
-        err = conn.Cmd("WATCH", "likes").Err
-        if err != nil {
-            return nil, err
-        }
+	// Begin an infinite loop. In a real application, you might want to
+	// limit this to a set number of attempts, and return an error if
+	// the transaction doesn't successfully complete within those
+	// attempts.
+	for {
+		// Instruct Redis to watch the likes sorted set for any changes.
+		_, err := conn.Do("WATCH", "likes")
+		if err != nil {
+			return nil, err
+		}
 
-        // Use the ZREVRANGE command to fetch the album ids with the highest
-        // score (i.e. most likes) from our 'likes' sorted set. The ZREVRANGE
-        // start and stop values are zero-based indexes, so we use 0 and 2
-        // respectively to limit the reply to the top three. Because ZREVRANGE
-        // returns an array response, we use the List() helper function to
-        // convert the reply into a []string.
-        reply, err := conn.Cmd("ZREVRANGE", "likes", 0, 2).List()
-        if err != nil {
-            return nil, err
-        }
+		// Use the ZREVRANGE command to fetch the album ids with the
+		// highest score (i.e. most likes) from our 'likes' sorted set.
+		// The ZREVRANGE start and stop values are zero-based indexes,
+		// so we use 0 and 2 respectively to limit the reply to the top
+		// three. Because ZREVRANGE returns an array response, we use
+		// the Strings() helper function to convert the reply into a
+		// []string.
+		ids, err := redis.Strings(conn.Do("ZREVRANGE", "likes", 0, 2))
+		if err != nil {
+			return nil, err
+		}
 
-        // Use the MULTI command to inform Redis that we are starting a new
-        // transaction.
-        err = conn.Cmd("MULTI").Err
-        if err != nil {
-            return nil, err
-        }
+		// Use the MULTI command to inform Redis that we are starting
+		// a new transaction.
+		err = conn.Send("MULTI")
+		if err != nil {
+			return nil, err
+		}
 
-        // Loop through the ids returned by ZREVRANGE, queuing HGETALL
-        // commands to fetch the individual album details.
-        for _, id := range reply {
-            err := conn.Cmd("HGETALL", "album:"+id).Err
-            if err != nil {
-                return nil, err
-            }
-        }
+		// Loop through the ids returned by ZREVRANGE, queuing HGETALL
+		// commands to fetch the individual album details.
+		for _, id := range ids {
+			err := conn.Send("HGETALL", "album:"+id)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-        // Execute the transaction. Importantly, use the Resp.IsType() method
-        // to check whether the reply from EXEC was nil or not. If it is nil
-        // it means that another client changed the WATCHed likes sorted set,
-        // so we use the continue command to re-run the loop.
-        ereply := conn.Cmd("EXEC")
-        if ereply.Err != nil {
-            return nil, err
-        } else if ereply.IsType(redis.Nil) {
-            continue
-        }
+		// Execute the transaction. Importantly, use the redis.ErrNil
+		// type to check whether the reply from EXEC was nil or not. If
+		// it is nil it means that another client changed the WATCHed
+		// likes sorted set, so we use the continue command to re-run
+		// the loop.
+		replies, err := redis.Values(conn.Do("EXEC"))
+		if err == redis.ErrNil {
+			log.Println("trying again")
+			continue
+		} else if err != nil {
+			return nil, err
+		}
 
-        // Otherwise, use the Array() helper function to convert the
-        // transaction reply to an array of Resp objects ([]*Resp).
-        areply, err := ereply.Array()
-        if err != nil {
-            return nil, err
-        }
+		// Create a new slice to store the album details.
+		albums := make([]*Album, 3)
 
-        // Create a new slice to store the album details.
-        abs := make([]*Album, 3)
+		// Iterate through the array of response objects, using the
+		// ScanStruct() function to assign the data to Album structs.
+		for i, reply := range replies {
+			var album Album
+			err = redis.ScanStruct(reply.([]interface{}), &album)
+			if err != nil {
+				return nil, err
+			}
 
-        // Iterate through the array of Resp objects, using the Map() helper
-        // to convert the individual reply into a map[string]string, and then
-        // the populateAlbum function to create a new Album object
-        // from the map. Finally store them in order in the abs slice.
-        for i, reply := range areply {
-            mreply, err := reply.Map()
-            if err != nil {
-                return nil, err
-            }
-            ab, err := populateAlbum(mreply)
-            if err != nil {
-                return nil, err
-            }
-            abs[i] = ab
-        }
+			albums[i] = &album
+		}
 
-        return abs, nil
-    }
+		return albums, nil
+	}
 }
 </pre></code></figure>
 
 <p>Using this from our web application is nice and straightforward:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gomodule/redigo/redis"
+)
+
 func main() {
-    http.HandleFunc("/album", showAlbum)
-    http.HandleFunc("/like", addLike)
-    http.HandleFunc("/popular", listPopular)
-    http.ListenAndServe(":3000", nil)
+	pool = &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", "localhost:6379")
+		},
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/album", showAlbum)
+	mux.HandleFunc("/like", addLike)
+	mux.HandleFunc("/popular", listPopular)
+
+	log.Println("Listening on :4000...")
+	http.ListenAndServe(":4000", mux)
 }
+
 ...
+
 func listPopular(w http.ResponseWriter, r *http.Request) {
-  // Unless the request is using the GET method, return a 405 'Method Not
-  // Allowed' response.
-  if r.Method != "GET" {
-    w.Header().Set("Allow", "GET")
-    http.Error(w, http.StatusText(405), 405)
-    return
-  }
+	// Unless the request is using the GET method, return a 405 'Method Not
+	// Allowed' response.
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, http.StatusText(405), 405)
+		return
+	}
 
-  // Call the FindTopThree() function, returning a return a 500 Internal
-  // Server Error response if there's any error.
-  abs, err := models.FindTopThree()
-  if err != nil {
-    http.Error(w, http.StatusText(500), 500)
-    return
-  }
+	// Call the FindTopThree() function, returning a return a 500 Internal
+	// Server Error response if there's any error.
+	albums, err := FindTopThree()
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
 
-  // Loop through the 3 albums, writing the details as a plain text list
-  // to the client.
-  for i, ab := range abs {
-    fmt.Fprintf(w, "%d) %s by %s: £%.2f [%d likes] \n", i+1, ab.Title, ab.Artist, ab.Price, ab.Likes)
-  }
+	// Loop through the 3 albums, writing the details as a plain text list
+	// to the client.
+	for i, ab := range albums {
+		fmt.Fprintf(w, "%d) %s by %s: £%.2f [%d likes] \n", i+1, ab.Title, ab.Artist, ab.Price, ab.Likes)
+	}
 }
 </pre></code></figure>
 
@@ -799,10 +850,11 @@ func listPopular(w http.ResponseWriter, r *http.Request) {
 <p>Making a request to the <code>GET /popular</code> route should now yield a response similar to:</p>
 
 <figure class="shell"><code><pre>
-$ curl -i localhost:3000/popular
+$ curl -i localhost:4000/popular
 <samp>HTTP/1.1 200 OK
 Content-Length: 147
 Content-Type: text/plain; charset=utf-8
+Date: Sat, 17 Aug 2019 17:10:13 GMT
 
 1) Rumours by Fleetwood Mac: £7.95 [12 likes]
 2) Nevermind by Nirvana: £5.95 [8 likes]
