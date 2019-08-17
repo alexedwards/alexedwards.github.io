@@ -185,7 +185,7 @@ func main() {
 
 <p>I don't want to labor the point here too much. But the key thing to take away is that by using a interface type in our <code>WriteLog()</code> function declaration, we have made the function agnostic (or flexible) about the exact <em>type</em> of object it receives. All that matters is <em>what methods it has</em>. </p>
 
-<h2 id="why-are-interfaces-useful">Why are interfaces useful?</h2>
+<h2 id="why-are-interfaces-useful">Why are they useful?</h2>
 
 <p>There are all sorts of reasons that you might end up using a interface in Go, but in my experience the three most common are:</p>
 
@@ -599,7 +599,7 @@ type Person struct {
 
 <p>But that said, the empty interface is useful in situations where you need to accept and work with unpredictable or user-defined types. You'll see it used in a a number of places throughout the standard library for that exact reason, such as in the <a href="https://golang.org/pkg/encoding/gob/#Encoder.Encode"><code>gob.Encode</code></a>, <a href="https://golang.org/pkg/fmt/#Print"><code>fmt.Print</code></a> and <a href="https://golang.org/pkg/text/template/#Template.Execute"><code>template.Execute</code></a> functions.</p>
 
-<h2 id="useful-interface-types">Useful interface types</h2>
+<h2 id="useful-interface-types">Comman and useful types</h2>
 
 <p>Lastly, here's a short list of some of the most common and useful interfaces in the standard library. If you're not familiar with them already, then I recommend taking out a bit of time to look at the relevant documentation for them.</p>
 
