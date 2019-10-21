@@ -9,7 +9,7 @@
     <pubDate>Mon, 21 Oct 2019 20:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body</link>
     <guid>https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body</guid>
-    <title>How to (Properly) Parse a JSON Request Body</title>
+    <title>How to Parse a JSON Request Body in Go</title>
     <description><![CDATA[
 <p>When I'm reviewing the code for APIs written in Go, I quite often come across handlers which use the following pattern to parse a JSON request body into a struct:</p>
 
