@@ -58,7 +58,7 @@ func main() {
 
 <p>If you're putting together a quick prototype, or building an API for personal/internal use only, then the code in the <code>personCreate</code> handler is probably OK.</p>
 
-<p>But if you're building an API for public use in production then there are a few problems with this, and things that can be improved.</p>
+<p>But if you're building an API for public use in production then there are a few issues with this to be aware of, and things that can be improved.</p>
 
 <ol>
 <li><p>Not all errors returned by <a href="https://golang.org/pkg/encoding/json/#Decoder.Decode"><code>Decode()</code></a> are caused by a bad request from the client. Specifically, <code>Decode()</code> can return a <a href="https://golang.org/pkg/encoding/json/#InvalidUnmarshalError"><code>json.InvalidUnmarshalError</code></a> error &mdash; which is caused by an unmarshalable target destination being passed to <code>Decode()</code>. If that happens, then it indicates a problem with our application &mdash; not the client request &mdash; so really the error should be logged and a <code>500 Internal Server Error</code> response sent to the client instead.</p></li>
