@@ -56,7 +56,9 @@
 		</span>
 		
 	</div>
-	<p>When I'm reviewing the code for APIs written in Go, I quite often come across handlers which use the following pattern to parse a JSON request body into a struct:</p>
+	<p>Let's say that you're building a JSON API with Go. And in some of the handlers &mdash; probably as part of a POST or PUT request &mdash; you want to read a JSON object from the request body and assign it to a struct in your code.</p>
+
+<p>After a bit of research, there's a good chance that you'll end up with some code that looks similar to the <code>personCreate</code> handler here:</p>
 
 <figure class="file"><code class="go"><pre>
 // File: main.go
@@ -99,7 +101,9 @@ func main() {
 }
 </pre></code></figure>
 
-<p>If you're building an API for internal use only, or putting together a quick prototype, then this code is probably OK. But if you're building an API for public use in production then there are a few problems and things that can be improved.</p>
+<p>If you're putting together a quick prototype, or building an API for personal/internal use only, then the code in the <code>personCreate</code> handler is probably OK.</p>
+
+<p>But if you're building an API for public use in production then there are a few problems with this, and things that can be improved.</p>
 
 <ol>
 <li><p>Not all errors returned by <a href="https://golang.org/pkg/encoding/json/#Decoder.Decode"><code>Decode()</code></a> are caused by a bad request from the client. Specifically, <code>Decode()</code> can return a <a href="https://golang.org/pkg/encoding/json/#InvalidUnmarshalError"><code>json.InvalidUnmarshalError</code></a> error &mdash; which is caused by an unmarshalable target destination being passed to <code>Decode()</code>. If that happens, then it indicates a problem with our application &mdash; not the client request &mdash; so really the error should be logged and a <code>500 Internal Server Error</code> response sent to the client instead.</p></li>
@@ -112,7 +116,8 @@ func main() {
 
 <li><p>There's no check for a <code>Content-Type: application/json</code> header in the request. Of course, this header may not always be present, and mistakes and malicious clients mean that it isn't a guarantee of the <em>actual</em> content type. But checking for an incorrect <code>Content-Type</code> header would allow us to 'fail fast' and send a helpful error message without spending unnecessary resources on parsing the body.</p></li>
 
-<li><p>The <code>Decode()</code> method is designed to decode streams of JSON objects. This means a request body like <code>'{"Name": "Bob"}{"Name": "Carol": "Age": 54}'</code> or <code>'{"Name": "Dave"}{}'</code> is considered valid and won't result in the client receiving an error message. But in each case, only the first JSON object in the request body will actually be parsed.</p></li>
+<li><p>The <code>Decode()</code> method is designed to decode streams of JSON objects. This means a request body like <code>'{"Name": "Bob"}{"Name": "Carol": "Age": 54}'</code> or <code>'{"Name": "Dave"}{}'</code> is considered valid and won't result in the client receiving an error message. But in each case, only the first JSON object in the request body will actually be parsed.</p>
+<p>There are two solutions here. We can either check the decoder's <a href="https://golang.org/pkg/encoding/json/#Decoder.More"><code>More()</code></a> method after decoding to see if there any any other JSON objects in the request body. Or we could avoid using <code>Decode()</code> altogether and read the body into a byte slice and pass it to <a href="https://golang.org/pkg/encoding/json/#Unmarshal"></a><code>json.Unmarshal()</code></a>, which <em>would</em> return an error if the body contains multiple JSON objects. The downside of using <code>json.Unmarshal()</code> is that there is no way to disallow extra unexpected fields in the JSON, so we can't address point 3 above.</p></li>
 </ol>
 
 <h2 id="an-improved-handler">An Improved Handler</h2>
