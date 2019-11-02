@@ -47,7 +47,7 @@
 	<div class="metadata">
 		<span class="dates">
 			
-			Posted on: 28th December 2017
+			Last updated: 2nd November 2019
 			
 		</span>
 		
@@ -58,20 +58,15 @@
 	</div>
 	<p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
 
-<p>But if you want something simple and lightweight &ndash; or just want to learn &ndash; it's not too difficult to roll your own middleware to handle rate limiting. In this post I'll run through the essentials of how to do that.</p>
+<p>But if you want something simple and lightweight &ndash; or just want to learn &ndash; it's not too difficult to roll your own middleware to handle rate limiting. In this post I'll run through the essentials of how to do that by using the <code><a href="https://godoc.org/golang.org/x/time/rate">x/time/rate</a></code> package, which provides a <a href="https://en.wikipedia.org/wiki/Token_bucket">token bucket</a> rate-limiter algorithm (note: this is also used by Tollbooth behind the scenes).</p>
 
-<p>If you'd like to follow along, you'll need to install the <code><a href="https://godoc.org/golang.org/x/time/rate">x/time/rate</a></code> package. This provides a <a href="https://en.wikipedia.org/wiki/Token_bucket">token bucket</a> rate-limiter algorithm (which is also used by Tollbooth behind the scenes).</p>
-
-<figure class="shell"><code><pre>
-$ go get golang.org/x/time/rate
-</pre></code></figure>
-
-<p>Then create a demo directory containing two files: <code>limit.go</code> and <code>main.go</code>.</p>
+<p>If you would like to follow along, create a demo directory containing two files, <code>limit.go</code> and <code>main.go</code>, and initialize a new Go module. Like so:</p>
 
 <figure class="shell"><code><pre>
 $ mkdir ratelimit-demo
 $ cd ratelimit-demo
 $ touch limit.go main.go
+$ go mod init example.com/ratelimit-demo
 </pre></code></figure>
 
 <p>Let's start by making a global rate limiter which acts on <em>all the requests</em> that a HTTP server receives.</p>
@@ -87,7 +82,7 @@ import (
     "golang.org/x/time/rate"
 )
 
-var limiter = rate.NewLimiter(2, 5)
+var limiter = rate.NewLimiter(1, 3)
 
 func limit(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +106,7 @@ func NewLimiter(r Limit, b int) *Limiter
 
 <p><blockquote>A Limiter controls how frequently events are allowed to happen. It implements a "token bucket" of size b, initially full and refilled at rate r tokens per second.</blockquote></p>
 
-<p>Or to describe it another way &ndash; the limiter permits you to consume an average of r tokens per second, with a maximum of b tokens in any single 'burst'. So in the code above our limiter allows 2 tokens to be consumed per second, with a maximum burst size of 5.</p>
+<p>Or to describe it another way &ndash; the limiter permits you to consume an average of r tokens per second, with a maximum of b tokens in any single 'burst'. So in the code above our limiter allows 1 token to be consumed per second, with a maximum burst size of 3.</p>
 
 <p>In the <code>limit</code> middleware function we call the global limiter's <code>Allow()</code> method each time the middleware receives a HTTP request. If there are no tokens left in the bucket <code>Allow()</code> will return <code>false</code> and we send the user a <code>429 Too Many Requests</code> response. Otherwise, calling <code>Allow()</code> will consume exactly one token from the bucket and we pass on control to the next handler in the chain.</p>
 
@@ -131,6 +126,7 @@ func main() {
     mux.HandleFunc("/", okHandler)
 
     // Wrap the servemux with the limit middleware.
+    log.Println("Listening on :4000...")
     http.ListenAndServe(":4000", limit(mux))
 }
 
@@ -142,7 +138,7 @@ func okHandler(w http.ResponseWriter, r *http.Request) {
 <p>Go ahead and run the application&hellip;</p>
 
 <figure class="shell"><code><pre>
-$ go run *.go
+$ go run .
 </pre></code></figure>
 
 <p>And if you make enough requests in quick succession, you should eventually get a response which looks like this:</p>
@@ -164,7 +160,7 @@ Too Many Requests</samp>
 
 <p>A conceptually straightforward way to do this is to create a <em>map of rate limiters</em>, using the identifier for each user as the map key. </p>
 
-<p>At this point you might think to reach for the new <code><a href="https://golang.org/pkg/sync/#Map">sync.Map</a></code> type that was introduced in Go 1.9. This essentially provides a concurrency-safe map, designed to be accessed from multiple goroutines without the risk of race conditions. But it comes with a note of caution:</p>
+<p>At this point you might think to reach for the <code><a href="https://golang.org/pkg/sync/#Map">sync.Map</a></code> type that was introduced in Go 1.9. This essentially provides a concurrency-safe map, designed to be accessed from multiple goroutines without the risk of race conditions. But it comes with a note of caution:</p>
 
 <p><blockquote> It is optimized for use in concurrent loops with keys that are stable over time, and either few steady-state stores, or stores localized to one goroutine per key.<br><br>For use cases that do not share these attributes, it will likely have comparable or worse performance and worse type safety than an ordinary map paired with a read-write mutex.</blockquote></p>
 
@@ -178,6 +174,8 @@ Too Many Requests</samp>
 package main
 
 import (
+    "log"
+    "net"
     "net/http"
     "sync"
 
@@ -186,15 +184,15 @@ import (
 
 // Create a map to hold the rate limiters for each visitor and a mutex.
 var visitors = make(map[string]*rate.Limiter)
-var mtx sync.Mutex
+var mu sync.Mutex
 
 // Create a new rate limiter and add it to the visitors map, using the
 // IP address as the key.
 func addVisitor(ip string) *rate.Limiter {
-    limiter := rate.NewLimiter(2, 5)
-    mtx.Lock()
+    limiter := rate.NewLimiter(1, 3)
+    mu.Lock()
     visitors[ip] = limiter
-    mtx.Unlock()
+    mu.Unlock()
     return limiter
 }
 
@@ -202,9 +200,9 @@ func addVisitor(ip string) *rate.Limiter {
 // already exists. Otherwise call the addVisitor function to add a
 // new entry to the map.
 func getVisitor(ip string) *rate.Limiter {
-    mtx.Lock()
+    mu.Lock()
     limiter, exists := visitors[ip]
-    mtx.Unlock()
+    mu.Unlock()
     if !exists {
         return addVisitor(ip)
     }
@@ -213,9 +211,17 @@ func getVisitor(ip string) *rate.Limiter {
 
 func limit(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Get the IP address for the current user.
+        ip, _, err := net.SplitHostPort(r.RemoteAddr)
+        if err != nil {
+            log.Println(err.Error())
+            http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+            return
+        }
+
         // Call the getVisitor function to retreive the rate limiter for
         // the current user.
-        limiter := getVisitor(r.RemoteAddr)
+        limiter := getVisitor)
         if limiter.Allow() == false {
             http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
             return
@@ -230,12 +236,14 @@ func limit(next http.Handler) http.Handler {
 
 <p>There's one problem with this: as long as the application is running the <code>visitors</code> map will continue to grow unbounded.</p>
 
-<p>We can fix this fairly simply by recording the <em>last seen</em> time for each visitor and running a background goroutine to deletes old entries from the map (and therefore free up memory as we go).</p>
+<p>We can fix this fairly simply by recording the <em>last seen</em> time for each visitor and running a background goroutine to delete old entries from the map (and therefore free up memory as we go).</p>
 
 <figure class="file"><figcaption>File: ratelimit-demo/limit.go</figcaption><code><pre>
 package main
 
 import (
+    "log"
+    "net"
     "net/http"
     "sync"
     "time"
@@ -252,7 +260,7 @@ type visitor struct {
 
 // Change the the map to hold values of the type visitor.
 var visitors = make(map[string]*visitor)
-var mtx sync.Mutex
+var mu sync.Mutex
 
 // Run a background goroutine to remove old entries from the visitors map.
 func init() {
@@ -260,25 +268,25 @@ func init() {
 }
 
 func addVisitor(ip string) *rate.Limiter {
-    limiter := rate.NewLimiter(2, 5)
-    mtx.Lock()
+    limiter := rate.NewLimiter(1, 3)
+    mu.Lock()
     // Include the current time when creating a new visitor.
     visitors[ip] = &visitor{limiter, time.Now()}
-    mtx.Unlock()
+    mu.Unlock()
     return limiter
 }
 
 func getVisitor(ip string) *rate.Limiter {
-    mtx.Lock()
+    mu.Lock()
+    defer mu.Unlock()
+
     v, exists := visitors[ip]
     if !exists {
-        mtx.Unlock()
         return addVisitor(ip)
     }
 
     // Update the last seen time for the visitor.
     v.lastSeen = time.Now()
-    mtx.Unlock()
     return v.limiter
 }
 
@@ -287,19 +295,27 @@ func getVisitor(ip string) *rate.Limiter {
 func cleanupVisitors() {
     for {
         time.Sleep(time.Minute)
-        mtx.Lock()
+
+        mu.Lock()
+        defer mu.Unlock()
         for ip, v := range visitors {
             if time.Now().Sub(v.lastSeen) > 3*time.Minute {
                 delete(visitors, ip)
             }
         }
-        mtx.Unlock()
     }
 }
 
 func limit(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        limiter := getVisitor(r.RemoteAddr)
+        ip, _, err := net.SplitHostPort(r.RemoteAddr)
+        if err != nil {
+            log.Println(err.Error())
+            http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+            return
+        }
+
+        limiter := getVisitor(ip)
         if limiter.Allow() == false {
             http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
             return
