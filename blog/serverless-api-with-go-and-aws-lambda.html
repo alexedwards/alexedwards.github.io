@@ -966,8 +966,8 @@ func show(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, er
     }, nil
 }
 
-func create(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-    if req.Headers["Content-Type"] != "application/json" {
+func create(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) { 
+    if req.Headers["content-type"] != "application/json" && req.Headers["Content-Type"] != "application/json" {
         return clientError(http.StatusNotAcceptable)
     }
 
