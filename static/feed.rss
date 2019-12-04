@@ -3943,7 +3943,7 @@ Date: Tue, 13 Mar 2018 16:53:27 GMT
     <guid>https://www.alexedwards.net/blog/configuring-sqldb</guid>
     <title>Configuring sql.DB for Better Performance</title>
     <description><![CDATA[
-<p>There are a lot of good tutorials which talk about Go's <a href="https://golang.org/pkg/database/sql/#DB"><code>sql.DB</code></a> type and how to use it to execute SQL database queries and statements. But most of them gloss over the <a href="https://golang.org/pkg/database/sql/#DB.SetMaxOpenConns"><code>SetMaxOpenConns()</code></a>, <a href="https://golang.org/pkg/database/sql/#DB.SetMaxIdleConns"><code>SetMaxIdleConns()</code></a> and <a href=""><code>SetConnMaxLifetime()</code></a> methods &mdash; which you can use to configure the behavior of <code>sql.DB</code> and alter its performance.
+<p>There are a lot of good tutorials which talk about Go's <a href="https://golang.org/pkg/database/sql/#DB"><code>sql.DB</code></a> type and how to use it to execute SQL database queries and statements. But most of them gloss over the <a href="https://golang.org/pkg/database/sql/#DB.SetMaxOpenConns"><code>SetMaxOpenConns()</code></a>, <a href="https://golang.org/pkg/database/sql/#DB.SetMaxIdleConns"><code>SetMaxIdleConns()</code></a> and <a href="https://golang.org/pkg/database/sql/#DB.SetConnMaxLifetime"><code>SetConnMaxLifetime()</code></a> methods &mdash; which you can use to configure the behavior of <code>sql.DB</code> and alter its performance.
 
 <p>In this post I'd like to explain exactly what these settings do and demonstrate the (positive and negative) impact that they can have.</p>
 
@@ -3968,8 +3968,7 @@ if err != nil {
 // Set the maximum number of concurrently open connections to 5. Setting this
 // to less than or equal to 0 will mean there is no maximum limit (which
 // is also the default setting).
-db.SetMaxOpenConns(5)
-</pre></code></figure>
+db.SetMaxOpenConns(5)</pre></code></figure>
 
 <p>In this example code the pool now has a maximum limit of 5 concurrently open connections. If 5 connections are already open and another new connection is needed, then the application will be forced to wait until one of the 5 open connections is freed up and becomes idle.</p>
 
@@ -3980,8 +3979,9 @@ BenchmarkMaxOpenConns2-8                1000       2181641 ns/op         470 B/o
 BenchmarkMaxOpenConns5-8                2000        859654 ns/op         493 B/op         10 allocs/op
 BenchmarkMaxOpenConns10-8               2000        545394 ns/op         510 B/op         10 allocs/op
 BenchmarkMaxOpenConnsUnlimited-8        2000        531030 ns/op         479 B/op          9 allocs/op
-PASS
-</pre></code></figure>
+PASS</pre></code></figure>
+
+<p><em><strong>Edit:</strong> To make clear, the purpose of this benchmark is not to simulate 'real-life' behaviour of an application. It's solely to help illustrate how <code>sql.DB</code> behaves behind the scenes and the impact of changing <code>MaxOpenConns</code> on that behaviour.</em></p>
 
 <p>For this benchmark we can see that the more open connections that are allowed, the less time is taken to perform the <code>INSERT</code> on the database (3129633 ns/op with 1 open connection compared to 531030 ns/op for unlimited connections &mdash; about 6 times quicker). This is because the more open connections that there are, the less time (on average) the benchmark code needs to wait for an open connection to be freed and made idle (ready for use) again.</p>
 
@@ -3998,8 +3998,7 @@ if err != nil {
 
 // Set the maximum number of concurrently idle connections to 5. Setting this
 // to less than or equal to 0 will mean that no idle connections are retained.
-db.SetMaxIdleConns(5)
-</pre></code></figure>
+db.SetMaxIdleConns(5)</pre></code></figure>
 
 <p>In theory, allowing a higher number of idle connections in the pool will improve performance because it makes it less likely that a new connection will need to be established from scratch &mdash; therefore helping to save resources.</p>
 
@@ -4010,8 +4009,7 @@ BenchmarkMaxIdleConns1-8            2000        568765 ns/op        2596 B/op   
 BenchmarkMaxIdleConns2-8            2000        529359 ns/op         596 B/op         11 allocs/op
 BenchmarkMaxIdleConns5-8            2000        506207 ns/op         451 B/op          9 allocs/op
 BenchmarkMaxIdleConns10-8           2000        501639 ns/op         450 B/op          9 allocs/op
-PASS
-</pre></code></figure>
+PASS</pre></code></figure>
 
 <p>When <code>MaxIdleConns</code> is set to none, a new connection has to be created from scratch for each <code>INSERT</code> and we can see from the benchmarks that the average runtime and memory usage is comparatively high.</p>
 
@@ -4046,8 +4044,7 @@ if err != nil {
 // Set the maximum lifetime of a connection to 1 hour. Setting it to 0
 // means that there is no maximum lifetime and the connection is reused
 // forever (which is the default behavior).
-db.SetConnMaxLifetime(time.Hour)
-</pre></code></figure>
+db.SetConnMaxLifetime(time.Hour)</pre></code></figure>
 
 <p>In this example all our connections will 'expire' 1 hour after they were first created, and cannot be reused after they've expired. But note:</p>
 
@@ -4070,10 +4067,11 @@ BenchmarkConnMaxLifetime200-8               2000        576053 ns/op        1612
 BenchmarkConnMaxLifetime500-8               2000        558297 ns/op         913 B/op         14 allocs/op
 BenchmarkConnMaxLifetime1000-8              2000        543601 ns/op         740 B/op         12 allocs/op
 BenchmarkConnMaxLifetimeUnlimited-8         3000        532789 ns/op         412 B/op          9 allocs/op
-PASS
-</pre></code></figure>
+PASS</pre></code></figure>
 
 <p>In these particular benchmarks we can see that memory usage was more than 3 times greater with a 100ms lifetime compared to an unlimited lifetime, and the average runtime for each <code>INSERT</code> was also slightly longer.</p>
+
+<p>If you do set <code>ConnMaxLifetime</code> in your code, it is important to bear in mind the frequency at which connections will expire (and subsequently be recreated). For example, if you have 100 total connections and a <code>ConnMaxLifetime</code> of 1 minute, then your application can potentially kill and recreate up to 1.67 connections (on average) every second. You don't want this frequency to be so great that it ultimately hinders performance, rather than helping it.</p>
 
 <h2 id="exceedingconnectionlimits">Exceeding connection limits</h2>
 
@@ -4081,8 +4079,7 @@ PASS
 
 <p>As an illustration, I'll change my <code>postgresql.conf</code> file so only a total of 5 connections are permitted (the default is 100)...</p>
 
-<figure class="plain"><code><pre>max_connections = 5
-</pre></code></figure>
+<figure class="plain"><code><pre>max_connections = 5</pre></code></figure>
 
 <p>And then rerun the benchmark test with unlimited open connections...</p>
 
@@ -4090,8 +4087,7 @@ PASS
     main_test.go:14: pq: sorry, too many clients already
     main_test.go:14: pq: sorry, too many clients already
     main_test.go:14: pq: sorry, too many clients already
-FAIL
-</pre></code></figure>
+FAIL</pre></code></figure>
 
 <p>As soon as the hard limit of 5 connections is hit my database driver (<a href="https://github.com/lib/pq">pq</a>) immediately returns a <code>sorry, too many clients already</code> error message instead of completing the <code>INSERT</code>.</p>
 
@@ -4105,23 +4101,29 @@ if err != nil {
 
 // Set the number of open and idle connection to a maximum total of 3.
 db.SetMaxOpenConns(2)
-db.SetMaxIdleConns(1)
-</pre></code></figure>
+db.SetMaxIdleConns(1)</pre></code></figure>
 
 <p>Now there will only ever be a maximum of 3 connections created by <code>sql.DB</code> and the benchmark should run without any errors.</p>
 
-<p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free.</p>
+<p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free. In the context of a web application, for example, the user's HTTP request would appear to 'hang' and could potentially even timeout while waiting for the database task to be run.</p>
+    
+<p>To mitigate this you should always pass in a <code>context.Context</code> object with a fixed, fast, timeout when making database calls, using the context-enabled methods like <a href="https://golang.org/pkg/database/sql/#DB.ExecContext"><code>ExecContext()</code></a>. An example can be seen in the <a href="https://gist.github.com/alexedwards/5d1db82e6358b5b6efcb038ca888ab07#file-main_test-go-L12-L15">gist here</a>.</p>
 
-<p>For some applications that behavior might be fine, but for others it might not. For example, in a web application it could arguably be better to immediately log the error message and send a <code>500 Internal Server Error</code> to the user, rather than having their HTTP request hang and potentially timeout while waiting for a free connection.</p>
+<h2>In Summary</h2>
 
-<h2>In summary</h2>
+<ol>
+    <li>As a rule of thumb, you should explicitly set <code>MaxOpenConns</code> and <code>MaxIdleConns</code> values. The sum of these should be comfortably below any hard limit on the number of connections imposed by your database and infrastructure, and <code>MaxIdleConns</code> should always be less than or equal to <code>MaxOpenConns</code>.</li>
+    <li>In general, higher <code>MaxOpenConns</code> and <code>MaxIdleConns</code> values will lead to better performance. But the returns are diminishing, and you should be aware that having a too-large idle connection pool (with connections that are not re-used and eventually go bad) can actually lead to reduced performance.</li>
+    <li>To mitigate the risk from point 2 above, you may want to set a relatively short <code>ConnMaxLifetime</code>. But you don't want this to be so short that leads to connections being killed and recreated unnecessarily often.</li>
+</ol>
 
-<ul>
-    <li><p>For most applications using <code>SetMaxOpenConns()</code>to limit the maximum of open connections will have a negative impact on performance, but it may make sense to do so if your database is operating in a particularly resource-constrained environment.</p></li>
-    <li><p>If your application is bursty or regularly executing more than 2 database tasks concurrently then there will probably be a positive performance impact from increasing the size of the idle connection pool via <code>SetMaxIdleConns()</code>. But be aware that making it too large may be counter-productive. Don't go crazy with it, and benchmarking real-world load is probably a good idea.</p></li>
-    <li><p>For most applications implementing a connection lifetime limit via <code>SetConnMaxLifetime()</code> will have a negative impact on performance. But if your database itself enforces a short connection lifetime then it makes sense to match this in <code>sql.DB</code> to avoid the overhead of trying-and-retrying bad connections.</p></li>
-    <li><p>If you prefer for your application to wait for a connection to be freed up (rather than return an error) when your database's hard limit of connections is reached then you should explicitly set both <code>SetMaxOpenConns()</code> and <code>SetMaxIdleConns()</code>.</p></li>
-</ul>
+<p>For small-to-medium web applications I typically use the following settings as a starting point, and then optimize from there depending on the results of load-testing with real-life levels of throughput.</p></p>
+
+<figure class="plain"><code><pre>
+db.SetMaxOpenConns(25)
+db.SetMaxIdleConns(25)
+db.SetConnMaxLifetime(5*time.Minute)
+</pre></code></figure>
     ]]></description>
   </item>
   <item>
