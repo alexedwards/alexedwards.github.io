@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="Alex Edwards">
-    <meta name="copyright" content="Copyright Alex Edwards 2019">
+    <meta name="copyright" content="Copyright Alex Edwards 2020">
     <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
     <title>How to Rate Limit HTTP Requests - Alex Edwards</title>
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,700|Fira+Sans:400,400i,700,700i,800" rel="stylesheet">
@@ -281,17 +281,17 @@ func getVisitor(ip string) *rate.Limiter {
 // Every minute check the map for visitors that haven't been seen for
 // more than 3 minutes and delete the entries.
 func cleanupVisitors() {
-    for {
-        time.Sleep(time.Minute)
+	for {
+		time.Sleep(time.Minute)
 
-        mu.Lock()
-        defer mu.Unlock()
-        for ip, v := range visitors {
-            if time.Now().Sub(v.lastSeen) > 3*time.Minute {
-                delete(visitors, ip)
-            }
-        }
-    }
+		mu.Lock()
+		for ip, v := range visitors {
+			if time.Since(v.lastSeen) > 3*time.Minute {
+				delete(visitors, ip)
+			}
+		}
+		mu.Unlock()
+	}
 }
 
 func limit(next http.Handler) http.Handler {
@@ -341,7 +341,7 @@ func limit(next http.Handler) http.Handler {
     </main>
     <footer>
       <div class="wrapper">
-        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2019</div>
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2020</div>
       </div>
     </footer>
     <script type="text/javascript">
