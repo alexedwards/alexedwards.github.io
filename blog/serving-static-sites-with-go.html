@@ -47,7 +47,7 @@
 	<div class="metadata">
 		<span class="dates">
 			
-			Last updated: 26th January 2017
+			Last updated: 29th February 2020
 			
 		</span>
 		
@@ -56,9 +56,9 @@
 		</span>
 		
 	</div>
-	<p>I've recently moved the site you're reading right now from a Sinatra application to an (almost) static one served by Go. While it's fresh in my head, here's an explanation of principles behind creating and serving static sites with Go.</p>
+	<p>I've recently moved the site you're reading right now from a Sinatra/Ruby application to an (almost) static site served by Go. So while it's fresh in my head, here's an explanation of principles behind creating and serving static sites with Go.</p>
 
-<p>Let's begin with a simple but real-world example: serving vanilla HTML and CSS files from a particular location.</p>
+<p>Let's begin with a simple but real-world example: serving vanilla HTML and CSS files from a particular location on disk.</p>
 
 <p>Start by creating a directory to hold the project:</p>
 
@@ -67,10 +67,10 @@ $ mkdir static-site
 $ cd static-site
 </pre></code></figure>
 
-<p>Along with an <code>app.go</code> file to hold our code, and some sample HTML and CSS files in a <code>static</code> directory.</p>
+<p>And then add a <code>main.go</code> file to hold our code, and some simple HTML and CSS files in a <code>static</code> directory.</p>
 
 <figure class="shell"><code><pre>
-$ touch app.go
+$ touch main.go
 $ mkdir -p static/stylesheets
 $ touch static/example.html static/stylesheets/main.css
 </pre></code></figure>
@@ -95,7 +95,7 @@ body {color: #c0392b}
 
 <p>Once those files are created, the code we need to get up and running is wonderfully compact:</p>
 
-<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
@@ -104,47 +104,56 @@ import (
 )
 
 func main() {
-  fs := http.FileServer(http.Dir("static"))
+  fs := http.FileServer(http.Dir("./static"))
   http.Handle("/", fs)
 
-  log.Println("Listening...")
-  http.ListenAndServe(":3000", nil)
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", nil)
+  if err != nil {
+    log.Fatal(err)
+  }
 }
 </pre></code></figure>
 
 <p>Let's step through this.</p>
 
-<p>First we use the <a href="http://golang.org/pkg/net/http/#FileServer">FileServer</a> function to create a handler which responds to all HTTP requests with the contents of a given <a href="http://golang.org/pkg/net/http/#FileSystem">FileSystem</a>. For our FileSystem we're using the <code>static</code> directory relative to our application, but you could use any other directory on your machine (or indeed any object that implements the FileSystem interface). Next we use the <a href="http://golang.org/pkg/net/http/#Handle">Handle</a> function to register our FileServer as the handler for all requests, and launch the server listening on port 3000.</p>
+<p>First we use the <a href="http://golang.org/pkg/net/http/#FileServer"><code>http.FileServer()</code></a> function to create a handler which responds to all HTTP requests with the contents of a given <em>file system</em>. For our file system we're using the <code>static</code> directory relative to our application, but you could use any other directory on your machine (or indeed any object that implements the <a href="https://golang.org/pkg/net/http/#FileSystem"><code>http.FileSystem</code></a> interface). Next we use the <a href="http://golang.org/pkg/net/http/#Handle"><code>http.Handle()</code></a> function to register the file server as the handler for all requests, and launch the server listening on port 3000.</p>
 
 <p>It's worth pointing out that in Go the pattern <code>"/"</code> matches all request paths, rather than just the empty path.</p>
 
 <p>Go ahead and run the application:</p>
 
 <figure class="shell"><code><pre>
-$ go run app.go
-<samp>Listening...</samp>
+$ go run main.go
+<samp>Listening on :3000...</samp>
 </pre></code></figure>
 
 <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the HTML page we made with a big red heading.</p>
 
+<p><img src="/static/images/static-1.png"></p>
+
 <h2>Almost-Static Sites</h2>
 
-<p>If you're creating a lot of static HTML files by hand, it can be tedious to keep repeating boilerplate content. Let's explore using the <a href="http://golang.org/pkg/text/template/">Template</a> package to put shared markup in a <em>layout</em> file.</p>
+<p>If you're creating a lot of static HTML files by hand, it can be tedious to keep repeating boilerplate content. Let's explore using Go's <a href="http://golang.org/pkg/html/template/"><code>html/template</code></a> package to put shared markup in a <em>layout</em> file.</p>
 
-<p>At the moment <em>all</em> requests are being handled by our FileServer. Let's make a slight adjustment to our application so it only handles request paths that begin with the pattern <code>/static/</code> instead.</p>
+<p>At the moment <em>all</em> requests are being handled by our file server. Let's make a slight adjustment to our application so the file server only handles request paths that begin with the pattern <code>/static/</code> instead.</p>
 
-<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 ...
+
 func main() {
-  fs := http.FileServer(http.Dir("static"))
+  fs := http.FileServer(http.Dir("./static"))
   http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-  log.Println("Listening...")
-  http.ListenAndServe(":3000", nil)
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", nil)
+  if err != nil {
+    log.Fatal(err)
+  }
 }
 </pre></code></figure>
 
-<p>Notice that because our <code>static</code> directory is set as the root of the FileSystem, we need to strip off the <code>/static/</code> prefix from the request path <em>before</em> searching the FileSystem for the given file. We do this using the <a href="http://golang.org/pkg/net/http/#StripPrefix">StripPrefix</a> function.</p>
+<p>Notice that because our <code>static</code> directory is set as the root of the file system, we need to strip off the <code>/static/</code> prefix from the request path <em>before</em> searching the file system for the given file. We do this using the <a href="http://golang.org/pkg/net/http/#StripPrefix"><code>http.StripPrefix()</code></a> function.</p>
 
 <p>If you restart the application, you should find the CSS file we made earlier available at <a href="http://localhost:3000/static/stylesheets/main.css">localhost:3000/static/stylesheets/main.css</a>.</p>
 
@@ -166,6 +175,7 @@ $ touch templates/layout.html templates/example.html
 &lt;/head&gt;
 &lt;body&gt;
   &#123;&#123;template "body"&#125;&#125;
+  &lt;footer&gt;Made with Go&lt;/footer&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 &#123;&#123;end&#125;&#125;
@@ -181,11 +191,11 @@ $ touch templates/layout.html templates/example.html
 
 <p>If you've used templating in other web frameworks or languages before, this should hopefully feel familiar.</p>
 
-<p>Go templates &ndash; in the way we're using them here &ndash; are essentially just named text blocks surrounded by <code>&#123;&#123;define&#125;&#125;</code> and <code>&#123;&#123;end&#125;&#125;</code> tags. Templates can be embedded into each other, as we do above where the <code>layout</code> template embeds both the <code>title</code> and <code>body</code> templates.</p>
+<p>Go templates &ndash; in the way we're using them here &ndash; are essentially just named text blocks surrounded by <code>&#123;&#123;define&#125;&#125;</code> and <code>&#123;&#123;end&#125;&#125;</code> tags. Templates can be embedded into each other using the <code>{{template}}</code> tag, like we do above where the <code>layout</code> template embeds both the <code>title</code> and <code>body</code> templates.</p>
 
 <p>Let's update the application code to use these:</p>
 
-<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
@@ -196,13 +206,16 @@ import (
 )
 
 func main() {
-  fs := http.FileServer(http.Dir("static"))
+  fs := http.FileServer(http.Dir("./static"))
   http.Handle("/static/", http.StripPrefix("/static/", fs))
 
   http.HandleFunc("/", serveTemplate)
 
-  log.Println("Listening...")
-  http.ListenAndServe(":3000", nil)
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", nil)
+  if err != nil {
+    log.Fatal(err)
+  }
 }
 
 func serveTemplate(w http.ResponseWriter, r *http.Request) {
@@ -218,34 +231,37 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 
 <p>First we've added the <code>html/template</code> and <code>path</code> packages to the import statement.</p>
 
-<p>We've then specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate</code> function (if you were wondering, Go matches patterns based on length, with longer patterns take precedence over shorter ones).</p>
+<p>Then we've specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate</code> function (if you were wondering, Go matches patterns based on length, with longer patterns take precedence over shorter ones).</p>
 
-<p>In the <code>serveTemplate</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="https://golang.org/pkg/path/filepath/#Join">filepath.Join</a>, which has the advantage joining paths using the correct separator for your OS.</p>
+<p>In the <code>serveTemplate</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="https://golang.org/pkg/path/filepath/#Join"><code>filepath.Join()</code></a>, which has the advantage joining paths using the correct separator for your OS.</p>
 
-<p>Importantly, because the URL path is untrusted user input, we use <a href="https://golang.org/pkg/path/filepath/#Clean">filepath.Clean</a> to sanitise the URL path before using it.</p>
+<p>Importantly, because the URL path is untrusted user input, we use <a href="https://golang.org/pkg/path/filepath/#Clean"><code>filepath.Clean()</code></a> to sanitise the URL path before using it.</p>
 
-<p>(Note that even though filepath.Join automatically runs the <em>joined path</em> through filepath.Clean, to help prevent directory traversal attacks you need to manually sanitise any untrusted inputs <em>before</em> joining them.)</p>
+<p>(Note that even though <code>filepath.Join()</code> automatically runs the <em>joined path</em> through <code>filepath.Clean()</code>, to help prevent directory traversal attacks you need to manually sanitise any untrusted inputs <em>before</em> joining them.)</p>
 
-<p>We then use the <a href="http://golang.org/pkg/text/template/#Template.ParseFiles">ParseFiles</a> function to bundle the requested template and layout into a <em>template set</em>. Finally, we use the <a href="http://golang.org/pkg/text/template/#Template.ExecuteTemplate">ExecuteTemplate</a> function to render a named template in the set, in our case the <code>layout</code> template.</p>
+<p>We then use the <a href="http://golang.org/pkg/text/template/#Template.ParseFiles"><code>template.ParseFiles()</code></a> function to bundle the requested template and layout into a <em>template set</em>. Finally, we use the <a href="http://golang.org/pkg/text/template/#Template.ExecuteTemplate"><code>template.ExecuteTemplate()</code></a> function to render a named template in the set, in our case the <code>layout</code> template.</p>
 
 <p>Restart the application:</p>
 
 <figure class="shell"><code><pre>
-$ go run app.go
-<samp>Listening...</samp>
+$ go run main.go
+<samp>Listening on :3000...</samp>
 </pre></code></figure>
 
-<p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. If you look at the source you should find the markup from both templates merged together. You might also notice that the <code>Content-Type</code> and <code>Content-Length</code> headers have automatically been set for us.</p>
+<p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the markup from all the templates merged together like so:</p>
+<p><img src="/static/images/static-2.png"></p>
+
+<p>If you use web developer tools to inspect the HTTP response, you'll also see that Go automatically sets the correct <code>Content-Type</code> and <code>Content-Length</code> headers for us.</p>
 
 <p>Lastly, let's make the code a bit more robust. We should:</p>
 
 <ul>
   <li>Send a <code>404</code> response if the requested template doesn't exist.</li>
   <li>Send a <code>404</code> response if the requested template path is a directory.</li>
-  <li>Send a <code>500</code> response if the <code>template.ParseFiles</code> or <code>template.ExecuteTemplate</code> functions throw an error, and log the detailed error message.</li>
+  <li>Send a <code>500</code> response if the <code>template.ParseFiles()</code> or <code>template.ExecuteTemplate()</code> functions throw an error, and log the detailed error message.</li>
 </ul>
 
-<figure class="file"><figcaption>File: app.go</figcaption><code><pre>
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
@@ -257,12 +273,15 @@ import (
 )
 
 func main() {
-  fs := http.FileServer(http.Dir("static"))
+  fs := http.FileServer(http.Dir("./static"))
   http.Handle("/static/", http.StripPrefix("/static/", fs))
   http.HandleFunc("/", serveTemplate)
 
-  log.Println("Listening...")
-  http.ListenAndServe(":3000", nil)
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", nil)
+  if err != nil {
+    log.Fatal(err)
+  }
 }
 
 func serveTemplate(w http.ResponseWriter, r *http.Request) {
@@ -293,7 +312,8 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  if err := tmpl.ExecuteTemplate(w, "layout", nil); err != nil {
+  err = tmpl.ExecuteTemplate(w, "layout", nil)
+  if err != nil {
     log.Println(err.Error())
     http.Error(w, http.StatusText(500), 500)
   }
