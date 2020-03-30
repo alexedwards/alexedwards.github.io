@@ -47,7 +47,7 @@
 	<div class="metadata">
 		<span class="dates">
 			
-			Last updated: 22nd January 2018
+			Last updated: 30th March 2020
 			
 		</span>
 		
@@ -56,26 +56,28 @@
 		</span>
 		
 	</div>
-	<p>In this post I'm going to run through a start-to-finish tutorial for building a online contact form in Go. I'll be trying to explain the different steps in detail, as well as outlining a sensible pattern for processing that can be extended to other forms.</p>
+	<p>In this post I want to outline a sensible pattern that you can use for validating and processing HTML forms in Go web applications. Over the years I've tried out a number of different approaches, but this is the basic pattern that I always keep coming back to. It's clear and uncomplicated, but also flexible and extensible enough to work well in a wide variety of projects and scenarios.<p>
+  
+<p>To illustrate the pattern, I'll run through the start-to-finish build of a simple online contact form.</p>
 
-<p>Let's begin the example by creating a new directory for the application, along with a <code>main.go</code> file for our code and a couple of vanilla HTML templates:</p>
+<p>So let's begin by creating a new directory for the application, along with a <code>main.go</code> file for our code and a couple of vanilla HTML templates:</p>
 
 <figure class="shell"><code><pre>
 $ mkdir -p contact-form/templates
 $ cd contact-form
-$ touch main.go templates/index.html templates/confirmation.html
+$ touch main.go templates/home.html templates/confirmation.html
 </pre></code></figure>
 
-<figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
+<figure class="file"><figcaption>File: templates/home.html</figcaption><code><pre>
 &lt;h1&gt;Contact&lt;/h1&gt;
 &lt;form action="/" method="POST" novalidate&gt;
   &lt;div&gt;
-    &lt;label&gt;Your email:&lt;/label&gt;
-    &lt;input type="email" name="email"&gt;
+    &lt;p&gt;&lt;label&gt;Your email:&lt;/label&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;input type="email" name="email"&gt;&lt;/p&gt;
   &lt;/div&gt;
   &lt;div&gt;
-    &lt;label&gt;Your message:&lt;/label&gt;
-    &lt;textarea name="content"&gt;&lt;/textarea&gt;
+    &lt;p&gt;&lt;label&gt;Your message:&lt;/label&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;textarea name="content"&gt;&lt;/textarea&gt;&lt;/p&gt;
   &lt;/div&gt;
   &lt;div&gt;
     &lt;input type="submit" value="Send message"&gt;
@@ -88,44 +90,91 @@ $ touch main.go templates/index.html templates/confirmation.html
 &lt;p&gt;Your message has been sent!&lt;/p&gt;
 </pre></code></figure>
 
-<p>Our contact form will issue a POST request to <code>/</code>, which will be the same URL path that we use for presenting the form. This means that we'll need to route requests for the same URL to different handlers based on the HTTP method.</p>
-
-<p>There are a few ways of achieving this, but we'll use <a href="https://github.com/bmizerany/pat">Pat</a> &ndash; a third-party routing library which I've <a href="/blog/a-mux-showdown">talked about before</a>. You'll need to install it if you're following along:</p>
+<p>If you're following along you'll also need to <a href="https://github.com/golang/go/wiki/Modules">enable modules</a> in the application root by running the <code>go mod init</code> command like so:</p>
 
 <figure class="shell"><code><pre>
-$ go get github.com/bmizerany/pat
+$ go mod init contact-form.example.com 
+<samp>go: creating new go.mod: module contact-form.example.com</samp>
 </pre></code></figure>
 
-<p>Go ahead and create a skeleton for the application:</p>
+<p>Once that's done, your directory structure should look like this:</p>
+
+<figure class="plain"><code><pre>
+.
+├── templates
+│   ├── confirmation.html
+│   └── home.html
+├── go.mod
+└── main.go
+</pre></code></figure>
+
+<h2>Displaying the Form</h2>
+
+<p>Our application is going to provide three routes:</p>
+
+<table>
+  <tr>
+    <th>Method</th>
+    <th>URL Path</th>
+    <th>Handler</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>GET</td>
+    <td>/</td>
+    <td>home</td>
+    <td>Display the contact form</td>
+  </tr>
+  <tr>
+    <td>POST</td>
+    <td>/</td>
+    <td>send</td>
+    <td>Submit the contact form</td>
+  </tr>
+  <tr>
+    <td style="vertical-align: top;">GET</td>
+    <td style="vertical-align: top;">/confirmation</td>
+    <td style="vertical-align: top;">confirmation</td>
+    <td style="vertical-align: top;">Display a confirmation message after successful submission</td>
+  </tr>
+</table>
+
+<p></p>To handle the routing of requests we're going to use <a href="https://github.com/bmizerany/pat">pat</a> &ndash; a third-party router package which I've <a href="/blog/a-mux-showdown">talked about before</a>. But if you want to use an alternative router please feel free.</p>
+
+<p>Let's go ahead and create a skeleton for the application:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 package main
 
 import (
-  "github.com/bmizerany/pat"
   "html/template"
   "log"
   "net/http"
+
+  "github.com/bmizerany/pat"
 )
 
 func main() {
   mux := pat.New()
-  mux.Get("/", http.HandlerFunc(index))
+  mux.Get("/", http.HandlerFunc(home))
   mux.Post("/", http.HandlerFunc(send))
   mux.Get("/confirmation", http.HandlerFunc(confirmation))
 
   log.Println("Listening...")
-  http.ListenAndServe(":3000", mux)
+  err := http.ListenAndServe(":3000", mux)
+  if err != nil {
+    log.Fatal(err)
+  }
 }
 
-func index(w http.ResponseWriter, r *http.Request) {
-  render(w, "templates/index.html", nil)
+func home(w http.ResponseWriter, r *http.Request) {
+  render(w, "templates/home.html", nil)
 }
 
 func send(w http.ResponseWriter, r *http.Request) {
-  // Validate form
-  // Send message in an email
-  // Redirect to confirmation page
+  // Step 1: Validate form
+  // Step 2: Send message in an email
+  // Step 3: Redirect to confirmation page
 }
 
 func confirmation(w http.ResponseWriter, r *http.Request) {
@@ -135,12 +184,15 @@ func confirmation(w http.ResponseWriter, r *http.Request) {
 func render(w http.ResponseWriter, filename string, data interface{}) {
   tmpl, err := template.ParseFiles(filename)
   if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
+    log.Println(err)
+    http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
   }
+
   if err := tmpl.Execute(w, data); err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
+    log.Println(err)
+    http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
   }
-}
+}  
 </pre></code></figure>
 
 <p>This is fairly straightforward stuff so far. The only real point of note is that we've put the template handling into a <code>render</code> function to cut down on boilerplate code.</p>
@@ -148,15 +200,19 @@ func render(w http.ResponseWriter, filename string, data interface{}) {
 <p>If you run the application:</p>
 
 <figure class="shell"><code><pre>
-$ go run main.go
-<samp>Listening...</samp>
+$ go run .
+<samp>2020/03/30 06:41:42 Listening...</samp>
 </pre></code></figure>
 
-<p>And visit <a href="http://localhost:3000/">localhost:3000</a> in your browser you should see the contact form, although it doesn't do anything yet.</p>
+<p>And then visit <a href="http://localhost:3000/">localhost:3000</a> in your browser you should see the contact form being displayed (although it doesn't do anything yet!).</p>
 
-<p>Now for the interesting part. Let's add a couple of validation rules to our contact form, display the errors if there are any, and make sure that the form values get presented back if there's an error so the user doesn't need to retype them.</p>
+<p><img src="/static/images/contact-1.png"></p>
 
-<p>One approach to setting this up is to add the code inline in our <code>send</code> handler, but personally I find it cleaner and neater to break out the logic into a separate <code>message.go</code> file:</p>
+<h2>Validating the Form</h2>
+
+<p>Now for the interesting part. Let's add some validation rules to this contact form, display the validation errors if there are any, and make sure that the form values get presented back if there's an error so the user doesn't need to retype them.</p>
+
+<p>We <em>could</em> add the code for this inline in our <code>send</code> handler, but personally I find it cleaner and neater to break out the logic into a separate <code>message.go</code> file:</p>
 
 <figure class="shell"><code><pre>
 $ touch message.go
@@ -170,8 +226,10 @@ import (
   "strings"
 )
 
+var rxEmail = regexp.MustCompile(".+@.+\\..+")
+
 type Message struct {
-  Email    string
+  Email   string
   Content string
   Errors  map[string]string
 }
@@ -179,80 +237,75 @@ type Message struct {
 func (msg *Message) Validate() bool {
   msg.Errors = make(map[string]string)
 
-  re := regexp.MustCompile(".+@.+\\..+")
-  matched := re.Match([]byte(msg.Email))
-  if matched == false {
+  match := rxEmail.Match([]byte(msg.Email))
+  if match == false {
     msg.Errors["Email"] = "Please enter a valid email address"
   }
 
   if strings.TrimSpace(msg.Content) == "" {
-    msg.Errors["Content"] = "Please write a message"
+    msg.Errors["Content"] = "Please enter a message"
   }
 
   return len(msg.Errors) == 0
 }
-
 </pre></code></figure>
 
 <p>So what's going on here?</p>
 
-<p>We've started by defining a new <code>Message</code> type, consisting of the <code>Email</code> and <code>Content</code> values (which will hold the data from the submitted form), along with an <code>Errors</code> map to hold any validation error messages.</p>
+<p>We've started by defining a <code>rxEmail</code> variable, containing a simple regular expression for validating the format of the email address in the form.</p>
 
-<p>We then created a <code>Validate</code> method that acts on a given <code>Message</code>, which summarily checks the format of the email address and makes sure that the content isn't blank. In the event of any errors we add them to the <code>Errors</code> map, and finally return a <code>true</code> or <code>false</code> value to indicate whether validation passed successful or not.</p>
+<p>Then we define a <code>Message</code> struct, consisting of <code>Email</code> and <code>Content</code> fields (which will hold the data from the submitted form), along with an <code>Errors</code> map to hold any validation error messages.</p>
 
-<p>This approach means that we can keep the code in our <code>send</code> handler fantastically light. All we need it to do is retrieve the form values from the POST request, create a new <code>Message</code> object with them, and call <code>Validate()</code>. If the validation fails we'll then want to reshow the contact form, passing back the relevant <code>Message</code> object.</p>
+<p>We then created a <code>Validate()</code> method that acts on a given <code>Message</code>, which checks the format of the email address and makes sure that the content isn't blank. In the event of any errors we add them to the <code>Errors</code> map, and finally return a <code>true</code> or <code>false</code> value to indicate whether validation passed successful or not. In a large project you might want to break the validation checks into helper functions to reduce duplication.</p>
+
+<p>This approach means that we can keep the code in our <code>send</code> handler fantastically light. All we need it to do is retrieve the form values from the POST request, create a new <code>Message</code> instance containing them, and call <code>Validate()</code>. If the validation fails we can re-render the contact form, passing back the relevant <code>Message</code> struct. Like so:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 ...
+
 func send(w http.ResponseWriter, r *http.Request) {
-  msg := &Message{
-    Email: r.FormValue("email"),
-    Content: r.FormValue("content"),
-  }
+	// Step 1: Validate form
+	msg := &Message{
+		Email:   r.PostFormValue("email"),
+		Content: r.PostFormValue("content"),
+	}
 
-  if msg.Validate() == false {
-    render(w, "templates/index.html", msg)
-    return
-  }
+	if msg.Validate() == false {
+		render(w, "templates/home.html", msg)
+		return
+	}
 
-  // Send message in an email
-  // Redirect to confirmation page
+	// Step 2: Send message in an email
+	// Step 3: Redirect to confirmation page
 }
+
 ...
 </pre></code></figure>
 
-<p>As a side note, in this example above we're using the <a href="http://golang.org/pkg/net/http/#Request.FormValue">FormValue</a> method on the request to access the POST data. We could also access the data directly via <code>r.Form</code>, but there is a gotcha to point out &ndash; by default <code>r.Form</code> will be empty until it is filled by calling <a href="http://golang.org/pkg/net/http/#Request.ParseForm">ParseForm</a> on the request. Once that's done, we can access it in the same way as any <a href="http://golang.org/pkg/net/url/#Values">url.Values</a> type. For example:</p>
+<p>As a side note, in the code above we're using the <a href="http://golang.org/pkg/net/http/#Request.PostFormValue"><code>PostFormValue()</code></a> method on the request to access the POST data. This is a helper method which parses the form data in the request body (using <a href="http://golang.org/pkg/net/http/#Request.ParseForm"><code>ParseForm()</code></a>) and returns the value for a specific field. If no matching field exists in the request body, it will return the empty string <code>""</code>.</p>
 
-<figure class="go"><code><pre>
-err := r.ParseForm()
-// Handle error
-msg := &Message{
-  Email: r.Form.Get("email"),
-  Content: r.Form.Get("content"),
-}
-</pre></code></figure>
+<p>For large request bodies, you might also want to consider using the <a href="https://pkg.go.dev/github.com/gorilla/schema?tab=overview">Gorilla Schema</a> package to automatically decode the form values in to a struct, instead of assigning them manually like we have done in the code above.</p>
+  
+<p>Anyway, let's now update our <code>home.html</code> template so it displays the validation errors (if they exist) above the relevant fields, and repopulate the form inputs with any information that the user previously typed in:</p>
 
-
-<p>Anyway, let's update our template so it shows the validation errors (if they exist) above the relevant fields, and repopulate the form inputs with any information that the user previously typed in:</p>
-
-<figure class="file"><figcaption>File: templates/index.html</figcaption><code><pre>
-&lt;style type="text/css"&gt;.error &#123;color: red;&#125;&lt;/style&gt;
+<figure class="file"><figcaption>File: templates/home.html</figcaption><code><pre>
+&lt;style type="text/css"&gt;.error {color: red;}&lt;/style&gt;
 
 &lt;h1&gt;Contact&lt;/h1&gt;
 &lt;form action="/" method="POST" novalidate&gt;
   &lt;div&gt;
-    &#123;&#123; with .Errors.Email &#125;&#125;
-    &lt;p class="error"&gt;&#123;&#123; . &#125;&#125;&lt;/p&gt;
-    &#123;&#123; end &#125;&#125;
-    &lt;label&gt;Your email:&lt;/label&gt;
-    &lt;input type="email" name="email" value="&#123;&#123; .Email &#125;&#125;"&gt;
+    {{ with .Errors.Email }}
+    &lt;p class="error"&gt;{{ . }}&lt;/p&gt;
+    {{ end }}
+    &lt;p&gt;&lt;label&gt;Your email:&lt;/label&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;input type="email" name="email" value="{{ .Email }}"&gt;&lt;/p&gt;
   &lt;/div&gt;
   &lt;div&gt;
-    &#123;&#123; with .Errors.Content &#125;&#125;
-    &lt;p class="error" &gt;&#123;&#123; . &#125;&#125;&lt;/p&gt;
-    &#123;&#123; end &#125;&#125;
-    &lt;label&gt;Your message:&lt;/label&gt;
-    &lt;textarea name="content"&gt;&#123;&#123; .Content &#125;&#125;&lt;/textarea&gt;
+    {{ with .Errors.Content }}
+    &lt;p class="error" &gt;{{ . }}&lt;/p&gt;
+    {{ end }}
+    &lt;p&gt;&lt;label&gt;Your message:&lt;/label&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;textarea name="content"&gt;{{ .Content }}&lt;/textarea&gt;&lt;/p&gt;
   &lt;/div&gt;
   &lt;div&gt;
     &lt;input type="submit" value="Send message"&gt;
@@ -260,75 +313,82 @@ msg := &Message{
 &lt;/form&gt;
 </pre></code></figure>
 
-<p>Go ahead and give it a try:</p>
+<p>Let's try this out. Go ahead and run the application:</p>
 
 <figure class="shell"><code><pre>
-$ go run main.go message.go
-<samp>Listening...</samp>
+$ go run .
+<samp>2020/03/30 08:41:42 Listening...</samp>
 </pre></code></figure>
 
-<p>Still, our contact form is pretty useless unless we actually do something with it. Let's add a <code>Deliver</code> method which sends the contact form message to a particular email address. In the code below I'm using Gmail, but the same thing should work with any other SMTP server.</p>
+<p>And try submitting an invalid form. You should find that the form is redisplayed along with the relevant data and validation errors like so:</p> 
+
+<p><img src="/static/images/contact-2.png"></p>
+
+<h2>Sending the Contact Form Message</h2>
+
+<p>Great! That's now working nicely, but our contact form isn't very useful unless we actually do something with it. Let's add a <code>Deliver()</code> method to our <code>Message</code> which sends the contact form message to a particular email address. In the code below I'm using the <a href="https://pkg.go.dev/github.com/go-mail/mail?tab=overview">go-mail/mail</a> package and a <a href="mailtrap.io/">mailtrap.io</a> account for email sending, but the same thing should work with any other SMTP server.</p>
 
 <figure class="file"><figcaption>File: message.go</figcaption><code><pre>
 package main
 
 import (
-  "fmt"
-  "net/smtp"
   "regexp"
   "strings"
+
+  "github.com/go-mail/mail"
 )
+
 ...
 
 func (msg *Message) Deliver() error {
-  to := []string{"someone@example.com"}
-  body := fmt.Sprintf("Reply-To: %v\r\nSubject: New Message\r\n%v", msg.Email, msg.Content)
+  email := mail.NewMessage()
+  email.SetHeader("To", "admin@example.com")
+  email.SetHeader("From", "server@example.com")
+  email.SetHeader("Reply-To", msg.Email)
+  email.SetHeader("Subject", "New message via Contact Form")
+  email.SetBody("text/plain", msg.Content)
 
-  username := "you@gmail.com"
-  password := "..."
-  auth := smtp.PlainAuth("", username, password, "smtp.gmail.com")
+  username := "your_username"
+  password := "your_password"
 
-  return smtp.SendMail("smtp.gmail.com:587", auth, msg.Email, to, []byte(body))
-}
+  return mail.NewDialer("smtp.mailtrap.io", 25, username, password).DialAndSend(email)
+}  
 </pre></code></figure>
 
-<p>The final step is to head back to our <code>main.go</code> file,  add some code to call <code>Deliver()</code>, and issue a 303 redirect to the confirmation page that we made earlier:</p>
+<p>The final step is to head back to our <code>main.go</code> file, add some code to call <code>Deliver()</code>, and issue a <code>303 See Other</code> redirect to the confirmation page that we made earlier:</p>
 
 <figure class="file"><figcaption>File: main.go</figcaption><code><pre>
 ...
+
 func send(w http.ResponseWriter, r *http.Request) {
-  msg := &Message{
-    Email: r.FormValue("email"),
-    Content: r.FormValue("content"),
-  }
+	// Step 1: Validate form
+	msg := &Message{
+		Email:   r.PostFormValue("email"),
+		Content: r.PostFormValue("content"),
+	}
 
-  if msg.Validate() == false {
-    render(w, "templates/index.html", msg)
-    return
-  }
+	if msg.Validate() == false {
+		render(w, "templates/home.html", msg)
+		return
+	}
 
-  if err := msg.Deliver(); err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-  http.Redirect(w, r, "/confirmation", http.StatusSeeOther)
+	// Step 2: Send contact form message in an email
+	if err := msg.Deliver(); err != nil {
+		log.Println(err)
+		http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	// Step 3: Redirect to confirmation page
+	http.Redirect(w, r, "/confirmation", http.StatusSeeOther)
 }
+
 ...
 </pre></code></figure>
 
-<h2>Additional Tools</h2>
+<p>So long as your SMTP server account credentials are set up correctly, you should now be able to successfully submit the contact form and you should see the confirmation message below in your browser.</p>
 
-<p>If mapping form data to objects is something that you're doing a lot of, you may find <a href="http://www.gorillatoolkit.org/pkg/schema">Gorilla Schema's</a> automatic decoder useful. If we were using it for our contact form example, the code would look a bit like this:</p>
-
-<figure class="go"><code><pre>
-import "github.com/gorilla/schema"
-...
-err := r.ParseForm()
-// Handle error
-msg := new(Message)
-decoder := schema.NewDecoder()
-decoder.Decode(msg, r.Form)
-</pre></code></figure>
+<p><img src="/static/images/contact-3.png"></p>
 	<div class="footer">
 		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
 		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
