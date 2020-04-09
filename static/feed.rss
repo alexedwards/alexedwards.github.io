@@ -3951,13 +3951,13 @@ Date: Tue, 13 Mar 2018 16:53:27 GMT
 
 <p>I'll begin with a little background.</p>
 
-<p>A <code>sql.DB</code> object is a <em>pool of many database connections</em> which contains both 'open' and 'idle' connections. A connection is marked open when you are using it to perform a database task, such as executing a SQL statement or querying rows. When the task is complete the connection becomes idle.</p>
+<p>A <code>sql.DB</code> object is a <em>pool of many database connections</em> which contains both 'in-use' and 'idle' connections. A connection is marked as in-use when you are using it to perform a database task, such as executing a SQL statement or querying rows. When the task is complete the connection is marked as idle.</p>
 
-<p>When you instruct <code>sql.DB</code> to perform a database task, it will first check if any idle connections are already available in the pool. If one is available then Go will reuse the existing connection and mark it as open for the duration of the task. If there are no idle connections in the pool when you need one then Go will create a new additional connection and 'open' it. </p>
+<p>When you instruct <code>sql.DB</code> to perform a database task, it will first check if any idle connections are already available in the pool. If one is available then Go will reuse this existing connection and mark it as in-use for the duration of the task. If there are no idle connections in the pool when you need one, then Go will create an additional new additional connection.</p>
 
 <h2 id="thesetmaxopenconnsmethod">The SetMaxOpenConns method</h2>
 
-<p>By default there's no limit on the number of connections that can be open at the same time. But you can implement your own limit via the <code>SetMaxOpenConns()</code> method like so:</p>
+<p>By default there's no limit on the number of open connections (in-use + idle) at the same time. But you can implement your own limit via the <code>SetMaxOpenConns()</code> method like so:</p>
 
 <figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
@@ -3965,12 +3965,12 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Set the maximum number of concurrently open connections to 5. Setting this
-// to less than or equal to 0 will mean there is no maximum limit (which
-// is also the default setting).
+// Set the maximum number of concurrently open connections (in-use + idle)
+// to 5. Setting this to less than or equal to 0 will mean there is no 
+// maximum limit (which is also the default setting).
 db.SetMaxOpenConns(5)</pre></code></figure>
 
-<p>In this example code the pool now has a maximum limit of 5 concurrently open connections. If 5 connections are already open and another new connection is needed, then the application will be forced to wait until one of the 5 open connections is freed up and becomes idle.</p>
+<p>In this example code the pool now has a maximum limit of 5 concurrently open connections. If all 5 connections are already marked as in-use and another new connection is needed, then the application will be forced to wait until one of the 5 connections is freed up and becomes idle.</p>
 
 <p>To illustrate the impact of changing <code>MaxOpenConns</code> I ran a benchmark test with the maximum open connections set to 1, 2, 5, 10 and unlimited. The benchmark executes parallel <code>INSERT</code> statements on a PostgreSQL database and you can find the code in <a href="https://gist.github.com/alexedwards/5d1db82e6358b5b6efcb038ca888ab07">this gist</a>. Here's the results:</p>
 
@@ -3983,7 +3983,7 @@ PASS</pre></code></figure>
 
 <p><em><strong>Edit:</strong> To make clear, the purpose of this benchmark is not to simulate 'real-life' behaviour of an application. It's solely to help illustrate how <code>sql.DB</code> behaves behind the scenes and the impact of changing <code>MaxOpenConns</code> on that behaviour.</em></p>
 
-<p>For this benchmark we can see that the more open connections that are allowed, the less time is taken to perform the <code>INSERT</code> on the database (3129633 ns/op with 1 open connection compared to 531030 ns/op for unlimited connections &mdash; about 6 times quicker). This is because the more open connections that there are, the less time (on average) the benchmark code needs to wait for an open connection to be freed and made idle (ready for use) again.</p>
+<p>For this benchmark we can see that the more open connections that are allowed, the less time is taken to perform the <code>INSERT</code> on the database (3129633 ns/op with 1 open connection compared to 531030 ns/op for unlimited connections &mdash; about 6 times quicker). This is because the more open connections that are permitted, the more database queries can be performed concurrently.</p>
 
 
 <h2 id="thesetmaxidleconnsmethod">The SetMaxIdleConns method</h2>
@@ -4015,7 +4015,7 @@ PASS</pre></code></figure>
 
 <p>Allowing just 1 idle connection to be retained and reused makes a massive difference to this particular benchmark &mdash; it cuts the average runtime by about 8 times and reduces memory usage by about 20 times. Going on to increase the size of the idle connection pool makes the performance even better, although the improvements are less pronounced.</p>
 
-<p>So we should you maintain a large idle connection pool? The answer is <em>it depends on the application</em>.</p>
+<p>So should you maintain a large idle connection pool? The answer is <em>it depends on the application</em>.</p>
 
 <p>It's important to realise that keeping an idle connection alive comes at a cost &mdash; it takes up memory which can otherwise be used for both your application and the database. </p>
 
@@ -4023,11 +4023,7 @@ PASS</pre></code></figure>
 
 <p>When this happens <code>sql.DB</code> handles it gracefully. Bad connections will automatically be retried twice before giving up, at which point Go will remove the connection from the pool and create a new one. So setting <code>MaxIdleConns</code> too high may actually result in connections becoming unusable and more resources being used than if you had a smaller idle connection pool (with fewer connections that are used more frequently). So really you only want to keep a connection idle if you're likely to be using it again soon.</p>
 
-<p>One last thing to point out is that <code>MaxIdleConns</code> should always be less than or equal to <code>MaxOpenConns</code>. Go enforces this and will automatically reduce <code>MaxIdleConns</code> if necessary. This <a href="https://stackoverflow.com/a/31952911">Stack Overflow post</a> nicely describes why:</p>
-
-<blockquote>
-  <p>There is no point in ever having any more idle connections than the maximum allowed open connections, because if you could instantaneously grab all the allowed open connections, the remain idle connections would always remain idle. It's like having a bridge with four lanes, but only ever allowing three vehicles to drive across it at once.</p>
-</blockquote>
+<p>One last thing to point out is that <code>MaxIdleConns</code> should always be less than or equal to <code>MaxOpenConns</code>. Go enforces this and will automatically reduce <code>MaxIdleConns</code> if necessary.</p>
 
 <h2 id="thesetconnmaxlifetimemethod">The SetConnMaxLifetime method</h2>
 
@@ -4091,7 +4087,7 @@ FAIL</pre></code></figure>
 
 <p>As soon as the hard limit of 5 connections is hit my database driver (<a href="https://github.com/lib/pq">pq</a>) immediately returns a <code>sorry, too many clients already</code> error message instead of completing the <code>INSERT</code>.</p>
 
-<p>To prevent this error we need to set the <em>total</em> maximum of open and idle connections in <code>sql.DB</code> to comfortably below 5. Like so:</p>
+<p>To prevent this error we need to set the <em>total</em> maximum of open connections (in-use + idle) in <code>sql.DB</code> to comfortably below 5. Like so:</p>
 
 <figure class="go"><code><pre>// Initialise a new connection pool
 db, err := sql.Open("postgres", "postgres://user:pass@localhost/db")
@@ -4099,11 +4095,11 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Set the number of open and idle connection to a maximum total of 3.
-db.SetMaxOpenConns(2)
-db.SetMaxIdleConns(1)</pre></code></figure>
+// Set the number of open connections (in-use + idle) to a maximum total of 3.
+db.SetMaxOpenConns(3)
+</pre></code></figure>
 
-<p>Now there will only ever be a maximum of 3 connections created by <code>sql.DB</code> and the benchmark should run without any errors.</p>
+<p>Now there will only ever be a maximum of 3 connections created by <code>sql.DB</code> at any moment in time, and the benchmark should run without any errors.</p>
 
 <p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free. In the context of a web application, for example, the user's HTTP request would appear to 'hang' and could potentially even timeout while waiting for the database task to be run.</p>
     
@@ -4112,9 +4108,10 @@ db.SetMaxIdleConns(1)</pre></code></figure>
 <h2>In Summary</h2>
 
 <ol>
-    <li>As a rule of thumb, you should explicitly set <code>MaxOpenConns</code> and <code>MaxIdleConns</code> values. The sum of these should be comfortably below any hard limit on the number of connections imposed by your database and infrastructure, and <code>MaxIdleConns</code> should always be less than or equal to <code>MaxOpenConns</code>.</li>
+    <li>As a rule of thumb, you should explicitly set a <code>MaxOpenConns</code> value. This should be comfortably below any hard limits on the number of connections imposed by your database and infrastructure.</li>
     <li>In general, higher <code>MaxOpenConns</code> and <code>MaxIdleConns</code> values will lead to better performance. But the returns are diminishing, and you should be aware that having a too-large idle connection pool (with connections that are not re-used and eventually go bad) can actually lead to reduced performance.</li>
     <li>To mitigate the risk from point 2 above, you may want to set a relatively short <code>ConnMaxLifetime</code>. But you don't want this to be so short that leads to connections being killed and recreated unnecessarily often.</li>
+    <li><code>MaxIdleConns</code> should always be less than or equal to <code>MaxOpenConns</code>.</li>
 </ol>
 
 <p>For small-to-medium web applications I typically use the following settings as a starting point, and then optimize from there depending on the results of load-testing with real-life levels of throughput.</p></p>
