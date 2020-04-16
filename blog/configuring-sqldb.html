@@ -214,7 +214,7 @@ db.SetMaxOpenConns(3)
 
 <p>Now there will only ever be a maximum of 3 connections created by <code>sql.DB</code> at any moment in time, and the benchmark should run without any errors.</p>
 
-<p>But doing this comes with a big caveat: when the open connection limit is reached, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free. In the context of a web application, for example, the user's HTTP request would appear to 'hang' and could potentially even timeout while waiting for the database task to be run.</p>
+<p>But doing this comes with a big caveat: when the open connection limit is reached, and all connections are in-use, any new database tasks that your application needs to execute will be forced to wait until a connection becomes free and marked as idle. In the context of a web application, for example, the user's HTTP request would appear to 'hang' and could potentially even timeout while waiting for the database task to be run.</p>
     
 <p>To mitigate this you should always pass in a <code>context.Context</code> object with a fixed, fast, timeout when making database calls, using the context-enabled methods like <a href="https://golang.org/pkg/database/sql/#DB.ExecContext"><code>ExecContext()</code></a>. An example can be seen in the <a href="https://gist.github.com/alexedwards/5d1db82e6358b5b6efcb038ca888ab07#file-main_test-go-L12-L15">gist here</a>.</p>
 
