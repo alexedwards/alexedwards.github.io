@@ -221,19 +221,19 @@ Content-Length: 19
 package main
 
 import (
-    &quot;log&quot;
-    &quot;net/http&quot;
-    &quot;strings&quot;
+    "log"
+    "net/http"
+    "path/filepath"
 )
 
 func main() {
     mux := http.NewServeMux()
 
-    fileServer := http.FileServer(neuteredFileSystem{http.Dir(&quot;./static&quot;)})
-    mux.Handle(&quot;/static&quot;, http.NotFoundHandler())
-    mux.Handle(&quot;/static/&quot;, http.StripPrefix(&quot;/static&quot;, fileServer))
+    fileServer := http.FileServer(neuteredFileSystem{http.Dir("./static")})
+    mux.Handle("/static", http.NotFoundHandler())
+    mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-    err := http.ListenAndServe(&quot;:4000&quot;, mux)
+    err := http.ListenAndServe(":4000", mux)
     log.Fatal(err)
 }
 
@@ -249,19 +249,24 @@ func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
 
     s, err := f.Stat()
     if s.IsDir() {
-        index := strings.TrimSuffix(path, &quot;/&quot;) + &quot;/index.html&quot;
+        index := filepath.Join(path, "index.html")
         if _, err := nfs.fs.Open(index); err != nil {
+            closeErr := f.Close()
+            if closeErr != nil {
+                return nil, closeErr
+            }
+
             return nil, err
         }
     }
 
     return f, nil
-}
+}    
 </pre></code></figure>
 
 <p>In this code we're creating a custom <code>neuteredFileSystem</code> type which embeds the standard <code>http.FileSystem</code>. We then implement an <code>Open()</code> method on it &mdash; which gets called each time our <code>http.FileServer</code> receives a request.</p>
 
-<p>In our <code>Open()</code> method we <code>Stat()</code> the requested file path and use the <code>IsDir()</code> method to check whether it's a directory or not. <em>If it is a directory</em> we then try to <code>Open()</code> any <code>index.html</code> file in it. If no <code>index.html</code> file exists a <code>os.ErrNotExist</code> error will be returned (which in turn will be transformed into a <code>404 Not Found</code> response by <code>http.Fileserver</code>). Otherwise, we just return the file and let <code>http.FileServer</code> do its thing.</p>
+<p>In our <code>Open()</code> method we <code>Stat()</code> the requested file path and use the <code>IsDir()</code> method to check whether it's a directory or not. <em>If it is a directory</em> we then try to <code>Open()</code> any <code>index.html</code> file in it. If no <code>index.html</code> file exists, then this will return a <code>os.ErrNotExist</code> error (which in turn we return and it will be transformed into a <code>404 Not Found</code> response by <code>http.Fileserver</code>). We also call <code>Close()</code> on the original file to avoid a file descriptor leak. Otherwise, we just return the file and let <code>http.FileServer</code> do its thing.</p>
 
 <p>Putting this to use with the directory structure...</p>
 

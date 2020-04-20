@@ -4093,9 +4093,9 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
     <guid>https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings</guid>
     <title>How to Disable http.FileServer Directory Listings</title>
     <description><![CDATA[
-<p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look at bit like this:</p>
+<p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look a bit like this:</p>
 
-<p><img src="https://www.alexedwards.net/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
+<p><img src="/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
 
 <p>But for certain applications you might want to prevent this behavior and disable directory listings altogether. In this post I’m going to run through three different options for doing exactly that:</p>
 
@@ -4126,12 +4126,14 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
 
 <p>If you've got a lot of sub-directories an easy way to do that is with a one-line command like this:</p>
 
-<figure class="shell"><code><pre>$ find ./static/ -type d -exec touch {}/index.html \;
+<figure class="shell"><code><pre>
+$ find ./static/ -type d -exec touch {}/index.html \;
 </pre></code></figure>
 
 <p>Any requests for a directory should now result in an empty <code>200 OK</code> response for the user, instead of a directory listing. For example:</p>
 
-<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img/
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img/
 <samp>HTTP/1.1 200 OK
 Accept-Ranges: bytes
 Content-Length: 0
@@ -4142,7 +4144,8 @@ Date: Tue, 13 Mar 2018 12:42:35 GMT</samp>
 
 <p>Or without the trailing slash, the user should get a <code>301 Redirect</code> like so:</p>
 
-<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img
 <samp>HTTP/1.1 301 Moved Permanently
 Location: /static/img/
 Date: Tue, 13 Mar 2018 12:43:13 GMT
@@ -4161,7 +4164,8 @@ Content-Type: text/html; charset=utf-8
 <p>Both of these imperfections can be addressed if we take a different approach and implement some custom <a href="/blog/making-and-using-middleware">middleware</a> to intercept requests before they reach the <code>http.FileServer</code>.
 <p>Essentially, we want the middleware to check if the request URL ends with a <code>/</code> character, and if it does, return a <code>404 Not Found</code> response instead of passing on the request to the <code>http.FileServer</code>. Here's a basic implementation:</p>
 
-<figure class="go"><code><pre>package main
+<figure class="go"><code><pre>
+package main
 
 import (
     &quot;log&quot;
@@ -4193,7 +4197,8 @@ func neuter(next http.Handler) http.Handler {
 
 <p>This approach would result in a user getting responses like these:</p>
 
-<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img/
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img/
 <samp>HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
@@ -4232,7 +4237,8 @@ Content-Type: text/html; charset=utf-8
 
 <p>... any request to <code><a href="http://localhost:4000/static/css/">http://localhost:4000/static/css/</a></code> will result in a <code>404 Not Found</code> response instead of returning the contents of the <code>/static/css/index.html</code> file.</p>
 
-<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/css/
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/css/
 <samp>HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
@@ -4248,22 +4254,23 @@ Content-Length: 19
 
 <p>There are a couple of approaches described by <a href="https://groups.google.com/d/msg/golang-nuts/bStLPdIVM6w/hidTJgDZpHcJ">Brad Fitzpatrick</a> and <a href="https://groups.google.com/d/msg/golang-nuts/bStLPdIVM6w/U_LVmJZRAwAJ">George Armhold</a> you might want to consider, but I would personally suggest doing something like this:<p>
 
-<figure class="go"><code><pre>package main
+<figure class="go"><code><pre>
+package main
 
 import (
-    &quot;log&quot;
-    &quot;net/http&quot;
-    &quot;strings&quot;
+    "log"
+    "net/http"
+    "path/filepath"
 )
 
 func main() {
     mux := http.NewServeMux()
 
-    fileServer := http.FileServer(neuteredFileSystem{http.Dir(&quot;./static&quot;)})
-    mux.Handle(&quot;/static&quot;, http.NotFoundHandler())
-    mux.Handle(&quot;/static/&quot;, http.StripPrefix(&quot;/static&quot;, fileServer))
+    fileServer := http.FileServer(neuteredFileSystem{http.Dir("./static")})
+    mux.Handle("/static", http.NotFoundHandler())
+    mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-    err := http.ListenAndServe(&quot;:4000&quot;, mux)
+    err := http.ListenAndServe(":4000", mux)
     log.Fatal(err)
 }
 
@@ -4279,23 +4286,29 @@ func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
 
     s, err := f.Stat()
     if s.IsDir() {
-        index := strings.TrimSuffix(path, &quot;/&quot;) + &quot;/index.html&quot;
+        index := filepath.Join(path, "index.html")
         if _, err := nfs.fs.Open(index); err != nil {
+            closeErr := f.Close()
+            if closeErr != nil {
+                return nil, closeErr
+            }
+
             return nil, err
         }
     }
 
     return f, nil
-}
+}    
 </pre></code></figure>
 
 <p>In this code we're creating a custom <code>neuteredFileSystem</code> type which embeds the standard <code>http.FileSystem</code>. We then implement an <code>Open()</code> method on it &mdash; which gets called each time our <code>http.FileServer</code> receives a request.</p>
 
-<p>In our <code>Open()</code> method we <code>Stat()</code> the requested file path and use the <code>IsDir()</code> method to check whether it's a directory or not. <em>If it is a directory</em> we then try to <code>Open()</code> any <code>index.html</code> file in it. If no <code>index.html</code> file exists a <code>os.ErrNotExist</code> error will be returned (which in turn will be transformed into a <code>404 Not Found</code> response by <code>http.Fileserver</code>). Otherwise, we just return the file and let <code>http.FileServer</code> do its thing.</p>
+<p>In our <code>Open()</code> method we <code>Stat()</code> the requested file path and use the <code>IsDir()</code> method to check whether it's a directory or not. <em>If it is a directory</em> we then try to <code>Open()</code> any <code>index.html</code> file in it. If no <code>index.html</code> file exists, then this will return a <code>os.ErrNotExist</code> error (which in turn we return and it will be transformed into a <code>404 Not Found</code> response by <code>http.Fileserver</code>). We also call <code>Close()</code> on the original file to avoid a file descriptor leak. Otherwise, we just return the file and let <code>http.FileServer</code> do its thing.</p>
 
 <p>Putting this to use with the directory structure...</p>
 
-<figure class="plain"><code><pre>.
+<figure class="plain"><code><pre>
+.
 ├── main.go
 └── static
     ├── css
@@ -4308,7 +4321,8 @@ func (nfs neuteredFileSystem) Open(path string) (http.File, error) {
 
 <p>...would result in responses like:</p>
 
-<figure class="shell"><code><pre>$ curl -i http://localhost:4000/static/img/
+<figure class="shell"><code><pre>
+$ curl -i http://localhost:4000/static/img/
 <samp>HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
