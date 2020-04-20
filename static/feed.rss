@@ -4,8 +4,416 @@
   <title>Alex Edwards</title>
   <link>https://www.alexedwards.net/blog</link>
   <language>en-us</language>
-  <lastBuildDate>Mon, 21 Oct 2019 20:00:00 GMT</lastBuildDate>
- <item>
+  <lastBuildDate>Mon, 20 Apr 2020 12:00:00 GMT</lastBuildDate>
+<item>
+    <pubDate>Mon, 20 Apr 2020 12:00:00 GMT</pubDate>
+    <link>https://www.alexedwards.net/blog/how-to-manage-database-timeouts-and-cancellations-in-go</link>
+    <guid>https://www.alexedwards.net/blog/how-to-manage-database-timeouts-and-cancellations-in-go</guid>
+    <title>How to Manage Database Timeouts and Cancellations in Go</title>
+    <description><![CDATA[
+<p>One of the great features of Go's <code>database/sql</code> package is that it's possible to cancel database queries <em>while they are still running</em> via a <code>context.Context</code> instance.</p>
+
+<p>On the face of it, usage of this functionality is quite straightforward (here's a <a href="https://golang.org/pkg/database/sql/#example_DB_ExecContext">basic example</a>). But once you start digging into the details there's a lot a nuance and quite a few gotchas... especially if you are using this functionality in the context of a web application or API. </p>
+
+<p>So in this post I want to explain <em>how</em> to cancel database queries in a web application, what <em>behavioral quirks and edge cases</em> it is important to be aware of, and try to provide answers to the questions that you might have when working through all this.</p>
+
+<p>But first off, <em>why would you want to cancel a database query?</em> Two scenarios spring to mind:</p>
+
+<ol>
+<li><p><strong>When a query is taking a lot longer to complete than expected.</strong> If this happens, it suggests a problem &mdash; either with that particular query or your database or application more generally. In this scenario, you would probably want to cancel the query after a set period of time (so that resources are freed-up and the database connection is returned to the <code>sql.DB</code> connection pool for reuse), log an error for further investigation, and return a <code>500 Internal Server Error</code> response to the client.</p></li>
+
+<li><p><strong>When a client goes away unexpectedly before the query completes.</strong>  This could happen for a number of reasons, such as a user closing a browser tab or terminating a process. In this scenario, nothing has really gone 'wrong', but there is no client left to return a response to so you may as well cancel the query and free-up the resources.</p></li>
+</ol>
+
+<h2 id="mimicking-a-long-running-query">Mimicking a long-running query</h2>
+
+<p>Let's start with the first scenario. To demonstrate this, I'll make a very basic web application with a handler that executes a <code>SELECT pg_sleep(10)</code> SQL query against a PostgreSQL database using the <a href="https://github.com/lib/pq"><code>pq</code></a> driver. The <a href="https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-DELAY"><code>pg_sleep(10)</code></a> function will make the query sleep for 10 seconds before returning, essentially mimicking a slow-running query.</p>
+
+<figure class="file"><code><pre>
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+
+    _ "github.com/lib/pq"
+)
+
+var db *sql.DB
+
+func slowQuery() error {
+    _, err := db.Exec("SELECT pg_sleep(10)")
+    return err
+}
+
+func main() {
+    var err error
+
+    db, err = sql.Open("postgres", "postgres://user:pa$$word@localhost/example_db")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    if err = db.Ping(); err != nil {
+        log.Fatal(err)
+    }
+
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", exampleHandler)
+
+    log.Println("Listening...")
+    err = http.ListenAndServe(":5000", mux)
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func exampleHandler(w http.ResponseWriter, r *http.Request) {
+    err := slowQuery()
+    if err != nil {
+        serverError(w, err)
+        return
+    }
+
+    fmt.Fprintln(w, "OK")
+}
+
+func serverError(w http.ResponseWriter, err error) {
+    log.Printf("ERROR: %s", err.Error())
+    http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
+}
+</pre></code></figure>
+
+<p>If you were to run this code, then make a <code>GET /</code> request to the application you should find that the request hangs for 10 seconds before you finally get an <code>"OK"</code> response. Like so:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:5000/
+<samp>HTTP/1.1 200 OK
+Date: Fri, 17 Apr 2020 07:46:40 GMT
+Content-Length: 3
+Content-Type: text/plain; charset=utf-8
+
+OK</samp>
+</pre></code></figure>
+
+<aside class="note">
+<strong>Note:</strong> The structure of the application code above is deliberately over-simplified. In a real project I would recommend using <a href="https://www.alexedwards.net/blog/organising-database-access#dependency-injection">dependency injection</a> to make the <code>sql.DB</code> connection pool and logger available to your handlers, instead of using global variables.
+</aside>
+
+<h2 id="adding-a-context-timeout">Adding a context timeout</h2>
+
+<p>OK, now that we've got some code that mimics a long-running query, let's enforce a <em>timeout</em> on the query so it is automatically canceled if it doesn't complete within 5 seconds.</p>
+
+<p></p>To do this we need to:</p>
+
+<ol>
+<li>Use the <a href="https://golang.org/pkg/context/#WithTimeout"><code>context.WithTimeout()</code></a> function to create a <code>context.Context</code> instance with a 5-second timeout duration.</li>
+
+<li>Execute the SQL query using the <a href="https://golang.org/pkg/database/sql/#DB.ExecContext"><code>ExecContext()</code></a> method, passing the <code>context.Context</code> instance as a parameter.</li>
+</ol>
+
+<p>I'll demonstrate:</p>
+
+<figure class="file"><code><pre>
+package main
+
+import (
+    "context" // New import
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+    "time" // New import
+
+    _ "github.com/lib/pq"
+)
+
+var db *sql.DB
+
+func slowQuery(ctx context.Context) error {
+    // Create a new child context with a 5-second timeout, using the
+    // provided ctx parameter as the parent.
+    ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+    defer cancel()
+
+    // Pass the child context (the one with the timeout) as the first
+    // parameter to ExecContext().
+    _, err := db.ExecContext(ctx, "SELECT pg_sleep(10)")
+    return err
+}
+
+...
+
+func exampleHandler(w http.ResponseWriter, r *http.Request) {
+    // Pass the request context to slowQuery(), so it can be used as the 
+    // parent context.
+    err := slowQuery(r.Context())
+    if err != nil {
+        serverError(w, err)
+        return
+    }
+
+    fmt.Fprintln(w, "OK")
+}
+
+...
+</pre></code></figure>
+
+<p>There are a few things about this that I'd like to emphasize and explain:</p>
+
+<ul>
+<li><p>Note that we pass <code>r.Context()</code> (the <em>request context</em>) to <code>slowQuery()</code> to use as the parent context. As we'll see in the next section, this is important because it means that any cancellation signal on the request context will be able to 'bubble down' to the context that we use in <code>ExecContext()</code>.
+</p></li>
+
+<li><p>The <code>defer cancel()</code> line is important because it ensures that the resources associated with our child context (the one with the timeout) will be released before the <code>slowQuery()</code> function returns. If we don't call <code>cancel()</code> it may cause a memory leak: the resources won't be released until either the parent <code>r.Context()</code> is canceled or the 5-second timeout is hit (whichever happens first).</p></li>
+
+<li><p>The timeout countdown begins from the moment that the child context is created using <code>context.WithTimeout()</code>. If you want more control over this you could use the alternative  <a href="https://golang.org/pkg/context/#WithDeadline"><code>context.WithDeadline()</code></a> function, which allows you to set an explicit <code>time.Time</code> value for when the context should timeout instead.</p></li>
+</ul>
+
+<p>OK, let's try this out. If you run the application again and make a <code>GET /</code> request, after a 5-second delay you should get a response like this:</p>
+
+<figure class="shell"><code><pre>
+$ curl -i localhost:5000/
+<samp>HTTP/1.1 500 Internal Server Error
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Fri, 17 Apr 2020 08:21:14 GMT
+Content-Length: 28
+
+Sorry, something went wrong</samp>
+</pre></code></figure>
+
+<p>And if you go back to the terminal window running the application you should see a log message similar to this:</p>
+
+<figure class="shell"><code><pre>
+$ go run .
+<samp>2020/04/17 10:21:07 Listening...
+2020/04/17 10:21:14 ERROR: pq: canceling statement due to user request</samp>
+</pre></code></figure>
+
+<p>That log message might seem a bit odd... until you realize that the error message is actually coming from PostgreSQL. In that light it makes sense: <em>our web application</em> is the user and we're canceling the query after 5 seconds.</p>
+
+<p>So this is actually really good; things are working as we want.</p>
+
+<p>Specifically, after 5 seconds the context timeout is reached and the <code>pq</code> driver sends a cancellation signal to PostgreSQL<sup>†</sup>. PostgreSQL then terminates the running query (thereby freeing-up resources). The client is sent a <code>500 Internal Server Error</code> response, and the error message is logged so we know that something has gone wrong.</p>
+
+<p><em>† More precisely, our child context (the one with the 5-second timeout) has a <code>Done</code> channel, and when the timeout is reached it will close the <code>Done</code> channel. While the SQL query is running, our database driver <code>pq</code> is also running a background goroutine which  listens on this <code>Done</code> channel. If the channel is closed, then it sends a cancellation signal to PostgreSQL. PostgreSQL terminates the query, and then sends the error message that we see above as a response to the original <code>pq</code> goroutine. That error message is then returned to our <code>slowQuery()</code> function.</em></p>
+
+<h2 id="closed-connections">Dealing with closed connections</h2>
+
+<p>OK, let's try one more thing. Let's use curl to make a <code>GET /</code> request and then very quickly (within 5 seconds) press <code>Ctrl+C</code> to cancel the request.</p>
+
+<p>If you look at the logs for the application again, you should see another log line with exactly the same error message that we saw before.</p>
+
+<figure class="shell"><code><pre>
+$ go run .
+<samp>2020/04/17 10:21:07 Listening...
+2020/04/17 10:21:14 ERROR: pq: canceling statement due to user request
+2020/04/17 10:41:18 ERROR: pq: canceling statement due to user request</samp>
+</pre></code></figure>
+
+<p><em>So what's happening here?</em></p>
+
+<p>In this case, the request context (which we use as the parent in our code above) is <em>canceled</em> because the client closed the connection. From the <a href="https://golang.org/pkg/net/http/#Request.Context"><code>net/http</code></a> docs:</p>
+
+<blockquote>
+  <p>For incoming server requests, the [request] context is canceled when the client's connection closes, the request is canceled (with HTTP/2), or when the ServeHTTP method returns. </p>
+</blockquote>
+
+<p>This cancellation signal bubbles down to our child context, it's <code>Done</code> channel is closed, and the <code>pq</code> driver terminates the running query in exactly the same way as before.</p>
+
+<p>With that in mind, it's not surprising that we see the same error message... From a PostgreSQL point of view exactly the same thing is happening as when the timeout was reached. </p>
+
+<p><strong>But from the perspective of our web application the scenario is very different.</strong> A client connection being closed  can happen for many different, innocuous, reasons. It's not really an error from our application's point of view, although it is probably sensible to log it as a warning (if we start to see elevated rates, it could be a sign that something is wrong).</p>
+
+<p>Fortunately, it's possible to tell these two scenarios apart by calling the <a href="https://golang.org/pkg/context/#Context"><code>ctx.Err()</code></a> method on our child context. If the context was canceled (due to a client closing the connection), then <code>ctx.Err()</code> will return <code>context.Canceled</code>. If the timeout was reached, then it will return <code>context.DeadlineExceeded</code>.  If <em>both</em> the deadline is reached and the context is canceled, then <code>ctx.Err()</code> will surface whichever happened first.</p>
+
+<p>There's another important thing to point out here: <strong>it's possible that a timeout/cancellation will happen before the PostgreSQL query even starts.</strong> For example you might have set <a href="https://golang.org/pkg/database/sql/#DB.SetMaxOpenConns"><code>MaxOpenConns()</code></a> on your <code>sql.DB</code> connection pool, and if that open connection limit is reached and all connections are in-use, then the query will be 'queued' by <code>sql.DB</code> until a connection becomes available. In this scenario &mdash; or any other which causes a delay &mdash; it's quite possible that the timeout/cancellation will occur before a free database connection even becomes available. In this case <code>ExecContext()</code> will directly return the <code>ctx.Err()</code> value as the error response (instead of the <code style="white-space: normal;">"pq: canceling statement due to user request"</code> error that we see above). </p>
+
+<p>If you're using the <a href="https://golang.org/pkg/database/sql/#DB.QueryContext"><code>QueryContext()</code></a> method then<strong> it's also possible that the timeout/cancellation will occur when processing the data</strong> with <code>Scan()</code>. If this happens, then <code>Scan()</code> will directly return the <code>ctx.Err()</code> value as an error. As far as I can see this behavior isn't mentioned in the <code>database/sql</code> docs, but I can confirm that this is the case with Go 1.14 and the comments on <a href="https://github.com/golang/go/issues/28842">issue #28842</a> suggest that it is intentional.</p>
+
+<p>Putting all that together, a sensible approach is to check for the error <code style="white-space: normal;">"pq: canceling statement due to user request"</code> and then <a href="https://blog.golang.org/go1.13-errors#TOC_3.3.">wrap this</a> with the error from <code>ctx.Err()</code> before returning from our <code>slowQuery()</code> function.</p>
+<p>Then in our handler, we can use the <a href="https://blog.golang.org/go1.13-errors#TOC_3.2."><code>errors.Is()</code></a> function to check if the error from <code>slowQuery()</code> is equal to (or wraps) <code>context.Canceled</code> and manage it accordingly. Like so:</p>
+
+<figure class="file"><code><pre>
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors" // New import
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	_ "github.com/lib/pq"
+)
+
+var db *sql.DB
+
+func slowQuery(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err := db.ExecContext(ctx, "SELECT pg_sleep(10)")
+    // If we get a "pq: canceling statement..." error wrap it with the 
+    // context error before returning.
+    if err != nil && err.Error() == "pq: canceling statement due to user request" {
+		return fmt.Errorf("%w: %v", ctx.Err(), err)
+	}
+
+	return err
+}
+
+...
+
+func exampleHandler(w http.ResponseWriter, r *http.Request) {
+	err := slowQuery(r.Context())
+	if err != nil {
+        // Check if the returned error equals or wraps context.Canceled and 
+        // record a warning if it does.
+		switch {
+		case errors.Is(err, context.Canceled):
+			serverWarning(err)
+		default:
+			serverError(w, err)
+		}
+		return
+	}
+
+	fmt.Fprintln(w, "OK")
+}
+
+func serverWarning(err error) {
+	log.Printf("WARNING: %s", err.Error())
+}
+
+...
+</pre></code></figure>
+
+<p>If you were to run this application again now and make two different <code>GET /</code> requests &mdash; one that times out, and the other that you cancel &mdash; you should see clearly different messages in the application log, like so:</p>
+
+<figure class="shell"><code><pre>
+$ go run .
+<samp>2020/04/17 13:09:25 Listening...
+2020/04/17 13:09:45 ERROR: context deadline exceeded: pq: canceling statement due to user request
+2020/04/17 13:09:47 WARNING: context canceled: pq: canceling statement due to user request</samp>
+</pre></code></figure>
+
+<h3 id="other-context-aware-methods">Other context-aware methods</h3>
+
+<p>The <code>database/sql</code> package provides context-aware variants for most actions on <code>sql.DB</code>, including <code>PingContext()</code>, <code>QueryContext()</code>, and <code>QueryRowContext()</code>. We can (and should!) update the <code>main()</code> function in the code above to use <code>PingContext()</code> instead of <code>Ping()</code>.</p>
+
+<p>In this case there is no request context to use as the parent, so we need to create an empty parent context with <code>context.Background()</code> instead. Like so:</p>
+
+<figure class="file"><code><pre>
+...
+
+func main() {
+	var err error
+
+	db, err = sql.Open("postgres", "postgres://user:pa$$word@localhost/example_db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    // Create a context with a 10-second timeout, using the empty 
+    // context.Background() as the parent.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+    // Use this when testing the connection pool.
+	if err = db.PingContext(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", exampleHandler)
+
+	log.Println("Listening...")
+	err = http.ListenAndServe(":5000", mux)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+...
+</pre></code></figure>
+
+<h3 id="can-i-set-a-global-timeout-for-all-requests">Can I set a global timeout for all requests?</h3>
+
+<p>Sure, you could create and use some middleware on your routes which adds a timeout to the current request context, similar to this:</p>
+
+<figure class="file"><code><pre>
+func setTimeout(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+        defer cancel()
+
+        // This gives you a copy of the request with a the request context 
+        // changed to the new context with the 5-second timeout created 
+        // above.
+        r = r.WithContext(ctx)
+        next.ServeHTTP(w, r)
+    })
+}
+</pre></code></figure>
+
+<p>If you take this approach there are a few of things to be aware of:</p>
+
+<ul>
+<li>The timeout starts from the moment the context is created, so any code running in your handlers before the database query counts towards the timeout.</li>
+
+<li>If you have multiple queries being executed in a handler, then they <em>all</em> have to complete within that one time. </li>
+
+<li>The timeout will continue to apply <em>even if you derive a child context</em> with a different timeout duration.  So while you can enforce an earlier timeout in a child context, <strong>you can't make it longer</strong>.</li>
+</ul>
+
+<h3 id="what-about-http-timeouthandler">What about http.TimeoutHandler?</h3>
+
+<p>Go provides a <a href="https://golang.org/pkg/net/http/#TimeoutHandler"><code>http.TimeoutHandler()</code></a> middleware function which you can use to wrap your handlers or router/servemux. This works similar to the middleware above in the sense that it  sets a timeout on the request context... so the warnings above also apply when using this. </p>
+
+<p>However, <code>http.TimeoutHandler()</code> also sends the client a <code>503 Service Unavailable</code> response and a HTML error message. So, if you're using this in your application, you shouldn't (or at least, you don't need to) send the client an error response yourself when encountering a <code>context.DeadlineExceeded</code> error.</p>
+
+<h3 id="how-about-transactions">How about transactions? How does context work in those?</h3>
+
+<p>The <code>database/sql</code> package provides a <code>BeginTx()</code> method which you can use to initiate a context-aware transaction. A code example <a href="https://golang.org/pkg/database/sql/#example_Tx_ExecContext">can be seen here</a>.</p>
+
+<p>It's important to understand that the context you provide  to <code>BeginTx()</code> applies to the whole transaction. In the event of a timeout/cancellation on the context, then the queries in the transaction will automatically be rolled-back.</p>
+
+<p>It's perfectly fine to pass the same context as a parameter for all the queries in the transaction, in which case it ensures that they all (<em>as a whole</em>) complete before any timeout/cancellation . Alternatively, if you want per-query timeouts you can create different child contexts with different timeouts for each in the queries in the transaction. <strong>But you must derive these child contexts from the context you passed to <code>BeginTX()</code></strong>. Otherwise there is a risk that the <code>BeginTX()</code> context timeout/cancellation occurs and the automatic rollback happens, but your code still may try to execute the query with a still-live context. If that happened you would receive the error <code style="white-space: normal;">"sql: transaction has already been committed or rolled back"</code>.</p>
+
+<h3 id="background-processing">What about background processing?</h3>
+
+<p>When doing background-processing in a different goroutine, bear in mind that if a parent context is canceled, the cancellation signal 'bubbles down' to its children. And also bear in mind what I quoted earlier about request context cancellation:</p>
+
+<blockquote>
+<p>For incoming server requests, the [request] context is canceled ... <strong>when the ServeHTTP method returns</strong>.</p>
+</blockquote>
+
+<p>Combine those two things, and it means that if you use a context which is a child of the request context in the background-process, the background-process will get a cancellation signal when the HTTP response is sent for the initial request. If you don't want that to be the case (and you probably don't), then you should create a brand-new context for the background-process using <code>context.Background()</code> and copy over any values that you need... or just pass them as regular parameters instead.<p>
+
+<h3 id="if-a-context-is-canceled">If a context is canceled, can I be confident that it's due to a closed connection?</h3>
+
+<p>Yes &mdash; so long as it's within the main goroutine for the request, it's a child of the request context, and you haven't manually canceled it yourself yet using <code>defer cancel()</code>. Otherwise, no.</p>
+
+<h3 id="other-dbs">Is the behavior the same with other databases and drivers?</h3>
+
+<p>I'm not sure. I've only used these features extensively with PostgreSQL and the <code>pq</code> driver. I imagine that things will be roughly the same with other databases and drivers, but you'll need to check.</p>
+
+<h3 id="anything-else">Anything else I should know?</h3>
+
+<p>Yep. This is a strange one and it's <a href="https://github.com/golang/go/issues/33340">not officially documented yet</a>, but if a client makes a request with a non-empty request body then closes the connection, the context won't be canceled <em>until after</em> you have read the request body. </p>
+
+<p>This doesn’t apply to requests without a request body, where the cancellation signal will be received immediately.</p>
+
+<p>You should also be aware of the <code>WriteTimeout</code> setting on your <code>http.Server</code> (if you have set one). Your context timeouts should always be shorter than your <code>WriteTimeout</code> value, otherwise the <code>WriteTimeout</code> will be hit first, the connection will be closed, and the client won’t get any response.</p>
+   ]]></description>
+ </item>
+  <item>
     <pubDate>Mon, 21 Oct 2019 20:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body</link>
     <guid>https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body</guid>
