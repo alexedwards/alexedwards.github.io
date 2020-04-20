@@ -12,7 +12,7 @@ html {
     font-family: "Fira Sans", sans-serif;
     font-size: 17px;
     color: #333333;
-    line-height: 1.5;
+    line-height: 1.53;
 }
 
 a {
@@ -310,6 +310,23 @@ article .chart {
     padding: 24px;
 }
 
+article aside.note {
+    background-color: #f2f8fb;
+    border-color:    #007BB6;
+}
+article aside {
+    border-left-style: solid;
+    border-left-width: 6px;
+}
+article aside {
+    padding: 1em;
+    border-left-style: solid;
+    border-left-width: 6px;
+}
+article aside {
+    margin: 20px 0;
+}
+
 /* ===================================================== */
 
 .lets-go {
@@ -376,10 +393,11 @@ a code {
     color: #1863A1 !important;
 }
 
-p code, li code {
+p code, li code, aside code {
     color: rgb(216, 130, 0);
     padding: 0.1em;
     white-space: nowrap;
+    font-weight: 500;
 }
 
 article figure code {
