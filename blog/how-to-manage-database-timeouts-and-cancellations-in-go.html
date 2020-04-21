@@ -47,9 +47,9 @@
 		</span>
 		
 	</div>
-	<p>One of the great features of Go's <code>database/sql</code> package is that it's possible to cancel database queries <em>while they are still running</em> via a <code>context.Context</code> instance.</p>
+	<p>One of the great features of Go is that it's possible to cancel database queries <em>while they are still running</em> via a <code>context.Context</code> instance (so long as it is supported by your database driver).</p>
 
-<p>On the face of it, usage of this functionality is quite straightforward (here's a <a href="https://golang.org/pkg/database/sql/#example_DB_ExecContext">basic example</a>). But once you start digging into the details there's a lot a nuance and quite a few gotchas... especially if you are using this functionality in the context of a web application or API. </p>
+<p>On the face of it, using this functionality is quite straightforward (here's a <a href="https://golang.org/pkg/database/sql/#example_DB_ExecContext">basic example</a>). But once you start digging into the details there's a lot a nuance and quite a few gotchas... especially if you are using this functionality in the context of a web application or API. </p>
 
 <p>So in this post I want to explain <em>how</em> to cancel database queries in a web application, what <em>behavioral quirks and edge cases</em> it is important to be aware of, and try to provide answers to the questions that you might have when working through all this.</p>
 
