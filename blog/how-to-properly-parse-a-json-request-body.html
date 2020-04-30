@@ -116,8 +116,8 @@ func main() {
 
 <li><p>There's no check for a <code>Content-Type: application/json</code> header in the request. Of course, this header may not always be present, and mistakes and malicious clients mean that it isn't a guarantee of the <em>actual</em> content type. But checking for an incorrect <code>Content-Type</code> header would allow us to 'fail fast' and send a helpful error message without spending unnecessary resources on parsing the body.</p></li>
 
-<li><p>The <code>Decode()</code> method is designed to decode streams of JSON objects. This means a request body like <code>'{"Name": "Bob"}{"Name": "Carol": "Age": 54}'</code> or <code>'{"Name": "Dave"}{}'</code> is considered valid and won't result in the client receiving an error message. But in each case, only the first JSON object in the request body will actually be parsed.</p>
-<p>There are two solutions here. We can either check the decoder's <a href="https://golang.org/pkg/encoding/json/#Decoder.More"><code>More()</code></a> method after decoding to see if there any any other JSON objects in the request body. Or we could avoid using <code>Decode()</code> altogether and read the body into a byte slice and pass it to <a href="https://golang.org/pkg/encoding/json/#Unmarshal"></a><code>json.Unmarshal()</code></a>, which <em>would</em> return an error if the body contains multiple JSON objects. The downside of using <code>json.Unmarshal()</code> is that there is no way to disallow extra unexpected fields in the JSON, so we can't address point 3 above.</p></li>
+<li><p>The decoder that we create with <code>json.NewDecoder()</code> is designed to decode streams of JSON objects and considers a request body like <code style="white-space: normal;">'{"Name": "Bob"}{"Name": "Carol": "Age": 54}'</code> or <code>'{"Name": "Dave"}{}'</code> to be valid. But in the code above only the first JSON object in the request body will actually be parsed. So if the client sends multiple JSON objects in the request body, we want to alert them to the fact that only a single object is supported.</p>
+<p>There are two ways to achieve this. We can either call the decoder's <code>Decode()</code> method for a second time and make sure that it returns an <code>io.EOF</code> error (if it does, then we know there are not any additional JSON objects or other data in the request body). Or we could avoid using <code>Decode()</code> altogether and read the body into a byte slice and pass it to <a href="https://golang.org/pkg/encoding/json/#Unmarshal"></a><code>json.Unmarshal()</code></a>, which <em>would</em> return an error if the body contains multiple JSON objects. The downside of using <code>json.Unmarshal()</code> is that there is no way to disallow extra unexpected fields in the JSON, so we can't address point 3 above.</p></li>
 </ol>
 
 <h2 id="an-improved-handler">An Improved Handler</h2>
@@ -237,8 +237,12 @@ func personCreate(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Check that the request body only contained a single JSON object.
-    if dec.More() {
+    // Call decode again, using a pointer to an empty anonymous struct as 
+    // the destination. If the request body only contained a single JSON 
+    // object this will return an io.EOF error. So if we get anything else, 
+    // we know that there is additional data in the request body.
+	err = dec.Decode(&struct{}{})
+	if err != io.EOF {
         msg := "Request body must only contain a single JSON object"
         http.Error(w, msg, http.StatusBadRequest)
         return
@@ -346,7 +350,8 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
         }
     }
 
-    if dec.More() {
+	err = dec.Decode(&struct{}{})
+	if err != io.EOF {
         msg := "Request body must only contain a single JSON object"
         return &amp;malformedRequest{status: http.StatusBadRequest, msg: msg}
     }
