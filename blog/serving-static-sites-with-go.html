@@ -231,7 +231,7 @@ func serveTemplate(w http.ResponseWriter, r *http.Request) {
 
 <p>First we've added the <code>html/template</code> and <code>path</code> packages to the import statement.</p>
 
-<p>Then we've specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate()</code> function (if you were wondering, Go matches patterns based on length, with longer patterns take precedence over shorter ones).</p>
+<p>Then we've specified that all the requests <em>not</em> picked up by the static file server should be handled with a new <code>serveTemplate()</code> function (if you were wondering, Go matches patterns based on length, with longer patterns taking precedence over shorter ones).</p>
 
 <p>In the <code>serveTemplate()</code> function, we build paths to the layout file and the template file corresponding with the request. Rather than manual concatenation we use <a href="https://golang.org/pkg/path/filepath/#Join"><code>filepath.Join()</code></a>, which has the advantage joining paths using the correct separator for your OS.</p>
 
