@@ -266,13 +266,13 @@ func main() {
 
 <p>The handler is now stricter about the content it will accept; we're reducing the amount of server resources used unnecessarily; and the client gets clear and consistent error messages that provide a decent amount of information without over-sharing.</p>
 
-<p>As a side note, you might have noticed that the <code>json/encoding</code> package contains some other error types (like <a href="https://golang.org/pkg/encoding/json/#UnmarshalFieldError"><code>json.UnmarshalFieldError</code></a>) which aren't checked in the code above &mdash; but these have been deprecated and not used by Go 1.13.</p>
+<p>As a side note, you might have noticed that the <code>json/encoding</code> package contains some other error types (like <a href="https://golang.org/pkg/encoding/json/#UnmarshalFieldError"><code>json.UnmarshalFieldError</code></a>) which aren't checked in the code above &mdash; but these have been deprecated and not used by the current version of Go.</p>
 
 <h2 id="makingahelperfunction">Making a Helper Function</h2>
 
 <p>If you've got a few handlers that need to to process JSON request bodies, you probably don't want to repeat this code in all of them.</p>
 
-<p>A solution which I've found works  well is to create a <code>decodeJSONBody</code> helper function, and have this return a custom <code>malformedRequest</code> error type which wraps the errors and relevant status codes.</p>
+<p>A solution which I've found works  well is to create a <code>decodeJSONBody()</code> helper function, and have this return a custom <code>malformedRequest</code> error type which wraps the errors and relevant status codes.</p>
 
 <p>For example:</p>
 

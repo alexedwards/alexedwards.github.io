@@ -7259,333 +7259,394 @@ Date: Sat, 17 Aug 2019 17:10:13 GMT
     <guid>https://www.alexedwards.net/blog/making-and-using-middleware</guid>
     <title>Making and Using HTTP Middleware</title>
     <description><![CDATA[
-    <p>When you're building a web application there's probably some shared functionality that you want to run for many (or even all) HTTP requests. You might want to log every request, gzip every response, or check a cache before doing some  heavy processing.</p>
+<p>When you're building a web application there's probably some shared functionality that you want to run for many (or even all) HTTP requests. You might want to log every request, gzip every response, or check a cache before doing some expensive processing.</p>
 
-    <p>One way of organising this shared functionality is to set it up as <em>middleware</em> &ndash; self-contained code which independently acts on a request before or after your normal application handlers. In Go a common place to use middleware is between a ServeMux and your application handlers, so that the flow of control for a HTTP request looks like:</p>
-
-    <p><code>ServeMux => Middleware Handler => Application Handler</code></p>
-
-    <p>In this post I'm going to explain how to make custom middleware that works in this pattern, as well as running through some concrete examples of using third-party middleware packages.</p>
-
-    <h2>The Basic Principles</h2>
-
-    <p>Making and using middleware in Go is fundamentally simple. We want to:<p>
-
-    <ul>
-      <li>Implement our middleware so that it satisfies the <a href="http://golang.org/pkg/net/http/#Handler">http.Handler</a> interface.</li>
-      <li>Build up a <em>chain of handlers</em> containing both our middleware handler and our normal application handler, which we can register with a <a href="http://golang.org/pkg/net/http/#ServeMux">http.ServeMux</a>.</li>
-    </ul>
-
-    <p>I'll explain how.</p>
-
-    <p>Hopefully you're already familiar with the following method for constructing a handler (if not, it's probably best to read <a href="https://www.alexedwards.net/blog/a-recap-of-request-handling">this primer</a> before continuing).</p>
-
-    <figure class="plain"><code class="go"><pre>    func messageHandler(message string) http.Handler {
-      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Write([]byte(message)
-      })
-    }
-    </pre></code></figure>
-
-    <p>In this snippet we're placing our handler logic (a simple <code>w.Write</code>) in an anonymous function and closing-over the <code>message</code> variable to form a closure. We're then converting this closure to a handler by using the <a href="http://golang.org/pkg/net/http/#HandlerFunc">http.HandlerFunc</a> adapter and returning it.</p>
-
-    <p>We can use this same approach to create a chain of handlers. Instead of passing a string into the closure (like above) we could pass <em>the next handler in the chain</em> as a variable, and then transfer control to this next handler by calling it's <code>ServeHTTP()</code> method.</p>
-
-    <p>This gives us a complete pattern for constructing middleware:</p>
-
-    <figure class="plain"><code class="go"><pre>    func exampleMiddleware(next http.Handler) http.Handler {
-      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Our middleware logic goes here...
-        next.ServeHTTP(w, r)
-      })
-    }
-    </pre></code></figure>
-
-    <p>You'll notice that this middleware function has a <code>func(http.Handler) http.Handler</code> signature. It accepts a handler as a parameter and returns a handler. This is useful for two reasons:</p>
-
-    <ul>
-      <li>Because it returns a handler we can register the middleware function directly with the standard ServeMux provided by the net/http package.</li>
-      <li>We can create an arbitrarily long handler chain by nesting middleware functions inside each other. For example:</li>
-    </ul>
-
-    <p><code>http.Handle("/", middlewareOne(middlewareTwo(finalHandler)))</code></p>
-
-    <h2>Illustrating the Flow of Control</h2>
-
-    <p>Let's look at a stripped-down example with some middleware that simply writes log messages to stdout:</p>
-
-    <figure class="file"><figcaption>File: main.go</figcaption><code><pre>    package main
-
-    import (
-      "log"
-      "net/http"
-    )
-
-    func middlewareOne(next http.Handler) http.Handler {
-      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Println("Executing middlewareOne")
-        next.ServeHTTP(w, r)
-        log.Println("Executing middlewareOne again")
-      })
-    }
-
-    func middlewareTwo(next http.Handler) http.Handler {
-      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Println("Executing middlewareTwo")
-        if r.URL.Path != "/" {
-          return
-        }
-        next.ServeHTTP(w, r)
-        log.Println("Executing middlewareTwo again")
-      })
-    }
-
-    func final(w http.ResponseWriter, r *http.Request) {
-      log.Println("Executing finalHandler")
-      w.Write([]byte("OK"))
-    }
-
-    func main() {
-      finalHandler := http.HandlerFunc(final)
-
-      http.Handle("/", middlewareOne(middlewareTwo(finalHandler)))
-      http.ListenAndServe(":3000", nil)
-    }
-    </pre></code></figure>
+<p>One way of organising this shared functionality is to set it up as <em>middleware</em> &ndash; self-contained code which independently acts on a request before or after your normal application handlers. In Go a common place to use middleware is between a router (such as <code><a href="http://golang.org/pkg/net/http/#ServeMux">http.ServeMux</a></code>) and your application handlers, so that the flow of control for a HTTP request looks like:</p>
 
 
-    <p>Run this application and make a request to <a href="http://localhost:3000/">http://localhost:3000</a>. You should get log output similar to this:</p>
+<figure class="plain"><code><pre>
+Router => Middleware Handler => Application Handler
+</pre></code></figure>
 
-    <figure class="shell"><code><pre>    $ go run main.go
-    <samp>2014/10/13 20:27:36 Executing middlewareOne
-    2014/10/13 20:27:36 Executing middlewareTwo
-    2014/10/13 20:27:36 Executing finalHandler
-    2014/10/13 20:27:36 Executing middlewareTwo again
-    2014/10/13 20:27:36 Executing middlewareOne again</samp>
-    </pre></code></figure>
+<p>In this post I'm going to explain how to make custom middleware that works in this pattern, as well as running through some concrete examples of using third-party middleware packages.</p>
 
-    <p>It's clear to see how control is being passed through the handler chain in the order we nested them, and then back up again in the <em>reverse direction</em>.</p>
+<h2>The Basic Principles</h2>
 
-    <p>We can stop control propagating through the chain at any point by issuing a <code>return</code> from a middleware handler.</p>
+<p>Making and using middleware in Go is fundamentally simple. We want to:<p>
 
-    <p>In the example above I've included a conditional return in the <code>middlewareTwo</code> function. Try it by visiting <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> and checking the log again &ndash; you'll see that this time the request gets no further than <code>middlewareTwo</code> before passing back up the chain.</p>
+<ul>
+  <li>Implement our middleware so that it satisfies the <a href="http://golang.org/pkg/net/http/#Handler"><code>http.Handler</code></a> interface.</li>
+  <li>Build up a <em>chain of handlers</em> containing both our middleware handler and our normal application handler, which we can register with a router.</li>
+</ul>
 
-    <h2>Understood. How About a Proper Example?</h2>
+<p>I'll explain how.</p>
 
-    <p>OK, let's say that we're building a service which processes requests containing a XML body. We want to create some middleware which a) checks for the existence of a request body, and b) sniffs the body to make sure it is XML. If either of those checks fail, we want our middleware to write an error message and to stop the request from reaching our application handlers.</p>
+<p>Hopefully you're already familiar with the following method for constructing a handler:</p>
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
+<figure class="plain"><code class="go"><pre>
+func messageHandler(message string) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte(message)
+  })
+}
+</pre></code></figure>
 
-    import (
-      "bytes"
-      "net/http"
-    )
+<p>In the handler above we're placing our logic (a simple <code>w.Write()</code>) in an anonymous function and closing-over the <code>message</code> variable to form a closure. We're then converting this closure to a handler by using the <a href="http://golang.org/pkg/net/http/#HandlerFunc"><code>http.HandlerFunc()</code></a> adapter and returning it.</p>
 
-    func enforceXMLHandler(next http.Handler) http.Handler {
-      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Check for a request body
-        if r.ContentLength == 0 {
-          http.Error(w, http.StatusText(400), 400)
-          return
-        }
-        // Check its MIME type
-        buf := new(bytes.Buffer)
-        buf.ReadFrom(r.Body)
-        if http.DetectContentType(buf.Bytes()) != "text/xml; charset=utf-8" {
-          http.Error(w, http.StatusText(415), 415)
-          return
-        }
-        next.ServeHTTP(w, r)
-      })
+<aside class="note">
+  <strong>Note:</strong> If this pattern is confusing or unfamiliar to you, it's probably best to read <a href="https://www.alexedwards.net/blog/a-recap-of-request-handling">this primer</a> before continuing.
+</aside>
+    
+
+<p>We can use this same approach to create a chain of handlers. Instead of passing a string into the closure (like above) we could pass <em>the next handler in the chain</em> as a variable, and then transfer control to this next handler by calling it's <code>ServeHTTP()</code> method.</p>
+
+<p>This gives us a complete pattern for constructing middleware:</p>
+
+<figure class="plain"><code class="go"><pre>
+func exampleMiddleware(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    // Our middleware logic goes here...
+    next.ServeHTTP(w, r)
+  })
+}
+</pre></code></figure>
+
+<p>You'll notice that this middleware function has a <code>func(http.Handler) http.Handler</code> signature. It accepts a handler as a parameter and returns a handler. This is useful for two reasons:</p>
+
+<ul>
+  <li>Because it returns a handler we can register the middleware function directly with the standard <code>http.ServeMux</code> router in Go's <code>net/http</code> package.</li>
+  <li>We can create an arbitrarily long handler chain by nesting middleware functions inside each other.</li>
+</ul>
+
+<p>For example:</p>
+
+<figure class="plain"><code><pre>
+mux := http.NewServeMux()
+mux.Handle("/", middlewareOne(middlewareTwo(finalHandler)))
+</pre></code></figure>
+
+<h2>Illustrating the Flow of Control</h2>
+
+<p>Let's look at a stripped-down example with some middleware that writes log messages to the standard output stream in your terminal:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+)
+
+func middlewareOne(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    log.Println("Executing middlewareOne")
+    next.ServeHTTP(w, r)
+    log.Println("Executing middlewareOne again")
+  })
+}
+
+func middlewareTwo(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    log.Println("Executing middlewareTwo")
+    if r.URL.Path == "/foo" {
+      return
     }
 
-    func main() {
-      finalHandler := http.HandlerFunc(final)
+    next.ServeHTTP(w, r)
+    log.Println("Executing middlewareTwo again")
+  })
+}
 
-      http.Handle("/", enforceXMLHandler(finalHandler))
-      http.ListenAndServe(":3000", nil)
-    }
+func final(w http.ResponseWriter, r *http.Request) {
+  log.Println("Executing finalHandler")
+  w.Write([]byte("OK"))
+}
 
-    func final(w http.ResponseWriter, r *http.Request) {
-      w.Write([]byte("OK"))
-    }
-    </pre></code></figure>
+func main() {
+  mux := http.NewServeMux()
 
-    <p>This looks good. Let's test it by creating a simple XML file:</p>
+  finalHandler := http.HandlerFunc(final)
+  mux.Handle("/", middlewareOne(middlewareTwo(finalHandler)))
 
-    <figure class="shell"><code><pre>    $ cat &gt; books.xml
-    &lt;?xml version="1.0"?&gt;
-    &lt;books&gt;
-      &lt;book&gt;
-        &lt;author&gt;H. G. Wells&lt;/author&gt;
-        &lt;title&gt;The Time Machine&lt;/title&gt;
-        &lt;price&gt;8.50&lt;/price&gt;
-      &lt;/book&gt;
-    &lt;/books&gt;
-    </pre></code></figure>
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", mux)
+  log.Fatal(err)
+}  
+</pre></code></figure>
 
-    <p>And making some requests using cURL:</p>
+<p>Run this application and make a request to <a href="http://localhost:3000/">http://localhost:3000</a>. You should see some log output similar to this:</p>
 
-    <figure class="shell"><code><pre>    $ curl -i localhost:3000
-    <samp>HTTP/1.1 400 Bad Request
-    Content-Type: text/plain; charset=utf-8
-    Content-Length: 12
+<figure class="shell"><code><pre>
+$ go run main.go
+<samp>2020/05/08 12:31:42 Listening on :3000...
+2020/05/08 12:32:05 Executing middlewareOne
+2020/05/08 12:32:05 Executing middlewareTwo
+2020/05/08 12:32:05 Executing finalHandler
+2020/05/08 12:32:05 Executing middlewareTwo again
+2020/05/08 12:32:05 Executing middlewareOne again</samp>
+</pre></code></figure>
 
-    Bad Request</samp>
-    $ curl -i -d "This is not XML" localhost:3000
-    <samp>HTTP/1.1 415 Unsupported Media Type
-    Content-Type: text/plain; charset=utf-8
-    Content-Length: 23
+<p>It's clear to see how control is being passed through the handler chain in the order we nested them, and then back up again in the <em>reverse direction</em>.</p>
 
-    Unsupported Media Type</samp>
-    $ curl -i -d @books.xml localhost:3000
-    <samp>HTTP/1.1 200 OK
-    Date: Fri, 17 Oct 2014 13:42:10 GMT
-    Content-Length: 2
-    Content-Type: text/plain; charset=utf-8
+<p>We can stop control propagating through the chain at any point by issuing a <code>return</code> from a middleware handler.</p>
 
-    OK</samp>
-    </pre></code></figure>
+<p>In the example above I've included a conditional return in the <code>middlewareTwo</code> function. Try it by visiting <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> and checking the log again &ndash; you'll see that this time the request gets no further than <code>middlewareTwo</code> before passing back up the chain.</p>
 
-    <h2>Using Third-Party Middleware</h2>
+<figure class="shell"><code><pre>
+<samp>2020/05/08 12:33:22 Executing middlewareOne
+2020/05/08 12:33:22 Executing middlewareTwo
+2020/05/08 12:33:22 Executing middlewareOne again</samp>
+</pre></code></figure>
 
-    <p>Rather than rolling your own middleware all the time you might want to use a third-party package. We're going to look at a couple here: <a href="http://elithrar.github.io/article/httpauth-basic-auth-for-go/">goji/httpauth</a> and Gorilla's <a href="http://www.gorillatoolkit.org/pkg/handlers#LoggingHandler">LoggingHandler</a>.</p>
+<h2>Understood. How About a Proper Example?</h2>
 
-    <p>The goji/httpauth package provides HTTP Basic Authentication functionality. It has a <a href="https://godoc.org/github.com/goji/httpauth#SimpleBasicAuth">SimpleBasicAuth</a> helper which returns a function with the signature <code>func(http.Handler) http.Handler</code>. This means we can use it in exactly the same way as our custom-built middleware.</p>
+<p>OK, let's say that we're building a service which processes requests containing a JSON body.</p>
+<p>We want to create some middleware which a) checks for the existence of a <code>Content-Type</code> header and b) if the header exists, check that it has the mime type <code>application/json</code>. If either of those checks fail, we want our middleware to write an error message and to stop the request from reaching our application handlers.</p>
 
-    <figure class="shell"><code><pre>    $ go get github.com/goji/httpauth
-    </pre></code></figure>
+<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+package main
 
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
+import (
+  "log"
+  "mime"
+  "net/http"
+)
 
-    import (
-      "github.com/goji/httpauth"
-      "net/http"
-    )
+func enforceJSONHandler(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    contentType := r.Header.Get("Content-Type")
 
-    func main() {
-      finalHandler := http.HandlerFunc(final)
-      authHandler := httpauth.SimpleBasicAuth("username", "password")
-
-      http.Handle("/", authHandler(finalHandler))
-      http.ListenAndServe(":3000", nil)
-    }
-
-    func final(w http.ResponseWriter, r *http.Request) {
-      w.Write([]byte("OK"))
-    }
-    </pre></code></figure>
-
-    <p>If you run this example you should get the responses you'd expect for valid and invalid credentials:</p>
-
-    <figure class="shell"><code><pre>    $ curl -i username:password@localhost:3000
-    <samp>HTTP/1.1 200 OK
-    Content-Length: 2
-    Content-Type: text/plain; charset=utf-8
-
-    OK</samp>
-    $ curl -i username:wrongpassword@localhost:3000
-    <samp>HTTP/1.1 401 Unauthorized
-    Content-Type: text/plain; charset=utf-8
-    Www-Authenticate: Basic realm=""Restricted""
-    Content-Length: 13
-
-    Unauthorized</samp>
-    </pre></code></figure>
-
-    <p>Gorilla's LoggingHandler &ndash; which records <a href="http://httpd.apache.org/docs/1.3/logs.html#common">Apache-style logs</a> &ndash; is a bit different.</p>
-
-    <p>It uses the signature <code>func(out io.Writer, h http.Handler) http.Handler</code>, so it takes not only the next handler but also the <a href="http://golang.org/pkg/io/#Writer">io.Writer</a> that the log will be written to.</p>
-
-    <p>Here's a simple example in which we write logs to a <code>server.log</code> file:</p>
-
-    <figure class="shell"><code><pre>    go get github.com/gorilla/handlers
-    </pre></code></figure>
-
-    <figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>    package main
-
-    import (
-      "github.com/gorilla/handlers"
-      "net/http"
-      "os"
-    )
-
-    func main() {
-      finalHandler := http.HandlerFunc(final)
-
-      logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+    if contentType != "" {
+      mt, _, err := mime.ParseMediaType(contentType)
       if err != nil {
-        panic(err)
+        http.Error(w, "Malformed Content-Type header", http.StatusBadRequest)
+        return
       }
 
-      http.Handle("/", handlers.LoggingHandler(logFile, finalHandler))
-      http.ListenAndServe(":3000", nil)
-    }
-
-    func final(w http.ResponseWriter, r *http.Request) {
-      w.Write([]byte("OK"))
-    }
-    </pre></code></figure>
-
-    <p>In a trivial case like this our code is fairly clear. But what happens if we want to use LoggingHandler as part of a larger middleware chain? We could easily end up with a declaration looking something like this:</p>
-
-    <p><code>http.Handle("/", handlers.LoggingHandler(logFile, authHandler(enforceXMLHandler(finalHandler))))</code></p>
-
-    <p>Woah! That makes my brain hurt.</p>
-
-    <p>We can clean this up by creating a constructor function (let's call it <code>myLoggingHandler</code>) with the signature <code>func(http.Handler) http.Handler</code>. This will allow us to nest it more neatly with other middleware:</p>
-
-    <figure class="plain"><code class="go"><pre>    func myLoggingHandler(h http.Handler) http.Handler {
-      logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-      if err != nil {
-        panic(err)
+      if mt != "application/json" {
+        http.Error(w, "Content-Type header must be application/json", http.StatusUnsupportedMediaType)
+        return
       }
-      return handlers.LoggingHandler(logFile, h)
     }
 
-    func main() {
-      finalHandler := http.HandlerFunc(final)
+    next.ServeHTTP(w, r)
+  })
+}
 
-      http.Handle("/", myLoggingHandler(finalHandler))
-      http.ListenAndServe(":3000", nil)
-    }
-    </pre></code></figure>
+func final(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("OK"))
+}
 
-    <p>If you run this application and make a few requests your <code>server.log</code> file should look something like this:</p>
+func main() {
+  mux := http.NewServeMux()
 
-    <figure class="shell"><code><pre>    $ cat server.log
-    <samp>127.0.0.1 - - [21/Oct/2014:18:56:43 +0100] "GET / HTTP/1.1" 200 2
-    127.0.0.1 - - [21/Oct/2014:18:56:36 +0100] "POST / HTTP/1.1" 200 2
-    127.0.0.1 - - [21/Oct/2014:18:56:43 +0100] "PUT / HTTP/1.1" 200 2</samp>
-    </pre></code></figure>
+  finalHandler := http.HandlerFunc(final)
+  mux.Handle("/", enforceJSONHandler(finalHandler))
 
-    <p>If you're interested, here's a gist of the <a href="https://gist.github.com/alexedwards/6f9496caecb2996ac61d">three middleware handlers</a> from this post combined in one example</a>.</p>
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", mux)
+  log.Fatal(err)
+}  
+</pre></code></figure>
 
-    <p>As a side note: notice that the Gorilla LoggingHandler is recording the response status (<code>200</code>) and response length (<code>2</code>) in the logs. This is interesting. How did the upstream logging middleware get to know about the response body written by our application handler?</p>
+<aside class="note">
+  <strong>Note:</strong> In the code above we're using the <a href="https://golang.org/pkg/mime/#ParseMediaType"><code>mime.ParseMediaType()</code></a> function to extract the mime type from the header (which may include optional parameters, such as <code>charset</code> or <code>boundary</code>). 
+</aside>
 
-    <p>It does this by defining it's own <code>responseLogger</code> type which wraps <code>http.ResponseWriter</code>, and creating custom <code>responseLogger.Write()</code> and <code>responseLogger.WriteHeader()</code> methods. These methods not only write the response but also store the size and status for later examination. Gorilla's LoggingHandler passes <code>responseLogger</code> onto the next handler in the chain, instead of the normal <code>http.ResponseWriter</code>.</p>
+<p>This looks good. Let's test it by making some requests using cURL:</p>
 
-    <p>(I'll probably write a proper tutorial about this sometime, in which case I'll add a link here!)</p>
+<figure class="shell"><code><pre>
+$ curl -i localhost:3000
+<samp>HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Fri, 08 May 2020 10:42:36 GMT
+Content-Length: 37
 
-    <h2>Additional Tools</h2>
+Content-Type header must be provided</samp>
 
-    <p><a href="https://github.com/justinas/alice">Alice by Justinas Stankevičius</a> is a clever and very lightweight package which provides some syntactic sugar for chaining middleware handlers. At it's most basic  Alice lets you rewrite this:</p>
+$ curl -i -H "Content-Type: application/xml" localhost:3000
+<samp>HTTP/1.1 415 Unsupported Media Type
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Fri, 08 May 2020 10:42:39 GMT
+Content-Length: 45
 
-    <p><code>http.Handle("/", myLoggingHandler(authHandler(enforceXMLHandler(finalHandler))))</code></p>
+Content-Type header must be application/json</samp>
 
-    <p>As this:</p>
+$ curl -i -H "Content-Type: application/json; charset=UTF-8" localhost:3000
+<samp>HTTP/1.1 200 OK
+Date: Fri, 08 May 2020 10:42:43 GMT
+Content-Length: 2
+Content-Type: text/plain; charset=utf-8
 
-    <p><code>http.Handle("/", alice.New(myLoggingHandler, authHandler, enforceXMLHandler).Then(finalHandler))</code></p>
+OK</samp>
+</pre></code></figure>
 
-    <p>In my eyes at least, that code is slightly clearer to understand at a glance. However, the real benefit of Alice is that it lets you to specify a handler chain once and reuse it for multiple routes. Like so:</p>
+<h2>Using Third-Party Middleware</h2>
 
-    <figure class="plain"><code class="go"><pre>    stdChain := alice.New(myLoggingHandler, authHandler, enforceXMLHandler)
+<p>Rather than rolling your own middleware all the time you might decide to save time and effort and use an existing third-party package. Let's take a look at a couple of examples to help demonstrate some common patterns that you might come across.</p>
 
-    http.Handle("/foo", stdChain.Then(fooHandler))
-    http.Handle("/bar", stdChain.Then(barHandler))
-    </pre></code></figure>
+<p>The first third-party middleware we'll demonstrate is <a href="http://elithrar.github.io/article/httpauth-basic-auth-for-go/">goji/httpauth</a>, which provides HTTP Basic Authentication functionality.<p>
 
-    <p>If you found this post useful, you might like to subscribe to my <a href="https://www.alexedwards.net/static/feed.rss">RSS feed</a>.</p>
+<p>When using this package you call a <em>helper function</em> in order to setup the chainable middleware. Specifically, you call the <a href="https://godoc.org/github.com/goji/httpauth#SimpleBasicAuth"><code>httpauth.SimpleBasicAuth()</code></a> function, and this returns a middleware function with the signature <code>func(http.Handler) http.Handler</code> &mdash; which you can then use in exactly the same way as any custom-built middleware.</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+
+  "github.com/goji/httpauth"
+)
+
+func main() {
+  authHandler := httpauth.SimpleBasicAuth("alice", "pa$$word")
+
+  mux := http.NewServeMux()
+
+  finalHandler := http.HandlerFunc(final)
+  mux.Handle("/", authHandler(finalHandler))
+
+  log.Println("Listening on :3000...")
+  err := http.ListenAndServe(":3000", mux)
+  log.Fatal(err)
+}
+
+func final(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("OK"))
+}  
+</pre></code></figure>
+
+<p>If you run this code then visit <a href="http://localhost:3000/">http://localhost:3000</a> in your browser you should get a username and password prompt like so:</p>
+
+<p><img src="/static/images/middleware-1.png"></p>
+
+<p>Entering the wrong username and password should result in the prompt being redisplayed, clicking 'Cancel' should result in a plain-text <code>"Unauthorized"</code> response, and  using the correct username (<code>alice</code>) and password (<code>pa$$word</code>) should result in an <code>"OK"</code> response.</p>
+
+<p>That was pretty straightforward and easy to integrate. Let's now look at a different example using the <a href="https://pkg.go.dev/github.com/gorilla/handlers?tab=doc#LoggingHandler"><code>LoggingHandler</code></a> middleware from the <a href="https://github.com/gorilla/handlers">gorilla/handlers</a> package, which records request logs using the <a href="http://httpd.apache.org/docs/1.3/logs.html#common">Apache Common Log Format</a>.</p>
+
+<p>Instead of using the standard middleware signature that we've seen so far throughout this post, this middleware has the signature <code style="white-space: normal;">func(out io.Writer, h http.Handler) http.Handler</code>, so it takes not only the next handler but also the <a href="http://golang.org/pkg/io/#Writer"><code>io.Writer</code></a> that the log will be written to.</p>
+
+<p>Here's a simple example of using it in which we write logs to a <code>server.log</code> file in the current directory:</p>
+
+<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+package main
+
+import (
+  "log"
+  "net/http"
+  "os"
+
+  "github.com/gorilla/handlers"
+)
+
+func main() {
+  logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  mux := http.NewServeMux()
+
+  finalHandler := http.HandlerFunc(final)
+  mux.Handle("/", handlers.LoggingHandler(logFile, finalHandler))
+
+  log.Println("Listening on :3000...")
+  err = http.ListenAndServe(":3000", mux)
+  log.Fatal(err)
+}
+
+func final(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("OK"))
+}
+</pre></code></figure>
+
+<p>In a trivial case like this our code is fairly clear. But what happens if we want to use this as part of a larger middleware chain? We could easily end up with a declaration looking something like this...</p>
+
+<figure class="plain"><code><pre>
+http.Handle("/", handlers.LoggingHandler(logFile, authHandler(enforceJSONHandler(finalHandler))))
+</pre></code></figure>
+
+<p>... And that's pretty confusing!</p>
+
+<p>To help tidy this up it's possible to create a <em>constructor function</em> which wraps the <code>LoggingHandler()</code> middleware and returns a standard <code>func(http.Handler) http.Handler</code> function that we can nest neatly with other middleware. Like so:</p>
+
+<figure class="plain"><code class="go"><pre>
+package main
+
+import (
+  "io"
+  "log"
+  "net/http"
+  "os"
+
+  "github.com/gorilla/handlers"
+)
+
+func newLoggingHandler(dst io.Writer) func(http.Handler) http.Handler {
+  return func(h http.Handler) http.Handler {
+    return handlers.LoggingHandler(dst, h)
+  }
+}
+
+func main() {
+  logFile, err := os.OpenFile("server.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  loggingHandler := newLoggingHandler(logFile)
+
+  mux := http.NewServeMux()
+
+  finalHandler := http.HandlerFunc(final)
+  mux.Handle("/", loggingHandler(finalHandler))
+
+  log.Println("Listening on :3000...")
+  err = http.ListenAndServe(":3000", mux)
+  log.Fatal(err)
+}
+
+func final(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("OK"))
+}
+</pre></code></figure>
+
+<p>If you run this application and make a few requests, your <code>server.log</code> file should look something like this:</p>
+
+<figure class="shell"><code><pre>
+$ cat server.log
+<samp>127.0.0.1 - - [10/May/2020:15:11:30 +0200] "GET / HTTP/1.1" 200 2
+127.0.0.1 - - [10/May/2020:15:11:31 +0200] "POST / HTTP/1.1" 200 2
+127.0.0.1 - - [10/May/2020:15:11:33 +0200] "PUT / HTTP/1.1" 200 2</samp>
+</pre></code></figure>
+
+<p>If you're interested, here's a gist of the <a href="https://gist.github.com/alexedwards/6f9496caecb2996ac61d">three middleware handlers</a> from this post combined in one example</a>.</p>
+
+<h2>Additional Tools</h2>
+
+<p><a href="https://github.com/justinas/alice">Alice by Justinas Stankevičius</a> is a clever and very lightweight package which provides some syntactic sugar for chaining middleware handlers. At it's most basic Alice lets you rewrite this:</p>
+
+<figure class="plain"><code><pre>
+mux.Handle("/", loggingHandler(authHandler(enforceJSONHandler(finalHandler))))
+</pre></code></figure>
+
+<p>As this:</p>
+
+<figure class="plain"><code><pre>
+mux.Handle("/", alice.New(loggingHandler, authHandler, enforceJSONHandler).Then(finalHandler))
+</pre></code></figure>
+
+<p>To my eyes at least, that code is slightly clearer to understand at a glance. However, the real benefit of Alice is that it lets you to specify a handler chain once and reuse it for multiple routes. Like so:</p>
+
+<figure class="plain"><code class="go"><pre>
+stdChain := alice.New(loggingHandler, authHandler, enforceJSONHandler)
+
+mux.Handle("/foo", stdChain.Then(fooHandler))
+mux.Handle("/bar", stdChain.Then(barHandler))
+</pre></code></figure>
     ]]></description>
   </item>
   <item>
