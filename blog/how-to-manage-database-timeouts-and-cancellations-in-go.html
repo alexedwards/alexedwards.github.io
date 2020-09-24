@@ -33,30 +33,30 @@
     <main class="wrapper clearfix">
       
 <div class="lets-go clearfix">
-	<div>
-		
-			<h3>Not sure how to structure your Go web application?</h3>
-			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
-			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-		
-	</div>
-	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <div>
+        
+        <h3>Not sure how to structure your Go web application?</h3>
+        <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+        <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+        
+    </div>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-	<h1>How to Manage Database Timeouts and Cancellations in Go</h1>
-	<div class="metadata">
-		<span class="dates">
-			
-			Posted on: 20th April 2020
-			
-		</span>
-		
-		<span class="tags">
-			Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
-		</span>
-		
-	</div>
-	<p>One of the great features of Go is that it's possible to cancel database queries <em>while they are still running</em> via a <code>context.Context</code> instance (so long as cancellation is supported by your database driver).</p>
+    <h1>How to Manage Database Timeouts and Cancellations in Go</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Posted on: 20th April 2020
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
+        </span>
+        
+    </div>
+    <p>One of the great features of Go is that it's possible to cancel database queries <em>while they are still running</em> via a <code>context.Context</code> instance (so long as cancellation is supported by your database driver).</p>
 
 <p>On the face of it, using this functionality is quite straightforward (here's a <a href="https://golang.org/pkg/database/sql/#example_DB_ExecContext">basic example</a>). But once you start digging into the details there's a lot a nuance and quite a few gotchas... especially if you are using this functionality in the context of a web application or API. </p>
 
@@ -456,18 +456,20 @@ func setTimeout(next http.Handler) http.Handler {
 <p>This doesn’t apply to requests without a request body, where the cancellation signal will be received immediately.</p>
 
 <p>You should also be aware of the <code>WriteTimeout</code> setting on your <code>http.Server</code> (if you have set one). Your context timeouts should always be shorter than your <code>WriteTimeout</code> value, otherwise the <code>WriteTimeout</code> will be hit first, the connection will be closed, and the client won’t get any response.</p>
-	<div class="footer">
-		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
-		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
-		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
-	</div>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
 </article>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-  $(document).ready(function() {
-    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
-  });
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
 </script>
     </main>
     <footer>

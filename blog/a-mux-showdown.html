@@ -33,30 +33,30 @@
     <main class="wrapper clearfix">
       
 <div class="lets-go clearfix">
-	<div>
-		
-			<h3>Not sure how to structure your Go web application?</h3>
-			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
-			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-		
-	</div>
-	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <div>
+        
+        <h3>Not sure how to structure your Go web application?</h3>
+        <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+        <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+        
+    </div>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-	<h1>Gorilla vs Pat vs Routes&#58; A Mux Showdown</h1>
-	<div class="metadata">
-		<span class="dates">
-			
-			Posted on: 2nd September 2013
-			
-		</span>
-		
-		<span class="tags">
-			Filed under: <a href="/blog/category/golang" rel="tag">golang</a>
-		</span>
-		
-	</div>
-	<p><em>Note: Since I wrote this post a <a href="https://github.com/avelino/awesome-go#routers">huge choice of new routers</a> have become available and the information below is a bit outdated. But that said, Gorilla Mux remains one of the most feature-complete routers available and (although it's no longer actively maintained) Pat is still a solid and simple option. In terms of newer routers, <a href="https://github.com/julienschmidt/httprouter">httprouter</a> is popular and very fast but has an awkward API. <a href="https://github.com/go-zoo/bone">Bone</a> looks promising.</em></p>
+    <h1>Gorilla vs Pat vs Routes&#58; A Mux Showdown</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Posted on: 2nd September 2013
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a>
+        </span>
+        
+    </div>
+    <p><em>Note: Since I wrote this post a <a href="https://github.com/avelino/awesome-go#routers">huge choice of new routers</a> have become available and the information below is a bit outdated. But that said, Gorilla Mux remains one of the most feature-complete routers available and (although it's no longer actively maintained) Pat is still a solid and simple option. In terms of newer routers, <a href="https://github.com/julienschmidt/httprouter">httprouter</a> is popular and very fast but has an awkward API. <a href="https://github.com/go-zoo/bone">Bone</a> looks promising.</em></p>
 
 <p>One of the first things I missed when learning Go was being able to route HTTP requests to handlers based on the <em>pattern</em> of a URL path, like you can with web frameworks like Sinatra and Django.</p>
 
@@ -263,18 +263,20 @@ func profile(w http.ResponseWriter, r *http.Request) {
 <p>If you're likely to be validating a lot of parameter input with regular expressions in your application, then it probably makes sense to skip Pat and use Routes or Gorilla Mux instead, with the expressions built into your routing patterns.</p>
 
 <p>For higher-latency applications, where there appears to be less of an overall impact due to router performance, Gorilla Mux may be a wise choice because of the sheer number of options and the flexibility it provides. Although I haven't looked at it in detail, larger applications with a lot of URL endpoints may also get a performance benefit from using Gorilla's nested routing too.</p>
-	<div class="footer">
-		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
-		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
-		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
-	</div>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
 </article>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-  $(document).ready(function() {
-    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
-  });
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
 </script>
     </main>
     <footer>

@@ -33,30 +33,30 @@
     <main class="wrapper clearfix">
       
 <div class="lets-go clearfix">
-	<div>
-		
-			<h3>Not sure how to structure your Go web application?</h3>
-			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
-			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-		
-	</div>
-	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <div>
+        
+        <h3>Not sure how to structure your Go web application?</h3>
+        <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+        <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+        
+    </div>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-	<h1>Understanding Mutexes</h1>
-	<div class="metadata">
-		<span class="dates">
-			
-			Last updated: 21st July 2019
-			
-		</span>
-		
-		<span class="tags">
-			Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
-		</span>
-		
-	</div>
-	<p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
+    <h1>Understanding Mutexes</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Last updated: 21st July 2019
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
+        </span>
+        
+    </div>
+    <p>For anyone new to building web applications with Go, it's important to realise that all incoming HTTP requests are served in their own goroutine. This means that any code in or called by your application handlers will be running concurrently, and there is a risk of <a href="http://stackoverflow.com/questions/34510/what-is-a-race-condition">race conditions</a> occurring.</p>
 
 <p>In case you're not familiar with race conditions, I'll quickly explain the risk with an example. Consider a situation where you have two goroutines try to add money to a shared bank balance at the same time, like so:</p>
 
@@ -225,18 +225,20 @@ func (b *balance) Display() string {
 	return strconv.FormatFloat(b.amount, 'f', 2, 64) + " " + b.currency
 }
 </pre></code></figure>
-	<div class="footer">
-		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
-		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
-		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
-	</div>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
 </article>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-  $(document).ready(function() {
-    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
-  });
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
 </script>
     </main>
     <footer>

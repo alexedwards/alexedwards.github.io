@@ -33,30 +33,30 @@
     <main class="wrapper clearfix">
       
 <div class="lets-go clearfix">
-	<div>
-		
-			<h3>Not sure how to structure your Go web application?</h3>
-			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
-			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-		
-	</div>
-	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <div>
+        
+        <h3>Not sure how to structure your Go web application?</h3>
+        <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+        <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+        
+    </div>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-	<h1>How to Rate Limit HTTP Requests</h1>
-	<div class="metadata">
-		<span class="dates">
-			
-			Last updated: 2nd November 2019
-			
-		</span>
-		
-		<span class="tags">
-			Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
-		</span>
-		
-	</div>
-	<p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
+    <h1>How to Rate Limit HTTP Requests</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Last updated: 2nd November 2019
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
+        </span>
+        
+    </div>
+    <p>If you're running a HTTP server and want to rate limit user requests, the go-to package to use is probably <a href="https://github.com/didip/tollbooth">Tollbooth</a> by Didip Kerabat. It's well maintained, has a good range of features and a clean and clear API.</p>
 
 <p>But if you want something simple and lightweight &ndash; or just want to learn &ndash; it's not too difficult to roll your own middleware to handle rate limiting. In this post I'll run through the essentials of how to do that by using the <code><a href="https://godoc.org/golang.org/x/time/rate">x/time/rate</a></code> package, which provides a <a href="https://en.wikipedia.org/wiki/Token_bucket">token bucket</a> rate-limiter algorithm (note: this is also used by Tollbooth behind the scenes).</p>
 
@@ -325,18 +325,20 @@ func limit(next http.Handler) http.Handler {
     <li>Remove the reliance on global variables, so that different rate limiters can be created with different settings.</li>
     <li>Switch to a <code>sync.RWMutex</code> to help reduce contention on the map.</li>
 </ul>
-	<div class="footer">
-		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
-		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
-		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
-	</div>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
 </article>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-  $(document).ready(function() {
-    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
-  });
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
 </script>
     </main>
     <footer>

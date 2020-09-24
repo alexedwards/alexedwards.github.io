@@ -33,30 +33,30 @@
     <main class="wrapper clearfix">
       
 <div class="lets-go clearfix">
-	<div>
-		
-			<h3>Not sure how to structure your Go web application?</h3>
-			<p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
-			<p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
-		
-	</div>
-	<a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <div>
+        
+        <h3>Not sure how to structure your Go web application?</h3>
+        <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+        <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+        
+    </div>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-	<h1>How to Disable http.FileServer Directory Listings</h1>
-	<div class="metadata">
-		<span class="dates">
-			
-			Posted on: 14th March 2018
-			
-		</span>
-		
-		<span class="tags">
-			Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
-		</span>
-		
-	</div>
-	<p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look a bit like this:</p>
+    <h1>How to Disable http.FileServer Directory Listings</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Posted on: 14th March 2018
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
+        </span>
+        
+    </div>
+    <p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look a bit like this:</p>
 
 <p><img src="/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
 
@@ -320,18 +320,20 @@ Date: Tue, 13 Mar 2018 16:53:27 GMT
     <li>All requests for directories (with no <code>index.html</code> file) return a <code>404 Not Found</code> response, instead of a directory listing or a redirect. This works for requests both with and without a trailing slash.</li>
     <li>The default behavior of <code>http.FileServer</code> isn't changed any other way, and <code>index.html</code> files work as per the standard library documentation.</li>
 </ul>
-	<div class="footer">
-		<p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
-		<p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
-		<p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
-	</div>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
 </article>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <script src="/static/javascripts/highlight.pack.js"></script>
 <script type="text/javascript">
-  $(document).ready(function() {
-    $('figure code').each(function(i, e) {hljs.highlightBlock(e)});
-  });
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
 </script>
     </main>
     <footer>
