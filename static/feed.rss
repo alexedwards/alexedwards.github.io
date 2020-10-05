@@ -15,26 +15,27 @@
 <p>Many of these things are mentioned in the official package documentation if you read it carefully enough, so in theory they <em>shouldn't</em> come as a surprise. But a few of them aren't mentioned in the documentation at all &mdash; or at least, they aren't pointed out explicitly &mdash; and are worth being aware of!</p>
 
 <ol style="padding-left: 1.5em;">
-<li><a href="#1">Map entries are sorted alphabetically</a></li>
-<li><a href="#2">Byte slices are encoded as base-64 strings</a></li>
-<li><a href="#3">Nil and empty slices are encoded differently</a></li>
-<li><a href="#4">Integer, time.Time and net.IP values can be used as map keys</a></li>
-<li><a href="#5">Angle brackets and ampersands in strings are escaped</a></li>
-<li><a href="#6">Trailing zeroes are removed from floats</a></li>
-<li><a href="#7">Using omitempty on an zero-valued struct doesn't work</a></li>
-<li><a href="#8">Using omitempty on a zero-value time.Time doesn't work</a></li>
-<li><a href="#9">There is a 'string' struct tag</a></li>
-<li><a href="#10">Non-ASCII punctuation characters aren't supported in struct tags</a></li>
-<li><a href="#11">Decoding a JSON number into an interface{} yields a float64</a></li>
-<li><a href="#12">Don't use More() to check if there are remaining JSON objects in a stream</a></li>
-<li><a href="#13">String values returned by custom MarshalJSON() methods must be quoted</a></li>
+    <li><a href="#1">Map entries are sorted alphabetically</a></li>
+    <li><a href="#2">Byte slices are encoded as base-64 strings</a></li>
+    <li><a href="#3">Nil and empty slices are encoded differently</a></li>
+    <li><a href="#4">Integer, time.Time and net.IP values can be used as map keys</a></li>
+    <li><a href="#5">Angle brackets and ampersands in strings are escaped</a></li>
+    <li><a href="#6">Trailing zeroes are removed from floats</a></li>
+    <li><a href="#7">Using omitempty on an zero-valued struct doesn't work</a></li>
+    <li><a href="#8">Using omitempty on a zero-value time.Time doesn't work</a></li>
+    <li><a href="#9">There is a 'string' struct tag</a></li>
+    <li><a href="#10">Non-ASCII punctuation characters aren't supported in struct tags</a></li>
+    <li><a href="#11">Decoding a JSON number into an interface{} yields a float64</a></li>
+    <li><a href="#12">Don't use More() to check if there are remaining JSON objects in a stream</a></li>
+    <li><a href="#13">String values returned by custom MarshalJSON() methods must be quoted</a></li>
 </ol>
 
 <h2 id="1">Map entries are sorted alphabetically</h2>
 
 <p>When encoding a Go map to JSON, the entries will be sorted alphabetically based on the map key. For example, the following map:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 m := map[string]int{
     "z": 123,
     "0": 123,
@@ -45,17 +46,17 @@ m := map[string]int{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"0":123,"_":123,"a":123,"z":123}
 </pre></code></figure>
-
-<p><small><a href="https://play.golang.org/p/oejqD9HlUxk">Try this on the Go playground</a></small></p>
 
 <h2 id="2">Byte slices are encoded as base-64 strings</h2>
 
 <p>Any <code>[]byte</code> slices will be converted to a base64-encoded string when encoding them to JSON. The base64 string uses padding and the <a href="https://tools.ietf.org/html/rfc4648#section-4">standard encoding</a> characters, as defined in RFC 4648. For example, the following map:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 m := map[string][]byte{
     "foo": []byte("bar baz"),
 }
@@ -63,17 +64,17 @@ m := map[string][]byte{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"foo":"YmFyIGJheg=="}
 </pre></code></figure>
-
-<p><small><a href="https://play.golang.org/p/doKJAXOn6FP">Try this on the Go playground</a></small></p>
 
 <h2 id="3">Nil and empty slices are encoded differently</h2>
 
 <p>Nil slices in Go will be encoded to the <code>null</code> JSON value. In contrast, an empty (but not nil) slice will be encoded as an empty JSON array. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 var nilSlice []string
 emptySlice := []string{}
 
@@ -85,17 +86,18 @@ m := map[string][]string{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"emptySlice":[],"nilSlice":null}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/LSt2Ib_uDgo">Try this on the Go playground</a></small></p>
 
 <h2 id="4">Integer, time.Time and net.IP values can be used as map keys</h2>
 
 <p>It's possible to encode a map which has integer values as the map keys. These integers will be automatically converted to strings in the resulting JSON (because the keys in a JSON object <a href="https://tools.ietf.org/html/rfc8259#section-4">must always be strings</a>). For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 m := map[int]string{
     123: "foo",
     456_000: "bar",
@@ -104,15 +106,16 @@ m := map[int]string{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"123":"foo","456000":"bar"}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/5RErMSCiv7t">Try this on the Go playground</a></small></p>
 
 <p>In addition, Go allows you to encode maps with keys that implement the <a href="https://golang.org/pkg/encoding/#TextMarshaler">encoding.TextMarshaler</a> interface. This means that you can also use <code>time.Time</code> and <code>net.IP</code> values as map keys out-of-the-box. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 t1 := time.Now()
 t2 := t1.Add(24 * time.Hour)
 
@@ -124,11 +127,11 @@ m := map[time.Time]string{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"2009-11-10T23:00:00Z":"foo","2009-11-11T23:00:00Z":"bar"}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/5mhnDhFXt4G">Try this on the Go playground</a></small></p>
 
 <p>Note that trying to encode a map with any other type of key will result in a <a href="https://golang.org/pkg/encoding/json/#UnsupportedTypeError"><code>json.UnsupportedTypeError</code></a> error.</p>
 
@@ -136,7 +139,8 @@ m := map[time.Time]string{
 
 <p>If a string contains angle brackets<code>&lt;&gt;</code> these will be escaped to <code>\u003c</code> and <code>\u003e</code> in the JSON output. Likewise the <code>&amp;</code> character will be escaped to <code>\u0026</code>. This is to prevent some web browsers from accidentally interpreting the JSON as HTML. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := []string{
     "&lt;foo&gt;",
     "bar &amp; baz",
@@ -145,11 +149,11 @@ s := []string{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 ["\u003cfoo\u003e","bar \u0026 baz"]
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/_oukcF6RV7S">Try this on the Go playground</a></small></p>
 
 <p>If you need to prevent these characters being escaped, you should use a <code>json.Encoder</code> instance and call <a href="https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML"><code>SetEscapeHTML(false)</code></a>. An example <a href="https://play.golang.org/p/h1-J5VHtLKq">is here</a>.</p>
 
@@ -157,7 +161,8 @@ s := []string{
 
 <p>When encoding a floating-point number with a fractional part that ends in zero(es), any trailing zeroes will not appear in the JSON. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := []float64{
     123.0,
     456.100,
@@ -167,17 +172,18 @@ s := []float64{
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 [123,456.1,789.99]
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/A5XjQZl7qyE">Try this on the Go playground</a></small></p>
 
 <h2 id="7">Using omitempty on an zero-valued struct doesn't work</h2>
 
 <p>The <code>omitempty</code> directive <em>never considers a struct type to be empty</em> &mdash; even if all the struct fields have their zero value, and you use <code>omitempty</code> on those fields too. It will always appear as an object in the encoded JSON. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := struct {
     Foo struct {
         Bar string `json:",omitempty"`
@@ -187,15 +193,16 @@ s := struct {
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"Foo":{}}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/R7SEcMpofoc">Try this on the Go playground</a></small></p>
 
 <p>There’s a long-standing <a href="https://github.com/golang/go/issues/11939">proposal</a> which discusses changing this behavior, but the Go 1 compatibility promise means that it's unlikely to happen any time soon. Instead, you can get around this by making the field a pointer to a struct, which works because <code>omitempty</code> considers <code>nil</code> pointers to be empty. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := struct {
     Foo *struct {
         Bar string `json:",omitempty"`
@@ -207,7 +214,8 @@ s := struct {
 
 <p>Using <code>omitempty</code> on a zero-value <code>time.Time</code> field won't hide it in the encoded JSON. This is because the <code>time.Time</code> type is a struct behind the scenes and, as mentioned above, <code>omitempty</code> <em>never considers a struct type to be empty</em>. Instead, the string <code>"0001-01-01T00:00:00Z"</code> will appear in the JSON (which is the value returned by calling the <a href="https://golang.org/pkg/time/#Time.MarshalJSON"><code>MarshalJSON()</code></a> method on an zero-value <code>time.Time</code>. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := struct {
     Foo time.Time `json:",omitempty"`
 }{}
@@ -215,17 +223,18 @@ s := struct {
 
 <p>Will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"Foo":"0001-01-01T00:00:00Z"}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/2HX9yv2JQK0">Try this on the Go playground</a></small></p>
 
 <h2 id="9">There is a 'string' struct tag</h2>
 
 <p>Go provides a <code>string</code> struct tag directive which forces the data in an individual field to be encoded as a string in the resulting JSON. For example, if you want to force an integer to be represented as a string instead of an JSON number you can use the <code>string</code> directive like so:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := struct {
     Foo int `json:",string"`
 }{
@@ -235,11 +244,11 @@ s := struct {
 
 <p>And this will be encoded to the JSON:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"Foo":"123"}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/q3KcSdLDteI">Try this on the Go playground</a></small></p>
 
 <p>Note that the <code>string</code> struct tag directive will only work on fields which contain float, integer or <code>bool</code> types. For any other type it will have no effect.</p>
 
@@ -247,7 +256,8 @@ s := struct {
 
 <p>When using struct tags to change key names in JSON, any tags containing non-ASCII punctuation characters will be ignored. Notably this means that you can't use en or em dashes, or most currency signs, in struct tags. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 s := struct {
     CostUSD string `json:"cost $"` // OK
     CostEUR string `json:"cost €"` // Contains the non-ASCII punctuation character €. Will be ignored.
@@ -259,15 +269,16 @@ s := struct {
 
 <p>Will be encoded to the following JSON (notice that the struct tag renaming the <code>CostEUR</code> field has been ignored):</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"cost $":"100.00","CostEUR":"100.00"}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/bVGEmS44mwA">Try this on the Go playground</a></small></p>
 
 <p>Likewise, any struct tags containing non-ASCII punctuation characters will be ignored when <em>decoding</em> values from a JSON object into a struct, and the struct field will be left with its zero value. For example the following code:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 js := []byte(`{"cost $":"100.00","cost €":"100.00"}`)
 
 s := struct {
@@ -285,15 +296,16 @@ fmt.Printf("%+v", s)
 
 <p>Will print out: </p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {CostUSD:100.00 CostEUR:}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/kPWY2jJgU64">Try this on the Go playground</a></small></p>
 
 <p>This can be annoying in situations where you need to decode a JSON object that has keys containing non-ASCII characters, and you can't change the JSON. To work around this limitation, you can decode to a map as an intermediary step, and then copy the data from the map to the struct. For example the following code:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 js := []byte(`{"cost $":"100.00","cost €":"100.00"}`)
 
 var aux map[string]string
@@ -316,11 +328,11 @@ fmt.Printf("%+v", s)
 
 <p>Will print out:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {CostUSD:100.00 CostEUR:100.00}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/r7CWoHbNBZB">Try this on the Go playground</a></small></p>
 
 <h2 id="11">Decoding a JSON number into an interface{} yields a float64</h2>
 
@@ -328,7 +340,8 @@ fmt.Printf("%+v", s)
 
 <p>If you want to get the value as an integer (instead of a <code>float64</code>) the most robust approach is to decode the JSON using a <code>json.Decoder</code> instance with the <a href="https://golang.org/pkg/encoding/json/#Decoder.UseNumber"><code>UseNumber()</code></a> method set on it. This will decode all JSON numbers to the underlying type <code>json.Number</code> instead of <code>float64</code>, and you can then access the number as an integer using its <code>Int64()</code> method. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 js := `{"foo": 123, "bar": true}`
 
 var m map[string]interface{}
@@ -351,11 +364,11 @@ fmt.Printf("foo: %d", i)
 
 <p>Will print:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 foo: 123
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/lW05ksrhSc4">Try this on the Go playground</a></small></p>
 
 <h2 id="12">Don't use More() to check if there are remaining JSON objects in a stream</h2>
 
@@ -365,7 +378,8 @@ foo: 123
 
 <p>For example, if you use it when decoding an invalid JSON stream like <code>{"name": "alice"}{"name": "bob"}]</code> (notice the additional square bracket at the end) it <em>won't</em> result in an error (when it should!). Like so:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 js := `{"name": "alice"}{"name": "bob"}]`
 
 dec := json.NewDecoder(strings.NewReader(js))
@@ -388,16 +402,17 @@ for {
 
 <p>This code will run without error and output: </p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 map[name:alice]
 map[name:bob]
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/Wz8dWy9LJp8">Try this on the Go playground</a></small></p>
 
 <p>The correct technique to see if a stream contains another JSON object is to check for an <code>io.EOF</code> error, which will be returned when there are no more objects to process in the stream. Like so: </p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 js := `{"name": "alice"}{"name": "bob"}]`
 
 dec := json.NewDecoder(strings.NewReader(js))
@@ -418,19 +433,20 @@ for {
 
 <p>Running this will correctly result in an error, as we would expect given the invalid input:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 map[name:alice]
 map[name:bob]
 2009/11/10 23:00:00 invalid character ']' looking for beginning of value
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/cp-DxGeq9_n">Try this on the Go playground</a></small></p>
 
 <h2 id="13">String values returned by custom MarshalJSON() methods must be quoted</h2>
 
 <p>If you are creating a custom <code>MarshalJSON()</code> method which returns a string value, you must wrap the string in double quotes before returning it, otherwise it won't be interpreted as a JSON string and will result in a runtime error. For example:</p>
 
-<figure class="go"><code><pre>
+<figure class="go"><code>
+        <pre>
 type Age int
 
 func (age Age) MarshalJSON() ([]byte, error) {
@@ -456,15 +472,16 @@ func main() {
 
 <p>Will result in the following JSON being printed:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 {"alice":"21 years","bob":"84 years"}
 </pre></code></figure>
 
-<p><small><a href="https://play.golang.org/p/xlSN-GXa4WO">Try this on the Go playground</a></small></p>
 
 <p>If, in the code above, you didn't quote the return value from <code>MarshalJSON()</code> you will get the error:</p>
 
-<figure class="plain"><code><pre>
+<figure class="plain"><code>
+        <pre>
 2009/11/10 23:00:00 json: error calling MarshalJSON for type main.Age: invalid character 'y' after top-level value
 </pre></code></figure>
    ]]></description>
