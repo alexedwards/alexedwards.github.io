@@ -7,7 +7,7 @@
     <meta name="author" content="Alex Edwards">
     <meta name="copyright" content="Copyright Alex Edwards 2020">
     <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
-    <title>Practical Persistence in Go&#58; Organising Database Access - Alex Edwards</title>
+    <title>Organising Database Access in Go - Alex Edwards</title>
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,500,700|Fira+Sans:400,400i,700,700i,800" rel="stylesheet">
     <link rel="stylesheet" href="/static/stylesheets/main.css">
     <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
@@ -43,11 +43,11 @@
     <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-    <h1>Practical Persistence in Go&#58; Organising Database Access</h1>
+    <h1>Organising Database Access in Go</h1>
     <div class="metadata">
         <span class="dates">
             
-            Last updated: 22nd January 2018
+            Last updated: 27th October 2020
             
         </span>
         
@@ -59,91 +59,83 @@
     <p>A few weeks ago someone created a <a href="http://www.reddit.com/r/golang/comments/38hkor/go_best_practice_for_accessing_database_in/">thread on Reddit</a> asking:</p>
 
 <blockquote>
-<p>In the context of a web application what would you consider a Go best practice for accessing the database in (HTTP or other) handlers?</p>
+    <p>In the context of a web application what would you consider a Go best practice for accessing the database in (HTTP or other) handlers?</p>
 </blockquote>
 
-<p>The replies it got were a genuinely interesting mix. Some people advised using dependency injection, a few espoused the simplicity of using global variables, others suggested putting the connection pool pointer into x/net/context.</p>
+<p>The replies it got were a genuinely interesting mix. Some people advised using dependency injection, a few favoured the simplicity of using global variables, others suggested putting the connection pool pointer into the request context.</p>
 
 <p>Me? I think the right answer depends on the project.</p>
 
 <p><em>What's the overall structure and size of the project? What's your approach to testing? How is it likely to grow in the future?</em> All these things and more should play a part when you pick an approach to take.</p>
 
-<p>So in this post I'll take a look at four different methods for organising your code and structuring access to your database connection pool.</p>
+<p>So in this post we're going to take a look at four different methods for organizing your code and structuring access to your database connection pool, and explain when they may &mdash; or may not &mdash; be a good fit for your project.</p>
 
-<h2 id="global-variables">Global variables</h2>
+<h2>Application setup</h2>
 
-<p>The first approach we'll look at is a common and straightforward one &ndash; putting the pointer to your database connection pool in a global variable.</p>
+<p>I like concrete examples, so let's set up a simple book store application to help illustrate the four different approaches. If you'd like to follow along, you need to create a new <code>bookstore</code> database and then execute the following SQL to create a <code>books</code> table and add some sample records.</p>
 
-<p>To keep code nice and DRY, you'll sometimes see this combined with an initialisation function that allows the connection pool global to be set from other packages and tests.</p>
+<figure class="plain"><code class="sql">
+        <pre>
+CREATE TABLE books (
+    isbn char(14) NOT NULL,
+    title varchar(255) NOT NULL,
+    author varchar(255) NOT NULL,
+    price decimal(5,2) NOT NULL
+);
 
-<p>I like concrete examples, so let's carry on working with the online bookstore database and code from my <a href="/blog/practical-persistence-sql">previous post</a>. We'll create a simple application with an MVC-like structure &ndash; with the HTTP handlers in <code>main</code> and a <code>models</code> package containing a global <code>DB</code> variable, <code>InitDB()</code> function, and our database logic.</p>
+INSERT INTO books (isbn, title, author, price) VALUES
+('978-1503261969', 'Emma', 'Jayne Austen', 9.44),
+('978-1505255607', 'The Time Machine', 'H. G. Wells', 5.99),
+('978-1503379640', 'The Prince', 'Niccolò Machiavelli', 6.99);
 
-<figure class="shell"><code><pre>
-bookstore
+ALTER TABLE books ADD PRIMARY KEY (isbn);
+</pre></code></figure>
+
+<aside class="note">
+    <strong>Note:</strong> In this tutorial I'll be using PostgreSQL, but the principles are the same no matter what database you're using.
+</aside>
+
+<p>You'll also need to run the following commands to scaffold a basic application structure and initialize a Go module:</p>
+
+<figure class="shell"><code>
+        <pre>
+$ mkdir bookstore && cd bookstore
+$ mkdir models
+$ touch main.go models/models.go
+$ go mod init bookstore.alexedwards.net
+<samp>go: creating new go.mod: module bookstore.alexedwards.net</samp>
+</pre></code></figure>
+
+<p>At this point, you should have a <code>bookstore</code> directory on your machine with a structure exactly like this:</p>
+
+<figure class="shell"><code>
+        <pre>
+bookstore/
+├── go.mod
 ├── main.go
 └── models
-    ├── books.go
-    └── db.go
+    └── models.go
 </pre></code></figure>
 
-<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-package main
+<h2 id="global-variables">1. Using a global variable</h2>
 
-import (
-    "bookstore/models"
-    "fmt"
-    "net/http"
-)
+<p>OK, let's start by looking at storing the database connection pool in a global variable.</p>
 
-func main() {
-    models.InitDB("postgres://user:pass@localhost/bookstore")
+<p>This approach is arguably the <em>simplest thing that works</em>. You initialise the <code>sql.DB</code> connection pool in your <code>main()</code> function, assign it to a global variable, and then access the global from anywhere that you need to execute a database query.</p>
 
-    http.HandleFunc("/books", booksIndex)
-    http.ListenAndServe(":3000", nil)
-}
+<p>In the context of our book store application, the code would look something like this:</p>
 
-func booksIndex(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "GET" {
-        http.Error(w, http.StatusText(405), 405)
-        return
-    }
-    bks, err := models.AllBooks()
-    if err != nil {
-        http.Error(w, http.StatusText(500), 500)
-        return
-    }
-    for _, bk := range bks {
-        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
-    }
-}
-</pre></code></figure>
-
-<figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
+<figure class="file">
+    <figcaption>File: models/models.go</figcaption><code class="go">
+        <pre>
 package models
 
 import (
     "database/sql"
-    _ "github.com/lib/pq"
-    "log"
 )
 
-var db *sql.DB
-
-func InitDB(dataSourceName string) {
-    var err error
-    db, err = sql.Open("postgres", dataSourceName)
-    if err != nil {
-        log.Panic(err)
-    }
-
-    if err = db.Ping(); err != nil {
-        log.Panic(err)
-    }
-}
-</pre></code></figure>
-
-<figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-package models
+// Create an exported global variable to hold the database connection pool.
+var DB *sql.DB
 
 type Book struct {
     Isbn   string
@@ -152,63 +144,218 @@ type Book struct {
     Price  float32
 }
 
-func AllBooks() ([]*Book, error) {
+// AllBooks returns a slice of all books in the books table.
+func AllBooks() ([]Book, error) {
+    // Note that we are calling Query() on the global variable.
+    rows, err := DB.Query("SELECT * FROM books")
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var bks []Book
+
+    for rows.Next() {
+        var bk Book
+
+        err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
+        if err != nil {
+            return nil, err
+        }
+
+        bks = append(bks, bk)
+    }
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return bks, nil
+}               
+</pre></code>
+</figure>
+
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+
+    "bookstore.alexedwards.net/models"
+
+    _ "github.com/lib/pq"
+)
+
+func main() {
+    var err error
+
+    // Initalize the sql.DB connection pool and assign it to the models.DB 
+    // global variable.
+    models.DB, err = sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    http.HandleFunc("/books", booksIndex)
+    http.ListenAndServe(":3000", nil)
+}
+
+// booksIndex sends a HTTP response listing all books.
+func booksIndex(w http.ResponseWriter, r *http.Request) {
+    bks, err := models.AllBooks()
+    if err != nil {
+        log.Println(err)
+        http.Error(w, http.StatusText(500), 500)
+        return
+    }
+
+    for _, bk := range bks {
+        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
+    }
+}           
+</pre></code>
+</figure>
+
+<p>At this point, if you run this application and make a request to the <code>/books</code> endpoint you should get the following response:</p>
+
+<figure class="shell"><code>
+        <pre>
+$ curl localhost:3000/books
+<samp>978-1503261969, Emma, Jayne Austen, £9.44
+978-1505255607, The Time Machine, H. G. Wells, £5.99
+978-1503379640, The Prince, Niccolò Machiavelli, £6.99</samp>
+</pre></code></figure>
+
+<p>Using a global variable to store the database connection pool like this is potentially a good fit when:</p>
+
+<ul>
+    <li>Your application is small and simple, and keeping track of globals in your head isn't a problem.</li>
+    <li>Your HTTP handlers are spread across multiple packages, but all your database-related code lives in one package.</li>
+    <li>You don't need to mock the database for testing purposes.</li>
+</ul>
+
+<p>The drawbacks of using global variables are <a href="https://softwareengineering.stackexchange.com/questions/148108/why-is-global-state-so-evil">well-documented</a>, but in practice I've found that for small and simple projects using a global variable like this works just fine, and it's (arguably) clearer and easier to understand than some of the other approaches we'll look at in this post.</p>
+
+<p>For more complex applications &mdash; where your handlers have more dependencies beyond just the database connection pool &mdash; it's generally better to use dependency injection instead of storing everything in global variables.</p>
+
+<p>The approach we've taken here also doesn't work if your database logic is spread over multiple packages, although &mdash; if you really want to &mdash; you could a separate <code>config</code> package containing an exported <code>DB</code> global variable and <code>import "yourproject/config"</code> into every file that needs it. I've provided a basic example in <a href="https://gist.github.com/alexedwards/534b79818ac8cb2410762ea33cee91f2">this gist</a>.</p>
+
+<h3 id="initDB">1b. Global variable with an InitDB function</h3>
+
+<p>A variation on the 'global variable' approach that I sometimes see uses an initialisation function to set up the connection pool, like so:</p>
+
+
+
+<figure class="file">
+    <figcaption>File: models/models.go</figcaption><code class="go">
+        <pre>
+package models
+
+import (
+    "database/sql"
+
+    _ "github.com/lib/pq"
+)
+
+// This time the global variable is unexported.
+var db *sql.DB
+
+// InitDB sets up setting up the connection pool global variable.
+func InitDB(dataSourceName string) error {
+    var err error
+
+    db, err = sql.Open("postgres", dataSourceName)
+    if err != nil {
+        return err
+    }
+
+    return db.Ping()
+}
+
+type Book struct {
+    Isbn   string
+    Title  string
+    Author string
+    Price  float32
+}
+
+func AllBooks() ([]Book, error) {
+    // This now uses the unexported global variable.
     rows, err := db.Query("SELECT * FROM books")
     if err != nil {
         return nil, err
     }
     defer rows.Close()
 
-    bks := make([]*Book, 0)
+    var bks []Book
+
     for rows.Next() {
-        bk := new(Book)
+        var bk Book
+
         err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
         if err != nil {
             return nil, err
         }
+
         bks = append(bks, bk)
     }
     if err = rows.Err(); err != nil {
         return nil, err
     }
+
     return bks, nil
+}  
+</pre></code>
+</figure>
+
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
+package main
+
+import (
+    "fmt"
+    "log"
+    "net/http"
+
+    "bookstore.alexedwards.net/models"
+)
+
+func main() {
+    // Use the InitDB function to initialise the global variable.
+    err := models.InitDB("postgres://user:pass@localhost/bookstore")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    http.HandleFunc("/books", booksIndex)
+    http.ListenAndServe(":3000", nil)
 }
-</pre></code></figure>
 
-<p>If you run the application and make a request to <code>/books</code> you should get a response similar to:</p>
+...             
+</pre></code>
+</figure>
 
-<figure class="shell"><code><pre>
-$ curl -i localhost:3000/books
-<samp>HTTP/1.1 200 OK
-Content-Length: 205
-Content-Type: text/plain; charset=utf-8
-
-978-1503261969, Emma, Jayne Austen, £9.44
-978-1505255607, The Time Machine, H. G. Wells, £5.99
-978-1503379640, The Prince, Niccolò Machiavelli, £6.99</samp>
-</pre></code></figure>
-
-<p>Using a global variable like this is potentially a good fit if:</p>
+<p>This is a small tweak to the global variable pattern, but it gives us a few nice benefits:</p>
 
 <ul>
-  <li>All your database logic is contained in the same package.</li>
-  <li>Your application is small enough that keeping track of globals in your head isn't a problem.</li>
-  <li>Your approach to testing means that you don't need to mock the database or run tests in parallel.</li>
+    <li>All the database-related code now lives a single package, including the code to set up the connection pool.</li>
+    <li>The global <code>db</code> variable is not exported, which removes the possibility of it being accidentally mutated by other packages at runtime.</li>
+    <li>During testing, you can reuse the <code>InitDB()</code> function to initialise a connection pool to your test database (by calling it from <a href="https://medium.com/goingogo/why-use-testmain-for-testing-in-go-dafb52b406bc"><code>TestMain()</code></a> before your tests run).</li>
 </ul>
 
-<p>For the example above using a global works just fine. But what happens in more complicated applications where database logic is spread over multiple packages?</p>
+<h2 id="dependency-injection">2. Dependency injection</h2>
 
-<p>One option is to have multiple <code>InitDB</code> calls, but that can quickly become cluttersome and I've personally found it a bit flaky (it's easy to forget to initialise a connection pool and get nil-pointer panics at runtime). A second option is to create a separate <code>config</code> package with an exported <code>DB</code> variable and <code>import "yourproject/config"</code> into every file that needs it. Just in case it isn't immediately understandable what I mean, I've included a simple example <a href="https://gist.github.com/alexedwards/8b4b0cd4495d7c3abadd">in this gist</a>.</p>
+<p>In a more complex web application there are probably additional application-level objects that you want your handlers to have access to. For example, you might want your handlers to also have access to a shared logger, or a template cache, as well your database connection pool.</p>
 
-<h2 id="dependency-injection">Dependency injection</h2>
+<p>Rather than storing all these dependencies in global variables, a neat approach is to store them in a single custom <code>Env</code> struct like so:</p>
 
-<p>The second approach we'll look at is dependency injection. In our example, we want to explicitly pass a connection pool pointer to our HTTP handlers and then onward to our database logic.</p>
-
-<p>In a real-world application there are probably extra application-level (and concurrency-safe) items that you want your handlers to have access to. Things like pointers to your logger or template cache, as well as the database connection pool.</p>
-
-<p>So for projects where all your handlers are in the same package, a neat approach is to put these items into a custom <code>Env</code> type:</p>
-
-<figure class="plain"><code class="go"><pre>
+<figure class="plain"><code class="go">
+        <pre>
 type Env struct {
     db *sql.DB
     logger *log.Logger
@@ -216,74 +363,18 @@ type Env struct {
 }
 </pre></code></figure>
 
-<p>&hellip; and then define your handlers as methods against <code>Env</code>. This provides a clean and idiomatic way of making the connection pool (and potentially other items) available to your handlers. Here's a full example:</p>
+<p>The nice thing about this is that you can then define your handlers as <em>methods against <code>Env</code></em>. This gives you a easy and idiomatic way of making the connection pool (and any other dependencies) available to your handlers.</p>
 
-<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
-package main
+<p>Here's a full example:</p>
 
-import (
-    "bookstore/models"
-    "database/sql"
-    "fmt"
-    "log"
-    "net/http"
-)
-
-type Env struct {
-    db *sql.DB
-}
-
-func main() {
-    db, err := models.NewDB("postgres://user:pass@localhost/bookstore")
-    if err != nil {
-        log.Panic(err)
-    }
-    env := &Env{db: db}
-
-    http.HandleFunc("/books", env.booksIndex)
-    http.ListenAndServe(":3000", nil)
-}
-
-func (env *Env) booksIndex(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "GET" {
-        http.Error(w, http.StatusText(405), 405)
-        return
-    }
-    bks, err := models.AllBooks(env.db)
-    if err != nil {
-        http.Error(w, http.StatusText(500), 500)
-        return
-    }
-    for _, bk := range bks {
-        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
-    }
-}
-</pre></code></figure>
-
-<figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
+<figure class="file">
+    <figcaption>File: models/models.go</figcaption><code class="go">
+        <pre>
 package models
 
 import (
     "database/sql"
-    _ "github.com/lib/pq"
 )
-
-func NewDB(dataSourceName string) (*sql.DB, error) {
-    db, err := sql.Open("postgres", dataSourceName)
-    if err != nil {
-        return nil, err
-    }
-    if err = db.Ping(); err != nil {
-        return nil, err
-    }
-    return db, nil
-}
-</pre></code></figure>
-
-<figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-package models
-
-import "database/sql"
 
 type Book struct {
     Isbn   string
@@ -292,42 +383,119 @@ type Book struct {
     Price  float32
 }
 
-func AllBooks(db *sql.DB) ([]*Book, error) {
+// Update the AllBooks function so it accepts the connection pool as a 
+// parameter.
+func AllBooks(db *sql.DB) ([]Book, error) {
     rows, err := db.Query("SELECT * FROM books")
     if err != nil {
         return nil, err
     }
     defer rows.Close()
 
-    bks := make([]*Book, 0)
+    var bks []Book
+
     for rows.Next() {
-        bk := new(Book)
+        var bk Book
+
         err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
         if err != nil {
             return nil, err
         }
+
         bks = append(bks, bk)
     }
     if err = rows.Err(); err != nil {
         return nil, err
     }
+
     return bks, nil
-}
-</pre></code></figure>
+}     
+</pre></code>
+</figure>
 
-<p><strong>Or using a closure&hellip;</strong></p>
-
-<p>If you don't want to define your handlers as methods on <code>Env</code> an alternative approach is to put your handler logic into a closure and <em>close over</em> the <code>Env</code> variable like so:</p>
-
-<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
 package main
 
 import (
-    "bookstore/models"
     "database/sql"
     "fmt"
     "log"
     "net/http"
+
+    "bookstore.alexedwards.net/models"
+
+    _ "github.com/lib/pq"
+)
+
+// Create a custom Env struct which holds a connection pool.
+type Env struct {
+    db *sql.DB
+}
+
+func main() {
+    // Initialise the connection pool.
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Create an instance of Env containing the connection pool.
+    env := &Env{db: db}
+
+    // Use env.booksIndex as the handler function for the /books route.
+    http.HandleFunc("/books", env.booksIndex)
+    http.ListenAndServe(":3000", nil)
+}
+
+// Define booksIndex as a method on Env.
+func (env *Env) booksIndex(w http.ResponseWriter, r *http.Request) {
+    // We can now access the connection pool directly in our handlers.
+    bks, err := models.AllBooks(env.db)
+    if err != nil {
+        log.Println(err)
+        http.Error(w, http.StatusText(500), 500)
+        return
+    }
+
+    for _, bk := range bks {
+        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
+    }
+}                 
+</pre></code>
+</figure>
+
+<p>One of the advantages of this pattern is how clear it is to see <em>what dependencies our handlers have</em> and <em>what values they take at runtime</em>. All the dependencies for our handlers are explicitly defined in one place (the <code>Env</code> struct), and we can see what values they have at runtime by simply looking at how it is initialised in the <code>main()</code> function.</p>
+
+<p>Another benefit is that any unit tests for our handlers can be completely self-contained. For example, a unit-test for <code>booksIndex()</code> could create an <code>Env</code> struct containing a connection pool to a test database, then call it's <code>booksIndex()</code> method in order to test the handler behaviour. There's no need to rely any global variables <em>outside of the test</em>.</p>
+
+<p>In general, dependency injection in this way is quite a nice approach when:</p>
+
+<ul>
+    <li>There is a common set of dependencies that your handlers need access to.</li>
+    <li>All your HTTP handlers live in one package, but your database-related code may be spread across multiple packages.</li>
+    <li>You don't need to mock the database for testing purposes.</li>
+</ul>
+
+<h3 id="closure">2b. Dependency injection via a closure</h3>
+
+<p>If you don't want to define your handlers as methods on <code>Env</code>, an alternative approach is to put your handler logic into a closure and <em>close over</em> the <code>Env</code> variable like so:</p>
+
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+
+    "bookstore.alexedwards.net/models"
+
+    _ "github.com/lib/pq"
 )
 
 type Env struct {
@@ -335,293 +503,363 @@ type Env struct {
 }
 
 func main() {
-    db, err := models.NewDB("postgres://user:pass@localhost/bookstore")
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
     if err != nil {
-        log.Panic(err)
+        log.Fatal(err)
     }
+
     env := &Env{db: db}
 
+    // Pass the Env struct as a parameter to booksIndex().
     http.Handle("/books", booksIndex(env))
     http.ListenAndServe(":3000", nil)
 }
 
-func booksIndex(env *Env) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != "GET" {
-            http.Error(w, http.StatusText(405), 405)
-            return
-        }
+// Use a closure to make Env available to the handler logic.
+func booksIndex(env *Env) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
         bks, err := models.AllBooks(env.db)
         if err != nil {
+            log.Println(err)
             http.Error(w, http.StatusText(500), 500)
             return
         }
+
         for _, bk := range bks {
             fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
         }
-    })
+    }
+}    
+</pre></code>
+</figure>
+
+<p>This pattern makes our handler functions a bit more verbose, but it can be a useful technique if you want to use dependency injection when <em>your handlers are spread across multiple packages</em>. Here's a <a href="https://gist.github.com/alexedwards/d42ae90aac9dfa75046ebf8a036b080b">gist</a> demonstrating how that can work.</p>
+
+<h2 id="wrapping-the-connection-pool">3. Wrapping the connection pool</h2>
+
+<p>The third pattern we'll look at uses dependency injection again, but this time we're going to wrap the <code>sql.DB</code> connection pool in our own custom type.</p>
+
+<p>Let's jump straight in to the code:</p>
+
+<figure class="file">
+    <figcaption>File: models/models.go</figcaption><code class="go">
+        <pre>
+package models
+
+import (
+	"database/sql"
+)
+
+type Book struct {
+	Isbn   string
+	Title  string
+	Author string
+	Price  float32
 }
-</pre></code></figure>
 
-<p>Dependency injection in this way is quite a nice approach when:</p>
-
-<ul>
-  <li>All your handlers are contained in the same package.</li>
-  <li>There is a common set of dependencies that each of your handlers need.</li>
-  <li>Your approach to testing means that you don't need to mock the database or run tests in parallel.</li>
-</ul>
-
-<p>Again, you could still use this general approach if your handlers and database logic are spread across multiple packages. One way to achieve this would be to setup a separate <code>config</code> package exporting the <code>Env</code> type and <em>close over</em> <code>config.Env</code> in the same way as the example above. Here's a <a href="https://gist.github.com/alexedwards/5cd712192b4831058b21">basic gist</a>.</p>
-
-<h2 id="using-an-interface">Using an interface</h2>
-
-<p>We can take this dependency injection example a little further. Let's change the <code>models</code> package so that it exports a custom <code>DB</code> type (which embeds <code>*sql.DB</code>) and implement our database logic as methods against the <code>DB</code> type.</p>
-
-<p>The advantages of this are twofold: first it gives our code a really clean structure, but &ndash; more importantly &ndash; it also opens up the potential to mock our database for unit testing.</p>
-
-<p>Let's amend the example to include a new <code>Datastore</code> interface, which implements exactly the same methods as our new <code>DB</code> type.</p>
-
-<figure class="plain"><code class="go"><pre>
-type Datastore interface {
-    AllBooks() ([]*Book, error)
+// Create a custom BookModel type which wraps the sql.DB connection pool.
+type BookModel struct {
+	DB *sql.DB
 }
-</pre></code></figure>
 
-<p>We can then use this interface instead of the direct <code>DB</code> type throughout our application. Here's the updated example:</p>
+// Use a method on the custom BookModel type to run the SQL query.
+func (m BookModel) All() ([]Book, error) {
+	rows, err := m.DB.Query("SELECT * FROM books")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+	var bks []Book
+
+	for rows.Next() {
+		var bk Book
+
+		err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
+		if err != nil {
+			return nil, err
+		}
+
+		bks = append(bks, bk)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return bks, nil
+}
+</pre></code>
+</figure>
+
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
 package main
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "bookstore/models"
+	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+
+	"bookstore.alexedwards.net/models"
+
+	_ "github.com/lib/pq"
 )
 
+// This time make models.BookModel the dependency in Env.
 type Env struct {
-    db models.Datastore
+	books models.BookModel
 }
 
 func main() {
-    db, err := models.NewDB("postgres://user:pass@localhost/bookstore")
-    if err != nil {
-        log.Panic(err)
-    }
+    // Initialise the connection pool as normal.
+	db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    env := &Env{db}
+    // Initalise Env with a models.BookModel instance (which in turn wraps
+    // the connection pool).
+	env := &Env{
+		books: models.BookModel{DB: db},
+	}
 
-    http.HandleFunc("/books", env.booksIndex)
-    http.ListenAndServe(":3000", nil)
+	http.HandleFunc("/books", env.booksIndex)
+	http.ListenAndServe(":3000", nil)
 }
 
 func (env *Env) booksIndex(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "GET" {
-        http.Error(w, http.StatusText(405), 405)
-        return
-    }
-    bks, err := env.db.AllBooks()
-    if err != nil {
-        http.Error(w, http.StatusText(500), 500)
-        return
-    }
-    for _, bk := range bks {
-        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
-    }
+    // Execute the SQL query by calling the All() method.
+	bks, err := env.books.All()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	for _, bk := range bks {
+		fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
+	}
 }
-</pre></code></figure>
+</pre></code>
+</figure>
 
-<figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
-package models
+<p>At first glance this pattern might feel more confusing than the other options we've looked at &mdash; especially if you're not very familiar with Go. But it has some distinct advantages over our previous examples:</p>
 
-import (
-    _ "github.com/lib/pq"
-    "database/sql"
-)
+<ul>
+    <li>The database calls are succinct and read very nicely from the perspective of our handlers: <code>env.books.All()</code> versus the previous <code>models.AllBooks(env.db)</code>.</li>
+    <li>In a complex application, your database access layer might have more dependencies than just the connection pool. This pattern allows us to store all those dependencies in the custom <code>BookModel</code> type, rather than having to pass them as parameters with every call.</li>
+    <li>Because the database actions are now defined as methods on our custom <code>BookModel</code> type, it opens up the opportunity to replace any references to <code>BookModel</code> in our application code with an interface. And in turn, that means that we can create a mock implementation of our <code>BookModel</code> which can be used during testing.</li>
+</ul>
 
-type Datastore interface {
-    AllBooks() ([]*Book, error)
-}
+<p>The final point here is probably the most important, so let's take a look at what it could look like in practice:</p>
 
-type DB struct {
-    *sql.DB
-}
-
-func NewDB(dataSourceName string) (*DB, error) {
-    db, err := sql.Open("postgres", dataSourceName)
-    if err != nil {
-        return nil, err
-    }
-    if err = db.Ping(); err != nil {
-        return nil, err
-    }
-    return &DB{db}, nil
-}
-</pre></code></figure>
-
-<figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
-package models
-
-type Book struct {
-    Isbn   string
-    Title  string
-    Author string
-    Price  float32
-}
-
-func (db *DB) AllBooks() ([]*Book, error) {
-    rows, err := db.Query("SELECT * FROM books")
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    bks := make([]*Book, 0)
-    for rows.Next() {
-        bk := new(Book)
-        err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
-        if err != nil {
-            return nil, err
-        }
-        bks = append(bks, bk)
-    }
-    if err = rows.Err(); err != nil {
-        return nil, err
-    }
-    return bks, nil
-}
-</pre></code></figure>
-
-<p>Because our handlers are now using the <code>Datastore</code> interface we can easily create mock database responses for any unit tests:</p>
-
-<figure class="plain"><code class="go"><pre>
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
 package main
 
 import (
-    "bookstore/models"
-    "net/http"
-    "net/http/httptest"
-    "testing"
+	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+
+	"bookstore.alexedwards.net/models"
+
+	_ "github.com/lib/pq"
 )
 
-type mockDB struct{}
+type Env struct {
+    // Replace the reference to models.BookModel with an interface 
+    // describing its methods instead. All the other code remains exactly 
+    // the same. 
+	books interface {
+		All() ([]models.Book, error)
+	}
+}
 
-func (mdb *mockDB) AllBooks() ([]*models.Book, error) {
-    bks := make([]*models.Book, 0)
-    bks = append(bks, &models.Book{"978-1503261969", "Emma", "Jayne Austen", 9.44})
-    bks = append(bks, &models.Book{"978-1505255607", "The Time Machine", "H. G. Wells", 5.99})
-    return bks, nil
+func main() {
+	db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	env := &Env{
+		books: models.BookModel{DB: db},
+	}
+
+	http.HandleFunc("/books", env.booksIndex)
+	http.ListenAndServe(":3000", nil)
+}
+
+func (env *Env) booksIndex(w http.ResponseWriter, r *http.Request) {
+	bks, err := env.books.All()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	for _, bk := range bks {
+		fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
+	}
+}
+</pre></code>
+</figure>
+
+<aside class="note">
+    <strong>Note:</strong> If you're not familiar with the concept of interfaces or how they work in Go, I've written a <a href="https://www.alexedwards.net/blog/interfaces-explained">detailed tutorial explaining them here</a>.
+</aside>
+
+<p>Once you've made that change, you should be able to create and run a unit test for the <code>booksIndex()</code> handler using a <code>mockBookModel</code> like so:</p>
+
+<figure class="shell"><code>
+        <pre>
+$ touch main_test.go</pre></code></figure>
+
+
+
+<figure class="file">
+    <figcaption>File: main_test.go</figcaption><code class="go">
+        <pre>
+package main
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"bookstore.alexedwards.net/models"
+)
+
+type mockBookModel struct{}
+
+func (m *mockBookModel) All() ([]models.Book, error) {
+	var bks []models.Book
+
+	bks = append(bks, models.Book{"978-1503261969", "Emma", "Jayne Austen", 9.44})
+	bks = append(bks, models.Book{"978-1505255607", "The Time Machine", "H. G. Wells", 5.99})
+
+	return bks, nil
 }
 
 func TestBooksIndex(t *testing.T) {
-    rec := httptest.NewRecorder()
-    req, _ := http.NewRequest("GET", "/books", nil)
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/books", nil)
 
-    env := Env{db: &mockDB{}}
-    http.HandlerFunc(env.booksIndex).ServeHTTP(rec, req)
+	env := Env{books: &mockBookModel{}}
 
-    expected := "978-1503261969, Emma, Jayne Austen, £9.44\n978-1505255607, The Time Machine, H. G. Wells, £5.99\n"
-    if expected != rec.Body.String() {
-        t.Errorf("\n...expected = %v\n...obtained = %v", expected, rec.Body.String())
-    }
+	http.HandlerFunc(env.booksIndex).ServeHTTP(rec, req)
+
+	expected := "978-1503261969, Emma, Jayne Austen, £9.44\n978-1505255607, The Time Machine, H. G. Wells, £5.99\n"
+	if expected != rec.Body.String() {
+		t.Errorf("\n...expected = %v\n...obtained = %v", expected, rec.Body.String())
+	}
 }
+</pre></code>
+</figure>
+
+<figure class="shell"><code>
+        <pre>
+$ go test -v
+<samp>=== RUN   TestBooksIndex
+--- PASS: TestBooksIndex (0.00s)
+PASS
+ok      bookstore.alexedwards.net       0.003s</samp>
 </pre></code></figure>
 
-<h2 id="request-scoped-context">Request-scoped context</h2>
+<p>Wrapping the connection pool with a custom type and combining it with dependency injection via an <code>Env</code> struct is quite a nice approach when:</p>
 
-<p>Finally let's look at using request-scoped context to store and pass around the database connection pool. Specifically, we'll make use of the <a href="https://golang.org/pkg/context/">context</a> package.</p>
+<ul>
+    <li>There is a common set of dependencies that your handlers need access to.</li>
+    <li>Your database layer has more dependencies than just the connection pool.</li>
+    <li>You want to mock the database during unit tests.</li>
+</ul>
 
-<p>Personally I'm not a fan of storing application-level variables in request-scoped context &ndash; it feels clunky and burdensome to me. The context package documentation kinda advises against it too:</p>
+<h2 id="request-context">4. Request context</h2>
+
+<p>Finally let's look at using <a href="https://golang.org/pkg/net/http/#Request.Context">request context</a> to store and pass around the database connection pool. Just to be clear upfront, I don't recommend using this approach, and the <a href="https://golang.org/pkg/context/">official documentation</a> advises against it too:</p>
 
 <blockquote>
-<p>Use context Values only for request-scoped data that transits processes and APIs, not for passing optional parameters to functions.</p>
+    <p>Use context Values <strong>only for request-scoped data</strong> that transits processes and APIs, not for passing optional parameters to functions.</p>
 </blockquote>
 
-<p>That said, people <em>do</em> use this approach. And if your project consists of a sprawling set of packages &ndash; and using a global config is out of the question &ndash; it's quite an attractive proposition.</p>
+<p>In other words, that means request context should only be used to store values which are created <em>during an individual request cycle</em> and are no longer needed after the request has completed. It's not really intended to store long-lived handler dependencies like connection pools, loggers or template caches.</p>
 
-<p>Let's adapt the bookstore example one last time, passing the database connection pool object to our handlers by injecting it via some <code>ContextInjector</code> middleware.</p>
+<p>That said, some people <em>do</em> use request context in this way, and it's worth being aware of in case you ever come across it.</p>
 
-<figure class="file"><figcaption>File: main.go</figcaption><code class="go"><pre>
+<p>The pattern works like this:</p>
+
+<figure class="file">
+    <figcaption>File: main.go</figcaption><code class="go">
+        <pre>
 package main
 
 import (
-    "bookstore/models"
     "context"
     "database/sql"
     "fmt"
     "log"
     "net/http"
-)
 
-type ContextInjector struct {
-    ctx context.Context
-    h   http.Handler
-}
-
-func (ci *ContextInjector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    ci.h.ServeHTTP(w, r.WithContext(ci.ctx))
-}
-
-func main() {
-    db, err := models.NewDB("postgres://user:pass!@localhost/bookstore")
-    if err != nil {
-        log.Panic(err)
-    }
-    ctx := context.WithValue(context.Background(), "db", db)
-
-    http.Handle("/books", &ContextInjector{ctx, http.HandlerFunc(booksIndex)})
-    http.ListenAndServe(":3000", nil)
-}
-
-func booksIndex(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "GET" {
-        http.Error(w, http.StatusText(405), 405)
-        return
-    }
-
-    db, ok := r.Context().Value("db").(*sql.DB)
-    if !ok {
-        http.Error(w, "could not get database connection pool from context", 500)
-        return
-    }
-
-    bks, err := models.AllBooks(db)
-    if err != nil {
-        http.Error(w, http.StatusText(500), 500)
-        return
-    }
-    for _, bk := range bks {
-        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
-    }
-}
-</pre></code></figure>
-
-<figure class="file"><figcaption>File: models/db.go</figcaption><code class="go"><pre>
-package models
-
-import (
-    "database/sql"
+    "bookstore.alexedwards.net/models"
 
     _ "github.com/lib/pq"
 )
 
-func NewDB(dataSourceName string) (*sql.DB, error) {
-    db, err := sql.Open("postgres", dataSourceName)
-    if err != nil {
-        return nil, err
-    }
-    if err = db.Ping(); err != nil {
-        return nil, err
-    }
-    return db, nil
-}
-</pre></code></figure>
+// Create some middleware which swaps out the existing request context
+// with new context.Context value containing the connection pool.
+func injectDB(db *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        ctx := context.WithValue(r.Context(), "db", db)
 
-<figure class="file"><figcaption>File: models/books.go</figcaption><code class="go"><pre>
+        next.ServeHTTP(w, r.WithContext(ctx))
+    }
+}
+
+func main() {
+    db, err := sql.Open("postgres", "postgres://user:pass@localhost/bookstore")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Wrap the booksIndex handler with the injectDB middleware,
+    // passing in the new context.Context with the connection pool.
+    http.Handle("/books", injectDB(db, booksIndex))
+    http.ListenAndServe(":3000", nil)
+}
+
+func booksIndex(w http.ResponseWriter, r *http.Request) {
+    // Pass the request context onto the database layer.
+    bks, err := models.AllBooks(r.Context())
+    if err != nil {
+        log.Println(err)
+        http.Error(w, http.StatusText(500), 500)
+        return
+    }
+
+    for _, bk := range bks {
+        fmt.Fprintf(w, "%s, %s, %s, £%.2f\n", bk.Isbn, bk.Title, bk.Author, bk.Price)
+    }
+}                      
+</pre></code>
+</figure>
+
+<p>Essentially, what's happening here is that the <code>injectDB</code> middleware replaces the request context for every request with <em>one that contains the connection pool</em>. Then, in our handlers, we pass the request context on to our database layer.</p>
+
+<p>Then in the database layer we can retrieve the connection pool from the context and use it like this:</p>
+
+<figure class="file">
+    <figcaption>File: models/models.go</figcaption><code class="go">
+        <pre>
 package models
 
 import (
+    "context"
     "database/sql"
+    "errors"
 )
 
 type Book struct {
@@ -631,28 +869,53 @@ type Book struct {
     Price  float32
 }
 
-func AllBooks(db *sql.DB) ([]*Book, error) {
+func AllBooks(ctx context.Context) ([]Book, error) {
+    // Retrieve the connection pool from the context. Because the
+    // r.Context().Value() method always returns an interface{} type, we
+    // need to type assert it into a *sql.DB before using it.
+    db, ok := ctx.Value("db").(*sql.DB)
+    if !ok {
+        return nil, errors.New("could not get database connection pool from context")
+    }
+
     rows, err := db.Query("SELECT * FROM books")
     if err != nil {
         return nil, err
     }
     defer rows.Close()
 
-    bks := make([]*Book, 0)
+    var bks []Book
+
     for rows.Next() {
-        bk := new(Book)
+        var bk Book
+
         err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
         if err != nil {
             return nil, err
         }
+
         bks = append(bks, bk)
     }
     if err = rows.Err(); err != nil {
         return nil, err
     }
+
     return bks, nil
-}
-</pre></code></figure>
+}               
+</pre></code>
+</figure>
+
+<p>If you go ahead and run this code it'll work just fine. But this pattern has some big downsides:</p>
+
+<ul>
+    <li>Each time we retrieve the connection pool from the context we need to type assert it and check for any errors. This makes our code more verbose, and we lose the compile-time type safety that we have with the other approaches.</li>
+    <li>Unlike the dependency injection patterns, it's not clear to see what dependencies a function has <em>just by looking at its signature</em>. Instead, you have to read through the code to see what it is retrieving from the request context. In a small application this isn't a problem &mdash; but if you're trying to get to grips with a large, unfamiliar, codebase then it's not ideal.</li>
+    <li>It's not idiomatic Go. Using the request context in this way goes against the advice in the official documentation, and that means the pattern might be surprising or unfamiliar to other Go developers.</li>
+</ul>
+
+<p><em>So, is there ever a scenario where this pattern is a good fit?</em> It's tempting to be glib here and say "no", but the truth is that it <em>can</em> be an easy-ish way to pass around the connection pool if you have a sprawling codebase with handlers and database logic spread across many different packages.</p>
+
+<p>But if you're considering using it for that reason, then it's probably a sign that you should refactor your codebase to have a simpler, flatter, package structure. Or, alternatively, I would suggest taking a closer look at the <a href="#closure">closure pattern</a> we talked about earlier instead.</p>
     <div class="footer">
         <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
         <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
