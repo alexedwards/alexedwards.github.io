@@ -7,7 +7,7 @@
     <meta name="author" content="Alex Edwards">
     <meta name="copyright" content="Copyright Alex Edwards 2020">
     <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
-    <title>Interfaces Explained - Alex Edwards</title>
+    <title>Golang Interfaces Explained - Alex Edwards</title>
     <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,500,700|Fira+Sans:400,400i,700,700i,800" rel="stylesheet">
     <link rel="stylesheet" href="/static/stylesheets/main.css">
     <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
@@ -43,7 +43,7 @@
     <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
 </div>
 <article>
-    <h1>Interfaces Explained</h1>
+    <h1>Golang Interfaces Explained</h1>
     <div class="metadata">
         <span class="dates">
             
@@ -61,13 +61,13 @@
 <p>I get that. Go was the first language I ever used that had interfaces, and I remember at the time that the whole concept felt pretty confusing. So in this tutorial I want to do a few things:</p>
 
 <ol>
-<li>Provide a plain-English explanation of what interfaces are;</li>
+    <li>Provide a plain-English explanation of what interfaces are;</li>
 
-<li>Explain why they are useful and how you might want to use them in your code;</li>
+    <li>Explain why they are useful and how you might want to use them in your code;</li>
 
-<li>Talk about what <code>interface{}</code> (the empty interface) is;</li>
+    <li>Talk about what <code>interface{}</code> (the empty interface) is;</li>
 
-<li>And run through some of the helpful interface types that you'll find in the standard library.</li>
+    <li>And run through some of the helpful interface types that you'll find in the standard library.</li>
 </ol>
 
 <h2 id="what-is-an-interface">So what is an interface?</h2>
@@ -76,7 +76,8 @@
 
 <p>One example of an interface type from the standard library is the <a href="https://golang.org/pkg/fmt/#Stringer"><code>fmt.Stringer</code></a> interface, which looks like this:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 type Stringer interface {
     String() string
 }
@@ -86,7 +87,8 @@ type Stringer interface {
 
 <p>For example, the following <code>Book</code> type satisfies the interface because it has a <code>String() string</code> method:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 type Book struct {
     Title  string
     Author string
@@ -101,7 +103,8 @@ func (b Book) String() string {
 
 <p>Or, as another example, the following <code>Count</code> type <em>also</em> satisfies the <code>fmt.Stringer</code> interface &mdash; again because it has a method with the exact signature <code>String() string</code>.</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 type Count int
 
 func (c Count) String() string {
@@ -119,7 +122,8 @@ func (c Count) String() string {
 
 <p>For example, let's say that you have the following function:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 func WriteLog(s fmt.Stringer) {
     log.Println(s.String())
 }
@@ -131,7 +135,8 @@ func WriteLog(s fmt.Stringer) {
 
 <p>Let's put this together in an example, which gives us a peek into the power of interfaces.</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 package main
 
 import (
@@ -178,7 +183,8 @@ func main() {
 
 <p>If you <a href="https://play.golang.org/p/DDQOFHxfOF8">run the code</a>, you should get some output which looks like this:</p>
 
-<figure class="shell"><code><pre>
+<figure class="shell"><code>
+        <pre>
 2009/11/10 23:00:00 Book: Alice in Wonderland - Lewis Carrol
 2009/11/10 23:00:00 3
 </pre></code></figure>
@@ -190,9 +196,9 @@ func main() {
 <p>There are all sorts of reasons that you might end up using a interface in Go, but in my experience the three most common are:</p>
 
 <ol>
-<li>To help reduce duplication or boilerplate code.</li>
-<li>To make it easier to use mocks instead of real objects in unit tests.</li>
-<li>As an architectural tool, to help enforce decoupling between parts of your codebase.</li>
+    <li>To help reduce duplication or boilerplate code.</li>
+    <li>To make it easier to use mocks instead of real objects in unit tests.</li>
+    <li>As an architectural tool, to help enforce decoupling between parts of your codebase.</li>
 </ol>
 
 <p>Let's step through these three use-cases and explore them in a bit more detail.</p>
@@ -205,7 +211,8 @@ func main() {
 
 <p>The first thing you need to know is that Go has an <a href="https://golang.org/pkg/io/#Writer"><code>io.Writer</code></a> interface type which looks like this:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 type Writer interface {
         Write(p []byte) (n int, err error)
 }
@@ -214,7 +221,8 @@ type Writer interface {
 
 <p>Let's take a look at a simple implementation:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 package main
 
 import (
@@ -286,7 +294,8 @@ func main() {
 
 <p>A minimal implementation of the code for that could look something like this: </p>
 
-<figure class="file"><code class="go"><pre>
+<figure class="file"><code class="go">
+        <pre>
 // File: main.go
 package main
 
@@ -357,7 +366,8 @@ func calculateSalesRate(sdb *ShopDB) (string, error) {
 
 <p>Like so:</p>
 
-<figure class="file"><code class="go"><pre>
+<figure class="file"><code class="go">
+        <pre>
 // File: main.go
 package main
 
@@ -433,7 +443,8 @@ func calculateSalesRate(sm ShopModel) (string, error) {
 
 <p>With that done, it's straightforward for us to create a mock which satisfies our <code>ShopModel</code> interface. We can then use that mock during unit tests to test that the math logic in our <code>calculateSalesRate()</code> function works correctly. Like so:</p>
 
-<figure class="file"><code class="go"><pre>
+<figure class="file"><code class="go">
+        <pre>
 // File: main_test.go
 package main
 
@@ -489,7 +500,7 @@ func TestCalculateSalesRate(t *testing.T) {
 <p>At the start of this blog post I said:</p>
 
 <blockquote>
-  <p>An interface type in Go is kind of like a <em>definition</em>. It defines and describes the exact methods that <em>some other type</em> must have.</p>
+    <p>An interface type in Go is kind of like a <em>definition</em>. It defines and describes the exact methods that <em>some other type</em> must have.</p>
 </blockquote>
 
 <p>The empty interface type essentially <em>describes no methods</em>. It has no rules. And because of that, it follows that any and every object satisfies the empty interface.</p>
@@ -498,7 +509,8 @@ func TestCalculateSalesRate(t *testing.T) {
 
 <p>Take a look at the following code:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 package main
 
 import "fmt"
@@ -519,7 +531,8 @@ func main() {
 
 <p>You can <a href="https://play.golang.org/p/GwxCQkLYNrq">give it a try here</a>, and when you run it you should see some output which looks like this:</p>
 
-<figure class="shell"><code><pre>
+<figure class="shell"><code>
+        <pre>
 map[age:21 height:167.64 name:Alice]
 </pre></code></figure>
 
@@ -527,7 +540,8 @@ map[age:21 height:167.64 name:Alice]
 
 <p>For example, let's say that we want to get the <code>"age"</code> value and increment it by 1. If you write something like the following code, it will fail to compile:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 package main
 
 import "log"
@@ -547,7 +561,8 @@ func main() {
 
 <p>And you'll get the following error message:</p>
 
-<figure class="shell"><code><pre>
+<figure class="shell"><code>
+        <pre>
 invalid operation: person["age"] + 1 (mismatched types interface {} and int)
 </pre></code></figure>
 
@@ -555,7 +570,8 @@ invalid operation: person["age"] + 1 (mismatched types interface {} and int)
 
 <p>To get around this this, you need to type assert the value back to an <code>int</code> before using it. Like so:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 package main
 
 import "log"
@@ -581,7 +597,8 @@ func main() {
 
 <p>If you <a href="https://play.golang.org/p/3cB9emSdcRX">run this now</a>, everything should work as expected:</p>
 
-<figure class="shell"><code><pre>
+<figure class="shell"><code>
+        <pre>
 2009/11/10 23:00:00 map[age:22 height:167.64 name:Alice]
 </pre></code></figure>
 
@@ -589,7 +606,8 @@ func main() {
 
 <p>The answer is <em>probably not that often</em>. If you find yourself reaching for it, pause and consider whether using <code>interface{}</code> is really the right option. As a general rule it's clearer, safer and more performant to use concrete types &mdash; or non-empty interface types &mdash; instead. In the code snippet above, it would have been more appropriate to define a <code>Person</code> struct with relevant typed fields similar to this:</p>
 
-<figure><code class="go"><pre>
+<figure><code class="go">
+        <pre>
 type Person struct {
     Name   string
     Age    int
@@ -604,13 +622,13 @@ type Person struct {
 <p>Lastly, here's a short list of some of the most common and useful interfaces in the standard library. If you're not familiar with them already, then I recommend taking out a bit of time to look at the relevant documentation for them.</p>
 
 <ul>
-<li><a href="https://golang.org/pkg/builtin/#error">builtin.Error</a></li>
-<li><a href="https://golang.org/pkg/fmt/#Stringer">fmt.Stringer</a></li>
-<li><a href="https://golang.org/pkg/io/#Reader">io.Reader</a></li>
-<li><a href="https://golang.org/pkg/io/#Writer">io.Writer</a></li>
-<li><a href="https://golang.org/pkg/io/#ReadWriteCloser">io.ReadWriteCloser</a></li>
-<li><a href="https://golang.org/pkg/net/http/#ResponseWriter">http.ResponseWriter</a></li>
-<li><a href="https://golang.org/pkg/net/http/#Handler">http.Handler</a></li>
+    <li><a href="https://golang.org/pkg/builtin/#error">builtin.Error</a></li>
+    <li><a href="https://golang.org/pkg/fmt/#Stringer">fmt.Stringer</a></li>
+    <li><a href="https://golang.org/pkg/io/#Reader">io.Reader</a></li>
+    <li><a href="https://golang.org/pkg/io/#Writer">io.Writer</a></li>
+    <li><a href="https://golang.org/pkg/io/#ReadWriteCloser">io.ReadWriteCloser</a></li>
+    <li><a href="https://golang.org/pkg/net/http/#ResponseWriter">http.ResponseWriter</a></li>
+    <li><a href="https://golang.org/pkg/net/http/#Handler">http.Handler</a></li>
 </ul>
 
 <p>There is also a longer and more comprehensive listing of standard libraries available in <a href="https://gist.github.com/asukakenji/ac8a05644a2e98f1d5ea8c299541fce9">this gist</a>.</p>

@@ -1250,7 +1250,7 @@ func main() {
     <pubDate>Tue, 7 Aug 2019 14:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/interfaces-explained</link>
     <guid>https://www.alexedwards.net/blog/interfaces-explained</guid>
-    <title>Interfaces Explained</title>
+    <title>Golang Interfaces Explained</title>
     <description><![CDATA[
 <p>For the past few months I've been running <a href="https://goo.gl/forms/Wvh42OXhvCHco5cw2">a survey</a> which asks people what they're finding difficult about learning Go. And something that keeps coming up in the responses is the concept of <em>interfaces</em>.</p>
 
