@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2021">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>Custom command-line flags with flag.Func - Alex Edwards</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Mono:400,500,700|Fira+Sans:400,400i,700,700i,800" rel="stylesheet">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="https://www.alexedwards.net/blog/custom-command-line-flags"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <main class="wrapper clearfix">
+      
+<div class="lets-go clearfix">
+    <div>
+        
+        <h3>Not sure how to structure your Go web application?</h3>
+        <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+        <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+        
+    </div>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+</div>
+<article>
+    <h1>Custom command-line flags with flag.Func</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Posted on: 8th March 2021
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
+        </span>
+        
+    </div>
+    <p>One of my favorite things about the recent <a href="https://golang.org/doc/go1.16">Go 1.16 release</a> is a small &mdash; but very welcome &mdash; addition to the <code>flag</code> package: the <a href="https://golang.org/pkg/flag/#Func"><code>flag.Func()</code></a> function. This makes it much easier to define and use custom command-line flags in your application.</p>
+
+<p>For example, if you want to parse a flag like <code>--pause=10s</code> directly into a <code>time.Duration</code> type,  or parse <code>--urls="http://example.com http://example.org"</code> directly into a <code>[]string</code> slice, then previously you had two options. You could either create a custom type to <a href="http://blog.ralch.com/tutorial/golang-custom-flags/">implement the <code>flag.Value</code> interface</a>, or use a third-party package like <a href="https://github.com/spf13/pflag"><code>pflag</code></a>.</p>
+
+<p>But now the <code>flag.Func()</code> function gives you a simple and lightweight alternative. In this short post we're going to take a look at a few examples of how you can use it in your own code.</p>
+
+<h2 id="parsing-custom-flag-types">Parsing custom flag types</h2>
+
+<p>To demonstrate how this works, let's start with the two examples I gave above and create a sample application which accepts a list of URLs and then prints them out with a pause between them. Similar to this:</p>
+
+<figure class="shell"><code><pre>$ go run . --pause=3s --urls="http://example.com http://example.org http://example.net"
+<samp>2021/03/08 08:16:04 http://example.com
+2021/03/08 08:16:07 http://example.org
+2021/03/08 08:16:10 http://example.net</samp></pre></code></figure>
+
+<p>To make this work, we'll need to do two things:</p>
+
+<ul>
+<li>Convert the <code>--pause</code> flag value from a 'human-readable' string like <code>200ms</code>, <code>5s</code> or <code>10m</code> into a native Go <code>time.Duration</code> type. We can do this using the <a href="https://golang.org/pkg/time/#ParseDuration"><code>time.ParseDuration()</code></a> function.</li>
+
+<li>Split the values in the <code>--urls</code> flag into a slice, so we can loop through them. The <a href="https://golang.org/pkg/strings/#Fields"><code>strings.Fields</code></a> function is a good fit for this task.</li>
+</ul>
+
+<p>We can use those together with <code>flag.Func()</code> like so:</p>
+
+<figure class="file"><code><pre>package main
+
+import (
+    "flag"
+    "log"
+    "strings"
+    "time"
+)
+
+func main() {
+    // First we need to declare variables to hold the values from the
+    // command-line flags. Notice that we also need to set any defaults,
+    // which will be used if the relevant flag is not provided at runtime.
+    var (
+        urls  []string                    // Default of the empty slice
+        pause time.Duration = time.Second // Default of one second
+    )
+
+    // The flag.Func() function takes three parameters: the flag name, 
+    // descriptive help text, and a function with the signature 
+    // `func(string) error` which is called to process the string value 
+    // from the command-line flag at runtime and assign it to the necessary 
+    // variable. In this case, we use strings.Fields() to split the string 
+    // based on whitespace and store the resulting slice in the urls  
+    // variable that we declared above. We then return nil from the 
+    // function to indicate that the flag was parsed without any errors.
+    flag.Func("urls", "List of URLs to print", func(flagValue string) error {
+        urls = strings.Fields(flagValue)
+        return nil
+    })
+
+    // Likewise we can do the same thing to parse the pause duration. The 
+    // time.ParseDuration() function may throw an error here, so we make 
+    // sure to return that from our function.
+    flag.Func("pause", "Duration to pause between printing URLs", func(flagValue string) error {
+        var err error
+        pause, err = time.ParseDuration(flagValue)
+        return err
+    })
+
+    // Importantly, call flag.Parse() to trigger actual parsing of the 
+    // flags.
+    flag.Parse()
+
+    // Print out the URLs, pausing between each iteration.
+    for _, u := range urls {
+        log.Println(u)
+        time.Sleep(pause)
+    }
+}
+</pre></code></figure>
+
+<p>If you try to run this application, you should find that the flags are parsed and work just like you would expect. For example:</p>
+
+<figure class="shell"><code><pre>$ go run . --pause=500ms --urls="http://example.com http://example.org http://example.net"
+<samp>2021/03/08 08:22:33 http://example.com
+2021/03/08 08:22:34 http://example.org
+2021/03/08 08:22:34 http://example.net</samp>
+</pre></code></figure>
+
+<p>Whereas if you provide an invalid flag value that triggers an error in one of the <code>flag.Func()</code> functions, Go will automatically display the corresponding error message and exit. For example:</p>
+
+<figure class="shell"><code><pre>$ go run . --pause=500xx --urls="http://example.com http://example.org http://example.net"
+<samp>invalid value "500xx" for flag -pause: time: unknown unit "xx" in duration "500xx"
+Usage of /tmp/go-build3141872390/b001/exe/example.text:
+  -pause value
+        Duration to pause between printing URLs
+  -urls value
+        List of URLs to print
+exit status 2</samp>
+</pre></code></figure>
+
+<p>It's really important to point out here that if a flag isn't provided, the corresponding <code>flag.Func()</code> function <em>will not be called at all</em>. This means that you <strong>cannot</strong> set a default value inside a <code>flag.Func()</code> function, so trying to do something like this won't work:</p>
+
+<figure class="file"><code><pre>flag.Func("pause", "Duration to pause between printing URLs (default 1s)", func(flagValue string) error {
+    // DON'T DO THIS! This function wont' be called if the flag value is "".
+    if flagValue == "" {
+        pause = time.Second
+        return nil
+    }
+
+    var err error
+    pause, err = time.ParseDuration(flagValue)
+    return err
+})
+</pre></code></figure>
+
+<p>On the plus side though, there are no restrictions on the code that can be contained in a <code>flag.Func()</code> function, so if you want, you could get even fancier with this and parse the URLs into a <code>[]*url.URL</code> slice instead of a <code>[]string</code>. Like so:</p>
+
+<figure class="file"><code><pre>var (
+    urls  []*url.URL                 
+    pause time.Duration = time.Second
+)
+
+flag.Func("urls", "List of URLs to print", func(flagValue string) error {
+    for _, u := range strings.Fields(flagValue) {
+        parsedURL, err := url.Parse(u)
+        if err != nil {
+            return err
+        }
+        urls = append(urls, parsedURL)
+    }
+    return nil
+})</pre></code></figure>
+
+<h2 id="validating-flag-values">Validating flag values</h2>
+
+<p>The <code>flag.Func()</code> function also opens up some new opportunities for validating input data from command-line flags. For example, let's say that your application has an <code>--environment</code> flag and you want to restrict the possible values to <code>development</code>, <code>staging</code> or <code>production</code>. </p>
+
+<p>To do that, you can implement a <code>flag.Func()</code> function similar to this:</p>
+
+<figure class="file"><code><pre>package main
+
+import (
+    "errors"
+    "flag"
+    "fmt"
+)
+
+func main() {
+    var (
+        environment string = "development"
+    )
+
+    flag.Func("environment", "Operating environment", func(flagValue string) error {
+        for _, allowedValue := range []string{"development", "staging", "production"} {
+            if flagValue == allowedValue {
+                environment = flagValue
+                return nil
+            }
+        }
+        return errors.New(`must be one of "development", "staging" or "production"`)
+    })
+
+    flag.Parse()
+
+    fmt.Printf("The operating environment is: %s\n", environment)
+}</pre></code></figure>
+
+<h3 id="making-reusable-helpers">Making reusable helpers</h3>
+
+<p>If you find yourself repeating the same code in your <code>flag.Func()</code> functions, or the logic is getting too complex, it's possible to break it out into a reusable helper. For example, we could rewrite the example above to process our <code>--environment</code> flag via a generic <code>enumFlag()</code> function, like so:</p>
+
+<figure class="file"><code><pre>package main
+
+import (
+    "flag"
+    "fmt"
+)
+
+func main() {
+    var (
+        environment string = "development"
+    )
+
+    enumFlag(&environment, "environment", []string{"development", "staging", "production"}, "Operating environment")
+
+    flag.Parse()
+
+    fmt.Printf("The operating environment is: %s\n", environment)
+}
+
+func enumFlag(target *string, name string, safelist []string, usage string) {
+    flag.Func(name, usage, func(flagValue string) error {
+        for _, allowedValue := range safelist {
+            if flagValue == allowedValue {
+                *target = flagValue
+                return nil
+            }
+        }
+
+        return fmt.Errorf("must be one of %v", safelist)
+    })
+}</pre></code></figure>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
+    
+</article>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
+</script>
+    </main>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2021</div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
