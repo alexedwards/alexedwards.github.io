@@ -40,7 +40,7 @@
         <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
         
     </div>
-    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
 </div>
 <article>
     <h1>Streamline Your Sublime Text + Go Workflow</h1>
@@ -112,7 +112,7 @@ export PATH=$PATH:$GOPATH/bin</pre></code></figure>
 
 <p>When you run these commands they will open and execute in a panel <em>within</em> Sublime Text. As an example, here's a screenshot of output from the <code>Build With: Go - Test</code> command:</p>
 
-<p><img src="/static/images/sublime-1.png"></p>
+<p><img loading="lazy" src="/static/images/sublime-1.png"></p>
 
 <h2>Automatic formatting</h2>
 
@@ -180,7 +180,7 @@ $ gometalinter --install</pre></code></figure>
     "lint_mode": "save",
 }</pre></code></figure>
 
-<p><img src="/static/images/sublime-2.png"></p>
+<p><img loading="lazy" src="/static/images/sublime-2.png"></p>
 
 <p>I should mention that the <code>SublimeLinter-contrib-gometalinter</code> plugin only executes the 'fast' linters included in <code>gometalinter</code>. You can see exactly which ones are run by checking the <a href="https://github.com/alecthomas/gometalinter/blob/322f0639d93eafd502424842597e73f8c3ae43d8/linters.go#L205">source code</a>.</p>
 
@@ -202,7 +202,7 @@ $ which gocode
 
 <p>If you open the command palette and run <code>Package Control: List Packages</code> you should then see a <code>gocode</code> entry in the list.</p>
 
-<p><img src="/static/images/sublime-3.png"></p>
+<p><img loading="lazy" src="/static/images/sublime-3.png"></p>
 
 <p>By default Sublime Text will make autocomplete suggestions whenever a letter is pressed. But when working with Go I like also to display potential method names whenever I hit the <code>.</code> character. You can make that happen by going to <code>Preferences &gt; Settings</code> and adding a new trigger in the <code>Preferences.sublime-settings - User</code> file:</p>
 
@@ -216,7 +216,7 @@ $ which gocode
 
 <p>You'll need to then restart Sublime Text for the settings to take effect. Once you have, you should have autocomplete working nicely and looking something like this:</p>
 
-<p><img src="/static/images/sublime-4.png"></p>
+<p><img loading="lazy" src="/static/images/sublime-4.png"></p>
 
 <h2>Code navigation</h2>
 
@@ -258,7 +258,7 @@ $ which guru
 
 <p>As an illustration, here's a screenshot of running <code>GoGuru: callers</code> on the <code>Sum</code> function:</p>
 
-<p><img src="/static/images/sublime-5.png"></p>
+<p><img loading="lazy" src="/static/images/sublime-5.png"></p>
 
 <h2>Snippets</h2>
 

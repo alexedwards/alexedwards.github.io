@@ -40,7 +40,7 @@
         <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
         
     </div>
-    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
 </div>
 <article>
     <h1>Gorilla vs Pat vs Routes&#58; A Mux Showdown</h1>
@@ -240,7 +240,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 <p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the results:</p>
 
 <figure class="chart">
-  <img src="/static/images/muxer-performance-comparison.png" alt="">
+  <img loading="lazy" src="/static/images/muxer-performance-comparison.png" alt="">
 </figure>
 
 <p>In this test the best performing package appeared to be Pat by a large margin. It handled around 30% more requests than Routes and Gorilla Mux, which were very evenly matched.</p>
@@ -248,7 +248,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 <p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the  results:</p>
 
 <figure class="chart">
-  <img src="/static/images/muxer-performance-comparison-2.png" alt="">
+  <img loading="lazy" src="/static/images/muxer-performance-comparison-2.png" alt="">
 </figure>
 
 

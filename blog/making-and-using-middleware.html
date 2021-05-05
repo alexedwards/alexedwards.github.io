@@ -40,7 +40,7 @@
         <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
         
     </div>
-    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
 </div>
 <article>
     <h1>Making and Using HTTP Middleware</h1>
@@ -318,7 +318,7 @@ func final(w http.ResponseWriter, r *http.Request) {
 
 <p>If you run this code then visit <a href="http://localhost:3000/">http://localhost:3000</a> in your browser you should get a username and password prompt like so:</p>
 
-<p><img src="/static/images/middleware-1.png"></p>
+<p><img loading="lazy" src="/static/images/middleware-1.png"></p>
 
 <p>Entering the wrong username and password should result in the prompt being redisplayed, clicking 'Cancel' should result in a plain-text <code>"Unauthorized"</code> response, and  using the correct username (<code>alice</code>) and password (<code>pa$$word</code>) should result in an <code>"OK"</code> response.</p>
 

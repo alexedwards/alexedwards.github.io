@@ -40,7 +40,7 @@
         <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
         
     </div>
-    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
 </div>
 <article>
     <h1>Form Validation and Processing in Go</h1>
@@ -206,7 +206,7 @@ $ go run .
 
 <p>And then visit <a href="http://localhost:3000/">localhost:3000</a> in your browser you should see the contact form being displayed (although it doesn't do anything yet!).</p>
 
-<p><img src="/static/images/contact-1.png"></p>
+<p><img loading="lazy" src="/static/images/contact-1.png"></p>
 
 <h2>Validating the Form</h2>
 
@@ -322,7 +322,7 @@ $ go run .
 
 <p>And try submitting an invalid form. You should find that the form is redisplayed along with the relevant data and validation errors like so:</p> 
 
-<p><img src="/static/images/contact-2.png"></p>
+<p><img loading="lazy" src="/static/images/contact-2.png"></p>
 
 <h2>Sending the Contact Form Message</h2>
 
@@ -388,7 +388,7 @@ func send(w http.ResponseWriter, r *http.Request) {
 
 <p>So long as your SMTP server account credentials are set up correctly, you should now be able to successfully submit the contact form and you should see the confirmation message below in your browser.</p>
 
-<p><img src="/static/images/contact-3.png"></p>
+<p><img loading="lazy" src="/static/images/contact-3.png"></p>
     <div class="footer">
         <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
         <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>

@@ -2569,7 +2569,7 @@ $ go test -coverprofile=/tmp/profile.out ./...
 $ go tool cover -html=/tmp/profile.out
 </pre></code></figure>
 
-<p><img src="/static/images/tooling-1.png"></p>
+<p><img loading="lazy" src="/static/images/tooling-1.png"></p>
 
 <p>This will gives you a navigable listing of all the test files, with code covered by the tests displayed in green, and uncovered code in red.</p>
 
@@ -2582,7 +2582,7 @@ $ go tool cover -html=/tmp/profile.out
 
 <p>When viewed in the browser, statements which are executed more frequently are shown in a more saturated shade of green, similar to this:</p>
 
-<p><img src="/static/images/tooling-2.png"></p>
+<p><img loading="lazy" src="/static/images/tooling-2.png"></p>
 
 <p>Note: If you’re using the <code>t.Parallel()</code> command in any of your tests, then you should use the flag <code>-covermode=atomic</code> instead of <code>-covermode=count</code> instead to ensure an accurate count.</p>
 
@@ -2946,13 +2946,13 @@ $ go test -run=^$ -bench=^BenchmarkFoo$ -o=/tmp/foo.test -cpuprofile=/tmp/cpupro
 $ go tool pprof -http=:5000 /tmp/cpuprofile.out
 </pre></code></figure>
 
-<p><img src="/static/images/tooling-3.png"></p>
+<p><img loading="lazy" src="/static/images/tooling-3.png"></p>
 
 <p>This will default to displaying a <em>graph</em> showing the execution tree for the sampled aspects of your application, which makes it possible to quickly get a feel for any resource usage 'hotspots'. In the graph above, we can see that the hotspots in terms of CPU usage are two system calls originating from <code>ioutil.ReadFile()</code>.</p>
 
 <p>You can also navigate to other <em>views</em> of the profile including top usage by function and source code.</p>
 
-<p><img src="/static/images/tooling-4.png"></p>
+<p><img loading="lazy" src="/static/images/tooling-4.png"></p>
 
 <p>If the amount of information is overwhelming, you might want to use the <code>--nodefraction</code> flag to ignore nodes that account for less than a certain percentage of samples. For example to ignore nodes that use appear in less than 10% of samples you can run <code>pprof</code> like so:</p>
 
@@ -2960,7 +2960,7 @@ $ go tool pprof -http=:5000 /tmp/cpuprofile.out
 $ go tool pprof --nodefraction=0.1 -http=:5000 /tmp/cpuprofile.out
 </pre></code></figure>
 
-<p><img src="/static/images/tooling-5.png"></p>
+<p><img loading="lazy" src="/static/images/tooling-5.png"></p>
 
 <p>This makes the graph a lot less 'noisy' and if you <a href="/static/images/tooling-5b.svg">zoom in on this screenshot</a>, it's now much clearer to see and understand where the CPU usage hotspots are.</p>
 
@@ -2984,7 +2984,7 @@ $ go tool trace /tmp/trace.out
 
 <p>Important: This is currently only viewable in Chrome/Chromium.</p>
 
-<p><img src="/static/images/tooling-6.png"></p>
+<p><img loading="lazy" src="/static/images/tooling-6.png"></p>
 
 <p>For more information about Go's execution tracer and how to interpret the output please see <a href="https://www.youtube.com/watch?v=mmqDlbWk_XA">Rhys Hiltner's dotGo 2016 talk</a> and this<a href="https://making.pusher.com/go-tool-trace/"> excellent blog post</a>.</p>
 
@@ -3535,7 +3535,7 @@ export PATH=$PATH:$GOPATH/bin
 
 <p>When you run these commands they will open and execute in a panel <em>within</em> Sublime Text. As an example, here's a screenshot of output from the <code>Build With: Go - Test</code> command:</p>
 
-<img src="https://www.alexedwards.net/static/images/sublime-1.png">
+<img loading="lazy" src="https://www.alexedwards.net/static/images/sublime-1.png">
 
 <h2>Automatic formatting</h2>
 
@@ -3607,7 +3607,7 @@ $ gometalinter --install
 }
 </pre></code></figure>
 
-<img src="https://www.alexedwards.net/static/images/sublime-2.png">
+<img loading="lazy" src="https://www.alexedwards.net/static/images/sublime-2.png">
 
 <p>I should mention that the <code>SublimeLinter-contrib-gometalinter</code> plugin only executes the 'fast' linters included in <code>gometalinter</code>. You can see exactly which ones are run by checking the <a href="https://github.com/alecthomas/gometalinter/blob/322f0639d93eafd502424842597e73f8c3ae43d8/linters.go#L205">source code</a>.</p>
 
@@ -3629,7 +3629,7 @@ $ which gocode
 
 <p>If you open the command palette and run <code>Package Control: List Packages</code> you should see a <code>gocode</code> entry in the list.</p>
 
-<img src="https://www.alexedwards.net/static/images/sublime-3.png">
+<img loading="lazy" src="https://www.alexedwards.net/static/images/sublime-3.png">
 
 <p>By default Sublime Text will make autocomplete suggestions whenever a letter is pressed. But when working with Go I like also to display potential method names whenever I hit the <code>.</code> character. You can make that happen by going to <code>Preferences &gt; Settings</code> and adding a new trigger in the <code>Preferences.sublime-settings - User</code> file:</p>
 
@@ -3644,7 +3644,7 @@ $ which gocode
 
 <p>You'll need to then restart Sublime Text for the settings to take effect. Once you have, you should have autocomplete working nicely and looking something like this:</p>
 
-<img src="https://www.alexedwards.net/static/images/sublime-4.png">
+<img loading="lazy" src="https://www.alexedwards.net/static/images/sublime-4.png">
 
 <h2>Code navigation</h2>
 
@@ -3687,7 +3687,7 @@ $ which guru
 
 <p>As an illustration, here's a screenshot of running <code>GoGuru: callers</code> on the <code>Sum</code> function:</p>
 
-<img src="https://www.alexedwards.net/static/images/sublime-5.png">
+<img loading="lazy" src="https://www.alexedwards.net/static/images/sublime-5.png">
 
 <h2>Snippets</h2>
 
@@ -4783,7 +4783,7 @@ $ curl https://<var>rest-api-id</var>.execute-api.us-east-1.amazonaws.com/stagin
     <description><![CDATA[
 <p>A nice feature of Go's <a href="https://golang.org/pkg/net/http/#FileServer"><code>http.FileServer</code></a> is that it automatically generates navigable directory listings, which look a bit like this:</p>
 
-<p><img src="/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
+<p><img loading="lazy" src="/static/images/directory-listing.png" alt="Screenshot of a directory listing"></p>
 
 <p>But for certain applications you might want to prevent this behavior and disable directory listings altogether. In this post I’m going to run through three different options for doing exactly that:</p>
 
@@ -8482,7 +8482,7 @@ func final(w http.ResponseWriter, r *http.Request) {
 
 <p>If you run this code then visit <a href="http://localhost:3000/">http://localhost:3000</a> in your browser you should get a username and password prompt like so:</p>
 
-<p><img src="/static/images/middleware-1.png"></p>
+<p><img loading="lazy" src="/static/images/middleware-1.png"></p>
 
 <p>Entering the wrong username and password should result in the prompt being redisplayed, clicking 'Cancel' should result in a plain-text <code>"Unauthorized"</code> response, and  using the correct username (<code>alice</code>) and password (<code>pa$$word</code>) should result in an <code>"OK"</code> response.</p>
 
@@ -8951,7 +8951,7 @@ $ go run .
 
 <p>And then visit <a href="http://localhost:3000/">localhost:3000</a> in your browser you should see the contact form being displayed (although it doesn't do anything yet!).</p>
 
-<p><img src="/static/images/contact-1.png"></p>
+<p><img loading="lazy" src="/static/images/contact-1.png"></p>
 
 <h2>Validating the Form</h2>
 
@@ -9067,7 +9067,7 @@ $ go run .
 
 <p>And try submitting an invalid form. You should find that the form is redisplayed along with the relevant data and validation errors like so:</p> 
 
-<p><img src="/static/images/contact-2.png"></p>
+<p><img loading="lazy" src="/static/images/contact-2.png"></p>
 
 <h2>Sending the Contact Form Message</h2>
 
@@ -9133,7 +9133,7 @@ func send(w http.ResponseWriter, r *http.Request) {
 
 <p>So long as your SMTP server account credentials are set up correctly, you should now be able to successfully submit the contact form and you should see the confirmation message below in your browser.</p>
 
-<p><img src="/static/images/contact-3.png"></p>
+<p><img loading="lazy" src="/static/images/contact-3.png"></p>
     ]]></description>
   </item>
   <item>
@@ -10200,7 +10200,7 @@ func send(w http.ResponseWriter, r *http.Request) {
     <p>For the 'stripped-down' benchmark, requests were simply routed to a handler that returned a 200 status code and message. Here are the <a href="https://gist.github.com/alexedwards/6404944">code samples</a> and results:</p>
 
     <figure class="chart">
-      <img src="https://www.alexedwards.net/static/images/muxer-performance-comparison.png" alt="">
+      <img loading="lazy" src="https://www.alexedwards.net/static/images/muxer-performance-comparison.png" alt="">
     </figure>
 
     <p>In this test the best performing package appeared to be Pat by a large margin. It handled around 30% more requests than Routes and Gorilla Mux, which were very evenly matched.</p>
@@ -10208,7 +10208,7 @@ func send(w http.ResponseWriter, r *http.Request) {
     <p>In the second benchmark requests were routed to a handler which accessed a named parameter from the URL, and then merged it with a HTML template read from disk. Here are the <a href="https://gist.github.com/alexedwards/6414164">code samples</a> and results:</p>
 
     <figure class="chart">
-      <img src="https://www.alexedwards.net/static/images/muxer-performance-comparison-2.png" alt="">
+      <img loading="lazy" src="https://www.alexedwards.net/static/images/muxer-performance-comparison-2.png" alt="">
     </figure>
 
 
@@ -10307,7 +10307,7 @@ $ go run main.go
 
 <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the HTML page we made with a big red heading.</p>
 
-<p><img src="/static/images/static-1.png"></p>
+<p><img loading="lazy" src="/static/images/static-1.png"></p>
 
 <h2>Almost-Static Sites</h2>
 
@@ -10426,7 +10426,7 @@ $ go run main.go
 </pre></code></figure>
 
 <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the markup from all the templates merged together like so:</p>
-<p><img src="/static/images/static-2.png"></p>
+<p><img loading="lazy" src="/static/images/static-2.png"></p>
 
 <p>If you use web developer tools to inspect the HTTP response, you'll also see that Go automatically sets the correct <code>Content-Type</code> and <code>Content-Length</code> headers for us.</p>
 

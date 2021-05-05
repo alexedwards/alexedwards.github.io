@@ -40,7 +40,7 @@
         <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
         
     </div>
-    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
 </div>
 <article>
     <h1>Testing and Documenting a Rubygem</h1>
@@ -211,7 +211,7 @@ $ yard doc
 
 <p>You should see a directory called <code>doc</code> being generated in the root folder of our gem. Open up <code>doc\index.html</code> in your browser and take a look around &ndash; don&#39;t miss the <code>Method List</code> link in the top right to see how the comment we just added is being rendered. Pretty neat, hey?</p>
 
-<p><img src='/static/images/yard-documentation.png'></p>
+<p><img loading="lazy" src='/static/images/yard-documentation.png'></p>
 
 <p>As a side note, because this HTML documentation is automatically generated based on other files in our gem, it doesn&#39;t make sense to include it in version control. Open up the hidden <code>.gitignore</code> file in the gem directory and check that it includes a <code>doc/</code> line, instructing Git to ignore the contents.</p>
 

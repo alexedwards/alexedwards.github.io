@@ -40,7 +40,7 @@
         <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
         
     </div>
-    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img src="/static/images/cover-sm.png"></a>
+    <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
 </div>
 <article>
     <h1>Serving Static Sites with Go</h1>
@@ -130,7 +130,7 @@ $ go run main.go
 
 <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the HTML page we made with a big red heading.</p>
 
-<p><img src="/static/images/static-1.png"></p>
+<p><img loading="lazy" src="/static/images/static-1.png"></p>
 
 <h2>Almost-Static Sites</h2>
 
@@ -249,7 +249,7 @@ $ go run main.go
 </pre></code></figure>
 
 <p>And open <a href="http://localhost:3000/example.html">localhost:3000/example.html</a> in your browser. You should see the markup from all the templates merged together like so:</p>
-<p><img src="/static/images/static-2.png"></p>
+<p><img loading="lazy" src="/static/images/static-2.png"></p>
 
 <p>If you use web developer tools to inspect the HTTP response, you'll also see that Go automatically sets the correct <code>Content-Type</code> and <code>Content-Length</code> headers for us.</p>
 
