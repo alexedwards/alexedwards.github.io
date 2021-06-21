@@ -6,7 +6,335 @@
   <language>en-us</language>
   <lastBuildDate>Mon, 8 Mar 2021 16:00:00 GMT</lastBuildDate>
 <item>
-    <pubDate>Mon, 8 Mar 2021 16:00:00 GMT</pubDate>
+    <pubDate>Mon, 21 Jun 2021 16:00:00 GMT</pubDate>
+    <link>https://www.alexedwards.net/blog/basic-authentication-in-go</link>
+    <guid>https://www.alexedwards.net/blog/basic-authentication-in-go</guid>
+    <title>How to correctly use Basic Authentication in Go</title>
+    <description><![CDATA[
+<p>When searching for examples of HTTP <em>basic authentication</em> with Go, every result I could find unfortunately contained code which is either out-of-date (i.e. doesn't use the <a href="https://golang.org/pkg/net/http/#Request.BasicAuth"><code>r.BasicAuth()</code></a> functionality that was introduced in Go 1.4) or is vulnerable to timing attacks.</p>
+
+<p>So in this post I'd like to quickly discuss how to implement basic authentication correctly in your Go applications.</p>
+
+<p>We'll start with a bit of background information, but if you're not interested in that you can <a href="#protecting-a-web-application">skip straight to the code</a>.</p>
+
+<h2 id="what-is-basic-authentication">What is basic authentication? When should I use it?</h2>
+
+<p>As a developer, you're probably already familiar with the prompt that web browsers show when you visit a URL that's protected by basic authentication.</p>
+
+<p><img src="/static/images/auth-1.png" alt=""></p>
+
+<p>When you input a username and password into this prompt, the web browser will send a HTTP request to the server containing an <code>Authorization</code> header &mdash; similar to this:</p>
+
+<figure class="plain"><code>
+        <pre>
+Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
+</pre></code></figure>
+
+<p>The <code>Authorization</code> header value is made up of the string <code>Basic</code> followed by the username and password in the format <code>username:password</code> and base-64 encoded. In this specific example, <code>YWxpY2U6cGE1NXdvcmQ=</code> is the base-64 encoding of the value <code>alice:pa55word</code>.</p>
+
+<p>When the server receives this request, it can decode the username and password from the <code>Authorization</code> header and check that they are valid. If the credentials are not valid, the server can return a <code>401 Unauthorized</code> response and the browser can redisplay the prompt.</p>
+
+<p>Basic authentication can be used in lots of different scenarios, but it's often a good fit for when you have a low-value resource and want a quick and easy way to protect it from prying eyes.</p>
+
+<p>To help keep things secure you should:</p>
+
+<ul>
+    <li>
+        <p>
+            <strong>Only ever use basic authentication over HTTPS connections</strong>. If you don't use HTTPS, the <code>Authorization</code> header can potentially be intercepted and decoded by an attacker, who can then use the username and password to gain access to your protected resources.
+        </p>
+    </li>
+    <li>
+        <p>
+            <strong>Use a strong password</strong> that is difficult for attackers to guess or brute-force.
+        </p>
+    </li>
+    <li>
+        <p>
+            Consider adding <a href="https://www.alexedwards.net/blog/how-to-rate-limit-http-requests">rate limiting</a> to your application, to make it harder for an attacker to brute-force the credentials.
+        </p>
+    </li>
+</ul>
+
+<p>It's also worth pointing out that basic authentication is supported out-of-the-box by most programming languages and command-line tools such as <code>curl</code> and <code>wget</code>, as well as web browsers.</p>
+
+<h2 id="protecting-a-web-application">Protecting a web application</h2>
+
+<p>The simplest way to protect your application with basic authentication is to create some <em>middleware</em>.</p>
+
+<aside class="note">
+    <strong>Note:</strong> If you're not familiar with the concept of middleware, <a href="https://www.alexedwards.net/blog/making-and-using-middleware">there's a primer here</a> which I recommend reading before you continue.
+</aside>
+
+<p>In the middleware we want to do three things:</p>
+
+<ul>
+    <li>
+        <p>Extract the username and password from the request <code>Authorization</code> header, if it exists. The best way to do this is with the <a href="https://golang.org/pkg/net/http/#Request.BasicAuth"><code>r.BasicAuth()</code></a> method which was introduced in Go 1.4.</p>
+    </li>
+
+    <li>
+        <p>Compare the provided username and password against the values that you expect. To avoid leaving your authentication vulnerable to timing attacks, it's important to use Go's <a href="https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare"><code>subtle.ConstantTimeCompare()</code></a> function to do this comparison. It's also important to be aware that using <code>subtle.ConstantTimeCompare()</code> can <a href="https://github.com/golang/go/issues/18936">leak information about username and password length</a>. To prevent this, we should hash both the provided and expected username and password values using a fast cryptographic hash function like SHA-256 before comparing them.</p>
+    </li>
+
+    <li>
+        <p>If the username and password are not correct, or the request didn't contain a valid <code>Authorization</code> header, then the middleware should send a <code>401 Unauthorized</code> response and set a <a href="https://datatracker.ietf.org/doc/html/rfc7235#section-4.1"><code>WWW-Authenticate</code></a> header to inform to the client that basic authentication should be used to gain access. Otherwise, the middleware should allow the request to proceed and call the next handler in the chain.</p>
+    </li>
+</ul>
+
+<p>Putting that together, the pattern for implementing some basic authentication middleware looks like this:</p>
+
+<figure class="plain"><code class="go">
+        <pre>func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Extract the username and password from the request 
+        // Authorization header. If no Authentication header is present 
+        // or the header value is invalid, then the 'ok' return value 
+        // will be false.
+        username, password, ok := r.BasicAuth()
+        if ok {
+            // Calculate SHA-256 hashes for the provided and expected
+            // usernames and passwords.
+            usernameHash := sha256.Sum256([]byte(username))
+            passwordHash := sha256.Sum256([]byte(password))
+            expectedUsernameHash := sha256.Sum256([]byte(expectedUsername))
+            expectedPasswordHash := sha256.Sum256([]byte(expectedPassword))
+
+            // Use the subtle.ConstantTimeCompare() function to check if 
+            // the provided username and password hashes equal the  
+            // expected username and password hashes. This function will 
+            // return 1 if the values are equal, or 0 otherwise.
+            if subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1 &&
+                subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1 {
+
+                // If the username and password are correct, then call
+                // the next handler in the chain. Make sure to return 
+                // afterwards, so that none of the code below is run.
+                next.ServeHTTP(w, r)
+                return
+            }
+        }
+
+        // If the Authentication header is not present, is invalid, or the
+        // username or password is wrong, then set a WWW-Authenticate 
+        // header to inform the client that we expect them to use basic
+        // authentication and send a 401 Unauthorized response.
+        w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+    })
+}    
+</pre></code></figure>
+
+<p>You might be wondering here what the <code>realm</code> value is and why we are setting it to <code>"restricted"</code> in the <code>WWW-Authenticate</code> response header.</p>
+
+<p>Basically, the realm value is a string which allows you to create <em>partitions</em> of protected space in your application. So, for example, an application could have a <code>"documents"</code> realm and an <code>"admin area"</code> realm, which require different basic authentication credentials. A web browser (or other type of client) can cache and automatically reuse the same username and password for any requests within the same realm, so that the prompt doesn't need to be shown for every single request.</p>
+
+<p>If you don't require multiple partitions for your application, you can set the realm to a single hardcoded value like <code>"restricted"</code>, like we have in the code above.</p>
+
+<p>For the sake of security and/or flexibility, you may also prefer to store the expected username and password values in environment variables or pass them as command-line flag values when starting the application, rather than hard-coding them into your application.</p>
+
+<h2 id="a-working-example">A working example</h2>
+
+<p>Let's take a quick look at this in the context of a small &mdash; but fully functioning &mdash; web application.</p>
+
+<p>If you'd like to follow along, create a new <code>basic-auth-example</code> directory on your computer, add a <code>main.go</code> file, initialize a module, and create a pair of locally-trusted TLS certificates using the <a href="https://github.com/FiloSottile/mkcert">mkcert</a> tool. Like so:</p>
+
+<figure class="shell"><code><pre>
+$ mkdir basic-auth-example
+$ cd basic-auth-example
+$ touch main.go
+$ go mod init example.com/basic-auth-example
+<samp>go: creating new go.mod: module example.com/basic-auth-example</samp>
+$ mkcert localhost
+<samp>Created a new certificate valid for the following names 📜
+     - "localhost"
+    
+    The certificate is at "./localhost.pem" and the key at "./localhost-key.pem" ✅
+    
+    It will expire on 21 September 2023 🗓</samp>
+$ ls
+<samp>go.mod  localhost-key.pem  localhost.pem  main.go</samp>
+</pre></code></figure>
+
+<p>Then add the following code to the <code>main.go</code> file, so that the application reads the expected username and password from environment variables and uses the middleware pattern that we described above.</p>
+
+<figure class="plain"><code class="go"><pre>
+package main
+
+import (
+    "crypto/sha256"
+    "crypto/subtle"
+    "fmt"
+    "log"
+    "net/http"
+    "os"
+    "time"
+)
+
+type application struct {
+    auth struct {
+        username string
+        password string
+    }
+}
+
+func main() {
+    app := new(application)
+
+    app.auth.username = os.Getenv("AUTH_USERNAME")
+    app.auth.password = os.Getenv("AUTH_PASSWORD")
+
+    if app.auth.username == "" {
+        log.Fatal("basic auth username must be provided")
+    }
+
+    if app.auth.password == "" {
+        log.Fatal("basic auth password must be provided")
+    }
+
+    mux := http.NewServeMux()
+    mux.HandleFunc("/unprotected", app.unprotectedHandler)
+    mux.HandleFunc("/protected", app.basicAuth(app.protectedHandler))
+
+    srv := &http.Server{
+        Addr:         ":4000",
+        Handler:      mux,
+        IdleTimeout:  time.Minute,
+        ReadTimeout:  10 * time.Second,
+        WriteTimeout: 30 * time.Second,
+    }
+
+    log.Printf("starting server on %s", srv.Addr)
+    err := srv.ListenAndServeTLS("./localhost.pem", "./localhost-key.pem")
+    log.Fatal(err)
+}
+
+func (app *application) protectedHandler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintln(w, "This is the protected handler")
+}
+
+func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintln(w, "This is the unprotected handler")
+}
+
+func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        username, password, ok := r.BasicAuth()
+        if ok {
+            usernameHash := sha256.Sum256([]byte(username))
+            passwordHash := sha256.Sum256([]byte(password))
+            expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
+            expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+
+            if subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1 &&
+                subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1 {
+
+                next.ServeHTTP(w, r)
+                return
+            }
+        }
+
+        w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+    })
+}    
+</pre></code></figure>
+
+
+<p>You should then be able to start the application, using a pair of temporary <code>AUTH_USERNAME</code> and <code>AUTH_PASSWORD</code> environment variables. Like so:</p>
+
+<figure class="shell"><code><pre>
+$ AUTH_USERNAME=alice AUTH_PASSWORD=p8fnxeqj5a7zbrqp go run .
+<samp>2021/06/20 16:09:21 starting server on :4000</samp>
+</pre></code></figure>
+
+<p>At this point, if you open your web browser and visit <code>https://localhost:4000/protected</code> you should be greeted by the basic authentication prompt.</p>
+
+<p>Alternatively, you can make some requests using <code>curl</code> to verify that the authentication checks are working correctly.</p>
+
+<figure class="shell"><code><pre>
+$ curl -i https://localhost:4000/unprotected
+<samp>HTTP/2 200 
+content-type: text/plain; charset=utf-8
+content-length: 32
+date: Sun, 20 Jun 2021 14:09:56 GMT
+
+This is the unprotected handler</samp>
+
+$ curl -i https://localhost:4000/protected
+<samp>HTTP/2 401 
+content-type: text/plain; charset=utf-8
+www-authenticate: Basic realm="restricted", charset="UTF-8"
+x-content-type-options: nosniff
+content-length: 13
+date: Sun, 20 Jun 2021 14:09:59 GMT
+
+Unauthorized</samp>
+
+$ curl -i -u alice:p8fnxeqj5a7zbrqp https://localhost:4000/protected
+<samp>HTTP/2 200 
+content-type: text/plain; charset=utf-8
+content-length: 30
+date: Sun, 20 Jun 2021 14:10:14 GMT
+
+This is the protected handler</samp>
+
+$ curl -i -u alice:wrongPa55word https://localhost:4000/protected
+<samp>HTTP/2 401 
+content-type: text/plain; charset=utf-8
+www-authenticate: Basic realm="restricted", charset="UTF-8"
+x-content-type-options: nosniff
+content-length: 13
+date: Sun, 20 Jun 2021 14:15:30 GMT
+
+Unauthorized</samp>
+</pre></code></figure>
+
+<h2 id="making-a-request-to-a-protected-resource">Making a request to a protected resource</h2>
+
+<p>Finally, when you need to <em>access a resource</em> that is protected by basic authentication, Go makes it very straightforward. All you need to do is call the <a href="https://golang.org/pkg/net/http/#Request.SetBasicAuth"><code>r.SetBasicAuth()</code></a> method on your request before executing it. Like so:</p>
+
+<figure class="plain"><code class="go"><pre>
+package main
+
+import (
+    "fmt"
+    "io"
+    "log"
+    "net/http"
+    "time"
+)
+
+func main() {
+    client := http.Client{Timeout: 5 * time.Second}
+
+    req, err := http.NewRequest(http.MethodGet, "https://localhost:4000/protected", http.NoBody)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    req.SetBasicAuth("alice", "p8fnxeqj5a7zbrqp")
+
+    res, err := client.Do(req)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer res.Body.Close()
+
+    resBody, err := io.ReadAll(res.Body)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("Status: %d\n", res.StatusCode)
+    fmt.Printf("Body: %s\n", string(resBody))
+}    
+</pre></code></figure>
+   ]]></description>
+</item>
+<item>
+    <pubDate>Mon, 21 Jun 2021 16:00:00 GMT</pubDate>
     <link>https://www.alexedwards.net/blog/custom-command-line-flags</link>
     <guid>https://www.alexedwards.net/blog/custom-command-line-flags</guid>
     <title>Custom command-line flags with flag.Func</title>
