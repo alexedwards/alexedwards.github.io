@@ -105,13 +105,7 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
 
 <h2 id="protecting-a-web-application">Protecting a web application</h2>
 
-<p>The simplest way to protect your application with basic authentication is to create some <em>middleware</em>.</p>
-
-<aside class="note">
-    <strong>Note:</strong> If you're not familiar with the concept of middleware, <a href="https://www.alexedwards.net/blog/making-and-using-middleware">there's a primer here</a> which I recommend reading before you continue.
-</aside>
-
-<p>In the middleware we want to do three things:</p>
+<p>The simplest way to protect your application with basic authentication is to create some <a href="https://www.alexedwards.net/blog/making-and-using-middleware"><em>middleware</em></a>. In this middleware we want to do three things:</p>
 
 <ul>
     <li>
@@ -119,7 +113,14 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
     </li>
 
     <li>
-        <p>Compare the provided username and password against the values that you expect. To avoid leaving your authentication vulnerable to timing attacks, it's important to use Go's <a href="https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare"><code>subtle.ConstantTimeCompare()</code></a> function to do this comparison. It's also important to be aware that using <code>subtle.ConstantTimeCompare()</code> can <a href="https://github.com/golang/go/issues/18936">leak information about username and password length</a>. To prevent this, we should hash both the provided and expected username and password values using a fast cryptographic hash function like SHA-256 before comparing them.</p>
+        <p>Compare the provided username and password against the values that you expect. To avoid leaving your authentication vulnerable to timing attacks, it's important to use Go's <a href="https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare"><code>subtle.ConstantTimeCompare()</code></a> function to do this comparison.<p>
+
+        <aside class="note">
+            <strong>Note:</strong> In Go (like most languages) the normal <code>==</code> comparison operator will return as soon as it finds a difference between two strings. So if the first character is different, it will return after just looking at one character. This enables a <a href="https://www.cs.rice.edu/~dwallach/pub/crosby-timing2009.pdf">timing attack</a> where an attacker could make lots of requests to your application, and look at discrepancies in the average response time. The amount of time taken for them receive a <code>401</code> response effectively tells them how many characters they got right, and with enough requests, it's possible to build up a picture of the complete username and password. Using <code>subtle.ConstantTimeCompare()</code> helps us avoid this issue.
+        </aside>
+            
+            
+        <p>It's also important to be aware that using <code>subtle.ConstantTimeCompare()</code> can <a href="https://github.com/golang/go/issues/18936">leak information about username and password length</a>. To prevent this, we should hash both the provided and expected username and password values using a fast cryptographic hash function like SHA-256 before comparing them. This ensures that both the provided and expected values that we are comparing are equal in length and prevents <code>subtle.ConstantTimeCompare()</code> <em>itself</em> from returning early.</p>
     </li>
 
     <li>
@@ -149,9 +150,9 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
             // the provided username and password hashes equal the  
             // expected username and password hashes. ConstantTimeCompare
             // will return 1 if the values are equal, or 0 otherwise. 
-            // We need to do the work to evaluate both the username and
-            // password before checking the return values to avoid
-            // leaking information via a timing attack.
+            // Importantly, we should to do the work to evaluate both the 
+            // username and password before checking the return values to 
+            // avoid leaking information.
 			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
 			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
 
