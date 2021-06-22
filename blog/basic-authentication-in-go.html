@@ -131,43 +131,45 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
 
 <figure class="plain"><code class="go">
         <pre>func basicAuth(next http.HandlerFunc) http.HandlerFunc {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         // Extract the username and password from the request 
         // Authorization header. If no Authentication header is present 
         // or the header value is invalid, then the 'ok' return value 
         // will be false.
-        username, password, ok := r.BasicAuth()
-        if ok {
+		username, password, ok := r.BasicAuth()
+		if ok {
             // Calculate SHA-256 hashes for the provided and expected
             // usernames and passwords.
-            usernameHash := sha256.Sum256([]byte(username))
-            passwordHash := sha256.Sum256([]byte(password))
-            expectedUsernameHash := sha256.Sum256([]byte(expectedUsername))
-            expectedPasswordHash := sha256.Sum256([]byte(expectedPassword))
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte("your expected username"))
+			expectedPasswordHash := sha256.Sum256([]byte("your expected password"))
 
             // Use the subtle.ConstantTimeCompare() function to check if 
             // the provided username and password hashes equal the  
-            // expected username and password hashes. This function will 
-            // return 1 if the values are equal, or 0 otherwise.
-            if subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1 &&
-                subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1 {
+            // expected username and password hashes. ConstantTimeCompare
+            // will return 1 if the values are equal, or 0 otherwise. 
+            // We need to do the work to evaluate both the username and
+            // password before checking the return values to avoid
+            // leaking information via a timing attack.
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
 
-                // If the username and password are correct, then call
-                // the next handler in the chain. Make sure to return 
-                // afterwards, so that none of the code below is run.
-                next.ServeHTTP(w, r)
-                return
-            }
-        }
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 
         // If the Authentication header is not present, is invalid, or the
         // username or password is wrong, then set a WWW-Authenticate 
         // header to inform the client that we expect them to use basic
         // authentication and send a 401 Unauthorized response.
-        w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-    })
-}    
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
+}
+
 </pre></code></figure>
 
 <p>You might be wondering here what the <code>realm</code> value is and why we are setting it to <code>"restricted"</code> in the <code>WWW-Authenticate</code> response header.</p>
@@ -263,26 +265,27 @@ func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        username, password, ok := r.BasicAuth()
-        if ok {
-            usernameHash := sha256.Sum256([]byte(username))
-            passwordHash := sha256.Sum256([]byte(password))
-            expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
-            expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
+			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
 
-            if subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1 &&
-                subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1 {
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
 
-                next.ServeHTTP(w, r)
-                return
-            }
-        }
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 
-        w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-    })
-}    
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
+}   
 </pre></code></figure>
 
 
