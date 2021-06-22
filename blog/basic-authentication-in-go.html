@@ -155,6 +155,9 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
 			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
 			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
 
+            // If the username and password are correct, then call
+            // the next handler in the chain. Make sure to return 
+            // afterwards, so that none of the code below is run.
 			if usernameMatch && passwordMatch {
 				next.ServeHTTP(w, r)
 				return
