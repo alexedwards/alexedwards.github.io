@@ -11,15 +11,15 @@
     <guid>https://www.alexedwards.net/blog/basic-authentication-in-go</guid>
     <title>How to correctly use Basic Authentication in Go</title>
     <description><![CDATA[
-<p>When searching for examples of HTTP <em>basic authentication</em> with Go, every result I could find unfortunately contained code which is either out-of-date (i.e. doesn't use the <a href="https://golang.org/pkg/net/http/#Request.BasicAuth"><code>r.BasicAuth()</code></a> functionality that was introduced in Go 1.4) or is vulnerable to timing attacks.</p>
+<p>When searching for examples of HTTP basic authentication with Go, every result I could find unfortunately contained code which is either out-of-date (i.e. doesn't use the <a href="https://golang.org/pkg/net/http/#Request.BasicAuth"><code>r.BasicAuth()</code></a> functionality that was introduced in Go 1.4) or doesn't protect against timing attacks.</p>
 
-<p>So in this post I'd like to quickly discuss how to implement basic authentication correctly in your Go applications.</p>
+<p>So in this post I'd like to quickly discuss how to implement it correctly in your Go applications.</p>
 
 <p>We'll start with a bit of background information, but if you're not interested in that you can <a href="#protecting-a-web-application">skip straight to the code</a>.</p>
 
 <h2 id="what-is-basic-authentication">What is basic authentication? When should I use it?</h2>
 
-<p>As a developer, you're probably already familiar with the prompt that web browsers show when you visit a URL that's protected by basic authentication.</p>
+<p>As a developer, you're probably already familiar with the prompt that web browsers show when you visit a protected URL.</p>
 
 <p><img src="/static/images/auth-1.png" alt=""></p>
 
@@ -41,7 +41,7 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
 <ul>
     <li>
         <p>
-            <strong>Only ever use basic authentication over HTTPS connections</strong>. If you don't use HTTPS, the <code>Authorization</code> header can potentially be intercepted and decoded by an attacker, who can then use the username and password to gain access to your protected resources.
+            <strong>Only ever use it over HTTPS connections</strong>. If you don't use HTTPS, the <code>Authorization</code> header can potentially be intercepted and decoded by an attacker, who can then use the username and password to gain access to your protected resources.
         </p>
     </li>
     <li>
@@ -56,17 +56,11 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
     </li>
 </ul>
 
-<p>It's also worth pointing out that basic authentication is supported out-of-the-box by most programming languages and command-line tools such as <code>curl</code> and <code>wget</code>, as well as web browsers.</p>
+<p>It's also worth pointing out that basic auth is supported out-of-the-box by most programming languages and command-line tools such as <code>curl</code> and <code>wget</code>, as well as web browsers.</p>
 
 <h2 id="protecting-a-web-application">Protecting a web application</h2>
 
-<p>The simplest way to protect your application with basic authentication is to create some <em>middleware</em>.</p>
-
-<aside class="note">
-    <strong>Note:</strong> If you're not familiar with the concept of middleware, <a href="https://www.alexedwards.net/blog/making-and-using-middleware">there's a primer here</a> which I recommend reading before you continue.
-</aside>
-
-<p>In the middleware we want to do three things:</p>
+<p>The simplest way to protect your application is to create some <a href="https://www.alexedwards.net/blog/making-and-using-middleware"><em>middleware</em></a>. In this middleware we want to do three things:</p>
 
 <ul>
     <li>
@@ -74,7 +68,13 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
     </li>
 
     <li>
-        <p>Compare the provided username and password against the values that you expect. To avoid leaving your authentication vulnerable to timing attacks, it's important to use Go's <a href="https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare"><code>subtle.ConstantTimeCompare()</code></a> function to do this comparison. It's also important to be aware that using <code>subtle.ConstantTimeCompare()</code> can <a href="https://github.com/golang/go/issues/18936">leak information about username and password length</a>. To prevent this, we should hash both the provided and expected username and password values using a fast cryptographic hash function like SHA-256 before comparing them.</p>
+        <p>Compare the provided username and password against the values that you expect. To avoid the risk of timing attacks, you should use Go's <a href="https://golang.org/pkg/crypto/subtle/#ConstantTimeCompare"><code>subtle.ConstantTimeCompare()</code></a> function to do this comparison.<p>
+
+        <aside class="note">
+            <strong>Note:</strong> In Go (like most languages) the normal <code>==</code> comparison operator will return as soon as it finds a difference between two strings. So if the first character is different, it will return after just looking at one character. In theory, this opens the opportunity for a <a href="https://www.cs.rice.edu/~dwallach/pub/crosby-timing2009.pdf">timing attack</a> where an attacker could make lots of requests to your application, and look at discrepancies in the average response time. The amount of time taken for them receive a <code>401</code> response effectively tells them how many characters they got right, and with enough requests, they could build up a picture of the complete username and password. Things like network jitter make this specific attack very difficult to pull off, but remote timing attacks <a href="https://www.cs.rice.edu/~dwallach/pub/crosby-timing2009.pdf">are already a reality</a> and may become even more viable in the future. Given that we can quite easily protect against this risk by using <code>subtle.ConstantTimeCompare()</code>, it makes sense to do so.
+        </aside>
+            
+        <p>It's also important to be aware that using <code>subtle.ConstantTimeCompare()</code> can <a href="https://github.com/golang/go/issues/18936">leak information about username and password length</a>. To prevent this, we should hash both the provided and expected username and password values using a fast cryptographic hash function like SHA-256 before comparing them. This ensures that both the provided and expected values that we are comparing are equal in length and prevents <code>subtle.ConstantTimeCompare()</code> <em>itself</em> from returning early.</p>
     </li>
 
     <li>
@@ -82,52 +82,62 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
     </li>
 </ul>
 
-<p>Putting that together, the pattern for implementing some basic authentication middleware looks like this:</p>
+<p>Putting that together, the pattern for implementing some middleware looks like this:</p>
 
 <figure class="plain"><code class="go">
-        <pre>func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        <pre>func basicAuth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         // Extract the username and password from the request 
         // Authorization header. If no Authentication header is present 
         // or the header value is invalid, then the 'ok' return value 
         // will be false.
-        username, password, ok := r.BasicAuth()
-        if ok {
+		username, password, ok := r.BasicAuth()
+		if ok {
             // Calculate SHA-256 hashes for the provided and expected
             // usernames and passwords.
-            usernameHash := sha256.Sum256([]byte(username))
-            passwordHash := sha256.Sum256([]byte(password))
-            expectedUsernameHash := sha256.Sum256([]byte(expectedUsername))
-            expectedPasswordHash := sha256.Sum256([]byte(expectedPassword))
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte("your expected username"))
+			expectedPasswordHash := sha256.Sum256([]byte("your expected password"))
 
             // Use the subtle.ConstantTimeCompare() function to check if 
             // the provided username and password hashes equal the  
-            // expected username and password hashes. This function will 
-            // return 1 if the values are equal, or 0 otherwise.
-            if subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1 &&
-                subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1 {
+            // expected username and password hashes. ConstantTimeCompare
+            // will return 1 if the values are equal, or 0 otherwise. 
+            // Importantly, we should to do the work to evaluate both the 
+            // username and password before checking the return values to 
+            // avoid leaking information.
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
 
-                // If the username and password are correct, then call
-                // the next handler in the chain. Make sure to return 
-                // afterwards, so that none of the code below is run.
-                next.ServeHTTP(w, r)
-                return
-            }
-        }
+            // If the username and password are correct, then call
+            // the next handler in the chain. Make sure to return 
+            // afterwards, so that none of the code below is run.
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 
         // If the Authentication header is not present, is invalid, or the
         // username or password is wrong, then set a WWW-Authenticate 
         // header to inform the client that we expect them to use basic
         // authentication and send a 401 Unauthorized response.
-        w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-    })
-}    
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
+}
+
 </pre></code></figure>
 
-<p>You might be wondering here what the <code>realm</code> value is and why we are setting it to <code>"restricted"</code> in the <code>WWW-Authenticate</code> response header.</p>
 
-<p>Basically, the realm value is a string which allows you to create <em>partitions</em> of protected space in your application. So, for example, an application could have a <code>"documents"</code> realm and an <code>"admin area"</code> realm, which require different basic authentication credentials. A web browser (or other type of client) can cache and automatically reuse the same username and password for any requests within the same realm, so that the prompt doesn't need to be shown for every single request.</p>
+<aside class="note">
+    <strong>Important:</strong> There's a chance that you're looking at the code above and thinking <em>"I thought you should never use SHA-256 for hashing passwords..."</em>. If you are, it's important to emphasize that the username and password are <strong>not</strong> being hashed for the purpose of storage, they are <strong>only</strong> being hashed in order to get two equal-length byte slices that can be compared in constant-time. Low collision risk is the important thing here, and a fast hash like SHA-256 is sufficient for this purpose.</em>
+</aside>
+
+<p>You might also be wondering here what the <code>realm</code> value is and why we are setting it to <code>"restricted"</code> in the <code>WWW-Authenticate</code> response header.</p>
+
+<p>Basically, the realm value is a string which allows you to create <em>partitions</em> of protected space in your application. So, for example, an application could have a <code>"documents"</code> realm and an <code>"admin area"</code> realm, which require different credentials. A web browser (or other type of client) can cache and automatically reuse the same username and password for any requests within the same realm, so that the prompt doesn't need to be shown for every single request.</p>
 
 <p>If you don't require multiple partitions for your application, you can set the realm to a single hardcoded value like <code>"restricted"</code>, like we have in the code above.</p>
 
@@ -218,26 +228,27 @@ func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        username, password, ok := r.BasicAuth()
-        if ok {
-            usernameHash := sha256.Sum256([]byte(username))
-            passwordHash := sha256.Sum256([]byte(password))
-            expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
-            expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
+			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
 
-            if subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1 &&
-                subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1 {
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
 
-                next.ServeHTTP(w, r)
-                return
-            }
-        }
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 
-        w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-    })
-}    
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
+}   
 </pre></code></figure>
 
 
@@ -292,7 +303,7 @@ Unauthorized</samp>
 
 <h2 id="making-a-request-to-a-protected-resource">Making a request to a protected resource</h2>
 
-<p>Finally, when you need to <em>access a resource</em> that is protected by basic authentication, Go makes it very straightforward. All you need to do is call the <a href="https://golang.org/pkg/net/http/#Request.SetBasicAuth"><code>r.SetBasicAuth()</code></a> method on your request before executing it. Like so:</p>
+<p>Finally, when you need to <em>access a protected resource</em>, Go makes it very straightforward. All you need to do is call the <a href="https://golang.org/pkg/net/http/#Request.SetBasicAuth"><code>r.SetBasicAuth()</code></a> method on your request before executing it. Like so:</p>
 
 <figure class="plain"><code class="go"><pre>
 package main

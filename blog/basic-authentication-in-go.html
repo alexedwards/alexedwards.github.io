@@ -56,15 +56,15 @@
         </span>
         
     </div>
-    <p>When searching for examples of HTTP <em>basic authentication</em> with Go, every result I could find unfortunately contained code which is either out-of-date (i.e. doesn't use the <a href="https://golang.org/pkg/net/http/#Request.BasicAuth"><code>r.BasicAuth()</code></a> functionality that was introduced in Go 1.4) or doesn't protect against timing attacks.</p>
+    <p>When searching for examples of HTTP basic authentication with Go, every result I could find unfortunately contained code which is either out-of-date (i.e. doesn't use the <a href="https://golang.org/pkg/net/http/#Request.BasicAuth"><code>r.BasicAuth()</code></a> functionality that was introduced in Go 1.4) or doesn't protect against timing attacks.</p>
 
-<p>So in this post I'd like to quickly discuss how to implement basic authentication correctly in your Go applications.</p>
+<p>So in this post I'd like to quickly discuss how to implement it correctly in your Go applications.</p>
 
 <p>We'll start with a bit of background information, but if you're not interested in that you can <a href="#protecting-a-web-application">skip straight to the code</a>.</p>
 
 <h2 id="what-is-basic-authentication">What is basic authentication? When should I use it?</h2>
 
-<p>As a developer, you're probably already familiar with the prompt that web browsers show when you visit a URL that's protected by basic authentication.</p>
+<p>As a developer, you're probably already familiar with the prompt that web browsers show when you visit a protected URL.</p>
 
 <p><img src="/static/images/auth-1.png" alt=""></p>
 
@@ -86,7 +86,7 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
 <ul>
     <li>
         <p>
-            <strong>Only ever use basic authentication over HTTPS connections</strong>. If you don't use HTTPS, the <code>Authorization</code> header can potentially be intercepted and decoded by an attacker, who can then use the username and password to gain access to your protected resources.
+            <strong>Only ever use it over HTTPS connections</strong>. If you don't use HTTPS, the <code>Authorization</code> header can potentially be intercepted and decoded by an attacker, who can then use the username and password to gain access to your protected resources.
         </p>
     </li>
     <li>
@@ -101,11 +101,11 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
     </li>
 </ul>
 
-<p>It's also worth pointing out that basic authentication is supported out-of-the-box by most programming languages and command-line tools such as <code>curl</code> and <code>wget</code>, as well as web browsers.</p>
+<p>It's also worth pointing out that basic auth is supported out-of-the-box by most programming languages and command-line tools such as <code>curl</code> and <code>wget</code>, as well as web browsers.</p>
 
 <h2 id="protecting-a-web-application">Protecting a web application</h2>
 
-<p>The simplest way to protect your application with basic authentication is to create some <a href="https://www.alexedwards.net/blog/making-and-using-middleware"><em>middleware</em></a>. In this middleware we want to do three things:</p>
+<p>The simplest way to protect your application is to create some <a href="https://www.alexedwards.net/blog/making-and-using-middleware"><em>middleware</em></a>. In this middleware we want to do three things:</p>
 
 <ul>
     <li>
@@ -127,7 +127,7 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
     </li>
 </ul>
 
-<p>Putting that together, the pattern for implementing some basic authentication middleware looks like this:</p>
+<p>Putting that together, the pattern for implementing some middleware looks like this:</p>
 
 <figure class="plain"><code class="go">
         <pre>func basicAuth(next http.HandlerFunc) http.HandlerFunc {
@@ -182,7 +182,7 @@ Authorization: Basic YWxpY2U6cGE1NXdvcmQ=
 
 <p>You might also be wondering here what the <code>realm</code> value is and why we are setting it to <code>"restricted"</code> in the <code>WWW-Authenticate</code> response header.</p>
 
-<p>Basically, the realm value is a string which allows you to create <em>partitions</em> of protected space in your application. So, for example, an application could have a <code>"documents"</code> realm and an <code>"admin area"</code> realm, which require different basic authentication credentials. A web browser (or other type of client) can cache and automatically reuse the same username and password for any requests within the same realm, so that the prompt doesn't need to be shown for every single request.</p>
+<p>Basically, the realm value is a string which allows you to create <em>partitions</em> of protected space in your application. So, for example, an application could have a <code>"documents"</code> realm and an <code>"admin area"</code> realm, which require different credentials. A web browser (or other type of client) can cache and automatically reuse the same username and password for any requests within the same realm, so that the prompt doesn't need to be shown for every single request.</p>
 
 <p>If you don't require multiple partitions for your application, you can set the realm to a single hardcoded value like <code>"restricted"</code>, like we have in the code above.</p>
 
@@ -348,7 +348,7 @@ Unauthorized</samp>
 
 <h2 id="making-a-request-to-a-protected-resource">Making a request to a protected resource</h2>
 
-<p>Finally, when you need to <em>access a resource</em> that is protected by basic authentication, Go makes it very straightforward. All you need to do is call the <a href="https://golang.org/pkg/net/http/#Request.SetBasicAuth"><code>r.SetBasicAuth()</code></a> method on your request before executing it. Like so:</p>
+<p>Finally, when you need to <em>access a protected resource</em>, Go makes it very straightforward. All you need to do is call the <a href="https://golang.org/pkg/net/http/#Request.SetBasicAuth"><code>r.SetBasicAuth()</code></a> method on your request before executing it. Like so:</p>
 
 <figure class="plain"><code class="go"><pre>
 package main
