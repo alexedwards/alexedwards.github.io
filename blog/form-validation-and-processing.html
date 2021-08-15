@@ -200,6 +200,7 @@ func render(w http.ResponseWriter, filename string, data interface{}) {
   if err != nil {
     log.Println(err)
     http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
+    return
   }
 
   if err := tmpl.Execute(w, data); err != nil {
