@@ -1,0 +1,1419 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Alex Edwards">
+    <meta name="copyright" content="Copyright Alex Edwards 2021">
+    <meta name="google-site-verification" content="cQSliJDuQ3qRlZyVLmjurqMe4x-Q_SxyvXtpQbWRbeY">
+    <title>I18n in Go&colon; Managing Translations - Alex Edwards</title>
+
+    <meta property="og:title" content="I18n in Go&colon; Managing Translations">
+    
+    
+    
+      <meta property="og:type" content="article">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:creator" content="@ajmedwards">
+        
+        <meta property="og:url" content="https://www.alexedwards.net/blog/i18n-managing-translations">
+        
+      
+    
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/static/stylesheets/main.css">
+    <link rel="alternate" href="/static/feed.rss" type="application/rss+xml">
+    
+    <link rel="canonical" href="https://www.alexedwards.net/blog/i18n-managing-translations"/>
+    
+  </head>
+  <body>
+    <header>
+      <nav class="wrapper clearfix">
+        <div class="breadcrumbs">
+          <a href="/">Alex Edwards</a>
+        </div>
+        <div class="pages">
+          <a href="/blog/">Blog</a>
+          <a href="/#book">Book</a>
+          <!-- <a href="/#projects">Projects</a> -->
+          <a href="/#contact">Contact</a>
+          <a href="/static/feed.rss">RSS</a>
+        </div>
+      </nav>
+    </header>
+    <main class="wrapper clearfix">
+      
+<div class="lets-go clearfix">
+    <div>
+            
+            <h3>Not sure how to structure your Go web application?</h3>
+            <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+            <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+            
+        </div>
+        <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
+    </div>
+<article>
+    <h1>I18n in Go&colon; Managing Translations</h1>
+    <div class="metadata">
+        <span class="dates">
+            
+            Posted on: 25th August 2021
+            
+        </span>
+        
+        <span class="tags">
+            Filed under: <a href="/blog/category/golang" rel="tag">golang</a> <a href="/blog/category/tutorial" rel="tag">tutorial</a>
+        </span>
+        
+    </div>
+    <p>Recently I've been building a fully internationalized (i18n) and localized (l10n) web application for the first time with Go's <a href="https://pkg.go.dev/golang.org/x/text"><code>golang.org/x/text</code></a> packages. I've found that the packages and tools that live under <code>golang.org/x/text</code> are really effective and well designed, although the documentation currently available is limited in places and it's been a bit of a challenge to figure out how to put it all together in the context of a real application.</p>
+
+<p>So in this tutorial, I want to start explaining how you can use the <code>golang.org/x/text</code> packages for i18n and l10n in your code, and in particular, how to work with them in the context of a web application.</p>
+
+<aside class="note">
+<strong>Note:</strong> Just in case you're not already aware, the packages that live under <code>golang.org/x</code> are part of the official Go Project but outside the main Go standard library tree. They are held to looser standards that the standard library packages, which means they aren't subject to the Go compatibility promise (i.e. their APIs might change), and documentation may not always be complete.
+</aside>
+
+<p>There's a <em>lot</em> of ground to cover on this topic, so to keep things manageable I'm going to split this up into four separate tutorials:</p>
+
+<ol>
+<li>Managing Translations [this article]</li>
+
+<li>Working with Numbers, Dates, Currencies, Timezones and Links [coming soon]</li>
+
+<li>Translating Content in html/template Files [coming soon]</li>
+
+<li>Switching, Saving and Detecting Locales [coming soon]</li>
+</ol>
+
+<p>In this first tutorial we'll focus primarily on working with on translations. Specifically:</p>
+
+<ul>
+<li>How to use the <code>golang.org/x/text/language</code> and <code>golang.org/x/text/message</code> packages to print translated messages from your Go code.</li>
+
+<li>How to use the <code>gotext</code> tool to automatically extract messages for translation from your code into JSON files.</li>
+
+<li>How to use <code>gotext</code> to parse translated JSON files and create a <em>catalog</em> containing translated messages.</li>
+
+<li>How to manage <em>variables</em> in messages and provided <em>pluralized versions</em> of translations.</li>
+</ul>
+
+<h2 id="whatwellbebuilding">What we'll be building</h2>
+
+<p>To help put all this information into context, over the four tutorials we're going to create a simple pre-launch website for an imaginary online bookstore. We'll start off slowly and build up the code step-by-step.</p>
+
+<p>To start with, our application will have just a single home page, and we'll localize the page content based on a locale identifier at the start of the URL path. We'll set up our application to support three different locales: the United Kingdom, Germany, and the French-speaking part of Switzerland.</p>
+
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Localized for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>localhost:4018/en-gb</td>
+<td>United Kingdom</td>
+</tr>
+<tr>
+<td>localhost:4018/de-de</td>
+<td>Germany</td>
+</tr>
+<tr>
+<td>localhost:4018/fr-ch</td>
+<td>Switzerland (French-speaking)</td>
+</tr>
+</tbody>
+</table>
+
+<p>We're going to follow a common convention and use <a href="https://en.wikipedia.org/wiki/IETF_language_tag">BCP 47 language tags</a> as the locale identifier in our URLs. Simplifying things <em>hugely</em> for the sake of this tutorial, BCP 47 language tags typically take the format <code>{language}-{region}</code>. The language part is a <a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes">ISO 639-1 code</a> and the region is a two-letter country code from <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">ISO_3166-1</a>. It's conventional to uppercase the region (like <code>en-GB</code>), but BCP 47 tags are technically case-insensitive and it's OK for us to use all-lowercase versions in our URLs.</p>
+
+<h2 id="scaffolding-a-webapplication">Scaffolding a web application</h2>
+
+<p>If you'd like to follow along with the application build, go ahead and run the following commands to setup a new project directory.</p>
+
+<figure class="shell"><code><pre>$ mkdir bookstore
+$ cd bookstore
+$ go mod init bookstore.example.com
+<samp>go: creating new go.mod: module bookstore.example.com</samp>
+</pre></code></figure>
+
+<p>At this point, you should have a <code>go.mod</code> file in the root of the project directory with the <em>module path</em> <code>bookstore.example.com</code>.</p>
+
+<p>Next create a new <code>cmd/www</code> directory to hold the code for the bookstore web application, and add <code>main.go</code> and <code>handlers.go</code> files like so:</p>
+
+<figure class="shell"><code><pre>$ mkdir -p cmd/www
+$ touch cmd/www/main.go  cmd/www/handlers.go
+</pre></code></figure>
+
+<p>Your project directory should now look like this:</p>
+
+<figure class="plain"><code><pre>.
+├── cmd
+│   └── www
+│       ├── handlers.go
+│       └── main.go
+└── go.mod
+</pre></code></figure>
+
+<p>Let's begin in the <code>cmd/www/main.go</code> file and add the code to declare our application routes and start a HTTP server.</p>
+
+<p>Because our application URL paths will always use a (dynamic) locale as a prefix &mdash; like <code>/en-gb/bestsellers</code> or <code>/fr-ch/bestsellers</code> &mdash; it's simplest if our application uses a third-party router which supports dynamic values in URL path segments. I'm going to use <a href="https://github.com/bmizerany/pat">pat</a> (a router that I wrote a <a href="/blog/a-mux-showdown#pat">short tutorial</a> about many years ago), but feel free to use an alternative like <a href="https://github.com/go-chi/chi">chi</a> or <a href="https://github.com/gorilla/mux">gorilla mux</a> if you prefer.</p>
+
+<p>OK, open up the <code>main.go</code> file and add the following code:</p>
+
+
+<figure class="file">
+<figcaption>File: cmd/www/main.go</figcaption>
+<code class="go"><pre>
+package main
+
+import (
+    "log"
+    "net/http"
+
+    "github.com/bmizerany/pat"
+)
+
+func main() {
+    // Initialize a router and add the path and handler for the homepage.
+    mux := pat.New()
+    mux.Get("/:locale", http.HandlerFunc(handleHome))
+
+    // Start the HTTP server using the router. 
+    log.Println("starting server on :4018...")
+    err := http.ListenAndServe(":4018", mux)
+    log.Fatal(err)
+}
+</pre></code></figure>
+
+<p>Then in the <code>cmd/www/handlers.go</code> file, add a <code>handleHome()</code> function which extracts the locale identifer from the URL path and echoes it in the HTTP response.</p>
+
+<figure class="file">
+<figcaption>File: cmd/www/handlers.go</figcaption>
+<code class="go"><pre>
+package main
+
+import (
+    "fmt"
+    "net/http"
+)
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    // Extract the locale from the URL path. This line of code is likely to  
+    // be different for you if you are using an alternative router.
+    locale := r.URL.Query().Get(":locale")
+
+    // If the locale matches one of our supported values, echo the locale 
+    // in the response. Otherwise send a 404 Not Found response.
+    switch locale {
+    case "en-gb", "de-de", "fr-ch":
+        fmt.Fprintf(w, "The locale is %s\n", locale)
+    default:
+        http.NotFound(w, r)
+    }
+}
+</pre></code></figure>
+
+<p>Once that's done, run <code>go mod tidy</code> to tidy your <code>go.mod</code> file and download any necessary dependencies, and then run the web application.</p>
+
+<figure class="shell"><code><pre>$ go mod tidy
+<samp>go: finding module for package github.com/bmizerany/pat
+go: found github.com/bmizerany/pat in github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f</samp>
+
+$ go run ./cmd/www/
+<samp>2021/08/21 21:22:57 starting server on :4018...</samp>
+</pre></code></figure>
+
+<p>If you make some requests to the application using curl, you should find that the appropriate locale is echoed back to you like so:</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/en-gb
+<samp>The locale is en-gb</samp>
+
+$ curl localhost:4018/de-de
+<samp>The locale is de-de</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>The locale is fr-ch</samp>
+
+$ curl localhost:4018/da-DK
+<samp>404 page not found</samp>
+</pre></code></figure>
+
+<h2 id="extracting-and-translating-text-content">Extracting and translating text content</h2>
+
+<p>Now that we've laid the groundwork for our web application, let's get into the core of this tutorial and update the <code>handleHome()</code> function so that it renders a <code>"Welcome!"</code> message translated for the specific locale. </p>
+
+<p>In this project we'll use British English (<code>en-GB</code>) as the default 'source' or 'base' language in our application, but we'll want to render a translated version of the welcome message in German and French for the other locales.</p>
+
+<p>To do this, we'll need to import the <a href="https://pkg.go.dev/golang.org/x/text/language"><code>golang.org/x/text/language</code></a> and <a href="https://pkg.go.dev/golang.org/x/text/message"><code>golang.org/x/text/message</code></a> packages and update our <code>handleHome()</code> function to do the following two things:</p>
+
+<ol>
+<li>Construct a <a href="https://pkg.go.dev/golang.org/x/text/language#Tag"><code>language.Tag</code></a> which identifies the target language that we want to translate the message in to. The <code>language</code> package contains some pre-defined tags for common language variants, but I find that it's easier to use the <a href="https://pkg.go.dev/golang.org/x/text/language#MustParse"><code>language.MustParse()</code></a> function to create a tag. This let's you create a <code>language.Tag</code> for any valid BCP 47 value, like <code>language.MustParse("fr-CH")</code>.</li>
+
+<li>Once you have a language tag, you can use the <a href="https://pkg.go.dev/golang.org/x/text/message#NewPrinter"><code>message.NewPrinter()</code></a> function to create a <a href="https://pkg.go.dev/golang.org/x/text/message#Printer"><code>message.Printer</code></a> instance that prints out messages in that specific language.</li>
+</ol>
+
+<p>If you're following along, please go ahead and update your <code>cmd/www/handlers.go</code> file to contain the following code:</p>
+
+<figure class="file">
+<figcaption>File: cmd/www/handlers.go</figcaption>
+<code class="go"><pre>
+package main
+
+import (
+    "net/http"
+
+    "golang.org/x/text/language"
+    "golang.org/x/text/message"
+)
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    locale := r.URL.Query().Get(":locale")
+
+    // Declare variable to hold the target language tag.
+    var lang language.Tag
+
+    // Use language.MustParse() to assign the appropriate language tag 
+    // for the locale.
+    switch locale {
+    case "en-gb":
+        lang = language.MustParse("en-GB")
+    case "de-de":
+        lang = language.MustParse("de-DE")
+    case "fr-ch":
+        lang = language.MustParse("fr-CH")
+    default:
+        http.NotFound(w, r)
+        return
+    }
+
+    // Initialize a message.Printer which uses the target language.
+    p := message.NewPrinter(lang)
+    // Print the welcome message translated into the target language.
+    p.Fprintf(w, "Welcome!\n")
+}
+</pre></code></figure>
+
+<p>Again, run <code>go mod tidy</code> to download the necessary dependencies&hellip;</p>
+
+<figure class="shell"><code><pre>$ go mod tidy
+<samp>go: finding module for package golang.org/x/text/message
+go: finding module for package golang.org/x/text/language
+go: downloading golang.org/x/text v0.3.7
+go: found golang.org/x/text/language in golang.org/x/text v0.3.7
+go: found golang.org/x/text/message in golang.org/x/text v0.3.7</samp>
+</pre></code></figure>
+
+<p>And then run the application:</p>
+
+<figure class="shell"><code><pre>$ go run ./cmd/www/
+<samp>2021/08/21 21:33:52 starting server on :4018...</samp>
+</pre></code></figure>
+
+<p>When you make a request to any of the supported URLs, you should now see the (untranslated) welcome message like this:</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/en-gb
+<samp>Welcome!</samp>
+
+$ curl localhost:4018/de-de
+<samp>Welcome!</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>Welcome!</samp>
+</pre></code></figure>
+
+<p>So in all cases we're seeing the <code>"Welcome!"</code> message in our <code>en-GB</code> source language. That's because we still need to provide Go's <code>message</code> package with the <em>actual translations</em> that we want to use. Without the actual translations, it falls back to displaying the message in the source language.</p>
+
+<p>There are a number of ways to provide Go's <code>message</code> package with translations, but for most non-trivial applications it's probably sensible to use some automated tooling to help you manage the task. Fortunately, Go provides the <a href="https://pkg.go.dev/golang.org/x/text/cmd/gotext"><code>gotext</code></a> tool to assist with this.</p>
+
+<aside class="note">
+<strong>Note:</strong> The <code>gotext</code> tool we're using is the one from <code>golang.org/x/text/cmd/gotext</code>. It shouldn't be confused with the <code>github.com/leonelquinteros/gotext</code> package (which is designed to work with GNU gettext utilities and PO/MO files).
+</aside>
+
+<p>If you're following along, please use <code>go install</code> to install the <code>gotext</code> executable on your machine:</p>
+
+<figure class="shell"><code><pre>$ go install golang.org/x/text/cmd/gotext@latest
+</pre></code></figure>
+
+<p>All being well, the tool should be installed to your <code>$GOBIN</code> directory on your system path and you can run it like so:</p>
+
+<figure class="shell"><code><pre>$ which gotext
+<samp>/home/alex/go/bin/gotext</samp>
+
+$ gotext
+<samp>gotext is a tool for managing text in Go source code.
+    
+Usage:
+
+        gotext command [arguments]
+
+The commands are:
+
+        update      merge translations and generate catalog
+        extract     extracts strings to be translated from code
+        rewrite     rewrites fmt functions to use a message Printer
+        generate    generates code to insert translated messages
+
+Use "gotext help [command]" for more information about a command.
+
+Additional help topics:
+
+
+Use "gotext help [topic]" for more information about that topic.</samp>
+</pre></code></figure>
+
+<p>I really like the <code>gotext</code> tool &mdash; it's functionality is excellent &mdash; but there are a couple of important things to point out before we carry on.</p>
+
+<p>The first thing is that <code>go text</code> is designed to work in conjunction with <code>go generate</code>, not as a standalone command-line tool. You <em>can</em> run it as a standalone tool, but weird things happen and it's a lot smoother if you use it in the way it's intended.</p>
+
+<p>The other thing is that documentation and help functionality is basically non-existent. The best guidance on how to use it are the <a href="https://cs.opensource.google/go/x/text/+/refs/tags/v0.3.7:cmd/gotext/examples/">examples in the repository</a> and, probably, this article that you're reading right now. There is an <a href="https://github.com/golang/go/issues/42644">open issue</a> about the lack of help functionality, and hopefully this is something that will improve in the future.</p>
+
+<p>In this tutorial, we're going to store the all the code relating to translations in a new <code>internal/translations</code> package. We <em>could</em> keep all the translation code for our web application under <code>cmd/www</code> instead, but in my (limited) experience I've found that using a separate <code>internal/translations</code> package is better. It helps <em>separate concerns</em> and also makes it possible to <em>reuse the same translations</em> across different applications in the same project. YMMV.</p>
+
+<p>If you're following along, go ahead and create that new directory and a <code>translations.go</code> file like so:</p>
+
+<figure class="shell"><code><pre>$ mkdir -p internal/translations
+$ touch internal/translations/translations.go
+</pre></code></figure>
+
+<p>At this point, your project structure should look like this:</p>
+
+<figure class="plain"><code><pre>
+.
+├── cmd
+│   └── www
+│       ├── handlers.go
+│       └── main.go
+├── go.mod
+├── go.sum
+└── internal
+    └── translations
+        └── translations.go
+</pre></code></figure>
+
+<p>Next, let's open up the <code>internal/translations/translations.go</code> file and add a <code>go generate</code> command which uses <code>gotext</code> to extract the messages for translation from our application.</p>
+
+<figure class="file">
+<figcaption>File: internal/translations/translations.go</figcaption>
+<code class="go"><pre>
+package translations
+
+//go:generate gotext -srclang=en-GB update -out=catalog.go -lang=en-GB,de-DE,fr-CH bookstore.example.com/cmd/www
+</pre></code></figure>
+
+<p>There's a lot going on in this  command, so let's quickly break it down.</p>
+
+<ul>
+<li>The <code>-srclang</code> flag contains the BCP 47 tag for the source (or 'base') language that we are using in the application. In our case, the source language is <code>en-GB</code>.</li>
+
+<li><code>update</code> is the<code>gotext</code> function that we want to execute. As well as <code>update</code> there are <code>extract</code>, <code>rewrite</code> and <code>generate</code> functions, but in the translation workflow for a web application the only one you actually need is <code>update</code>.</li>
+
+<li>The <code>-out</code> flag contains the path that you want the message <em>catalog</em> to be output to. This path should be <em>relative to the file containing the <code>go generate</code> command</em>. In our case, we've set the value to <code>catalog.go</code>, which means that the message catalog will be output to a new <code>internal/translations/catalog.go</code> file. We'll talk more about message catalogs and explain what they are shortly.</li>
+
+<li>The <code>-lang</code> flag contains a comma-separated list of the BCP 47 tags that you want to create translations for. You don't <em>need</em> to include the source language here, but (as we'll demonstrate later in this article) it can be helpful for dealing with <em>pluralization</em> of text content.</li>
+
+<li>Lastly, we have the fully-qualified module path for the package(s) that you want to create translations for (in this case <code>bookstore.example.com/cmd/www</code>). You can list multiple packages if necessary, separated by a whitespace character.</li>
+</ul>
+
+<p>When we execute this <code>go generate</code> command, <code>gotext</code> will walk the code for the <code>cmd/www</code> application and look for all calls to a <code>message.Printer</code>†. It then extracts the relevant message strings and outputs them to some JSON files for translation.</p>
+
+<aside class="note">
+<strong>† Important:</strong> It's critical to note when <code>gotext</code> walks your code it actually <em>only</em> looks for calls to <code>message.Printer.Printf()</code>, <code>Fprintf()</code> and <code>Sprintf()</code> &mdash; basically the three methods that end with an <code>f</code>. It ignores all other methods such as <code>Sprint()</code> or <code>Println()</code>. You can see this behavior in the <code>gotext</code> implementation <a href="https://cs.opensource.google/go/x/text/+/refs/tags/v0.3.7:message/pipeline/extract.go;l=103;drc=refs%2Ftags%2Fv0.3.7">here</a>.
+</aside>
+
+<p>OK, let's put this into action and call <code>go generate</code> on our <code>translations.go</code> file. In turn, this will execute the <code>gotext</code> command that we included at the top of that file.</p>
+
+<figure class="shell"><code><pre>$ go generate ./internal/translations/translations.go
+<samp>de-DE: Missing entry for "Welcome!".
+fr-CH: Missing entry for "Welcome!".</samp>
+</pre></code></figure>
+
+<p>Cool, this looks like we're getting somewhere. We've got some useful feedback to indicate that we are missing the necessary German and French translations for our <code>"Welcome!"</code> message.</p>
+
+<p>If you take a look at the directory structure for your project, it should now look like this:</p>
+
+<figure class="plain"><code><pre>
+.
+├── cmd
+│   └── www
+│       ├── handlers.go
+│       └── main.go
+├── go.mod
+├── go.sum
+└── internal
+    └── translations
+        ├── catalog.go
+        ├── locales
+        │   ├── de-DE
+        │   │   └── out.gotext.json
+        │   ├── en-GB
+        │   │   └── out.gotext.json
+        │   └── fr-CH
+        │       └── out.gotext.json
+        └── translations.go
+</pre></code></figure>
+
+<p>We can see that the <code>go generate</code> command has automatically generated an <code>internal/translations/catalog.go</code> file for us (which we'll look at in a minute), and a <code>locales</code> folder containing <code>out.gotext.json</code> files for each of our target languages.</p>
+
+<p>Let's take a look at the <code>internal/translations/locales/de-DE/out.gotext.json</code> file:</p>
+
+<figure class="file">
+<figcaption>File: internal/translations/locales/de-DE/out.gotext.json</figcaption>
+<code class="json"><pre>
+{
+    "language": "de-DE",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": ""
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>In this JSON file, the relevant BCP 47 <code>language</code> tag is defined at the top of the file, followed by a JSON array of the <code>messages</code> which require translation. The <code>message</code> value is the text for translation in the source language, and the (currently empty) <code>translation</code> value is where we should enter appropriate German translation.</p>
+
+<p>It's important to emphasize that you <strong>don't edit this file in place</strong>. Instead, the workflow for adding a translation goes like this:</p>
+
+<ol>
+<li>You generate the <code>out.gotext.json</code> files containing the messages which need to be translated (which we've just done).</li>
+
+<li>You send these files to a translator, who edits the JSON to include the necessary translations. They then send the updated files back to you.</li>
+
+<li>You then save these updated files with the name <code>messages.gotext.json</code> in the folder for the appropriate language.</li>
+</ol>
+
+<p>For demonstration purposes, let's quickly simulate this workflow by copying the <code>out.gotext.json</code> files to <code>messages.gotext.json</code> files, and updating them to include the translated messages like so:</p>
+
+<figure class="shell"><code><pre>
+$ cp internal/translations/locales/de-DE/out.gotext.json internal/translations/locales/de-DE/messages.gotext.json
+$ cp internal/translations/locales/fr-CH/out.gotext.json internal/translations/locales/fr-CH/messages.gotext.json
+</pre></code></figure>
+
+<figure class="file">
+<figcaption>File: internal/translations/locales/de-DE/messages.gotext.json</figcaption>
+<code class="json"><pre>
+{
+    "language": "de-DE",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Willkommen!"
+        }
+    ]
+}
+</pre></code></figure>
+
+<figure class="file">
+<figcaption>File: internal/translations/locales/fr-CH/messages.gotext.json</figcaption>
+<code class="json"><pre>
+{
+    "language": "fr-CH",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Bienvenu !"
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>If you like, you can also take a look at the <code>out.gotext.json</code> file for our <code>en-GB</code> source language. You'll see that the <code>translation</code> value for the message has been auto-filled for us.</p>
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/en-GB/messages.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "en-GB",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Welcome!",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>The next step is to run our <code>go generate</code> command again. This time, it should execute without any warning messages about missing translations.</p>
+
+<figure class="shell"><code><pre>$ go generate ./internal/translations/translations.go
+</pre></code></figure>
+
+<p>Now it's a good time to take a look at the <code>internal/translations/catalog.go</code> file, which is automatically generated for us by the <code>gotext update</code> command. This file contains a <em>message catalog</em>, which is &mdash; very roughly speaking &mdash; a mapping of messages and their relevant translations for each target language. </p>
+
+<p>Let's take a quick look inside the file:</p>
+
+<figure class="file">
+<figcaption>File: internal/translations/catalog.go</figcaption>
+<code class="go"><pre>
+// Code generated by running "go generate" in golang.org/x/text. DO NOT EDIT.
+
+package translations
+
+import (
+    "golang.org/x/text/language"
+    "golang.org/x/text/message"
+    "golang.org/x/text/message/catalog"
+)
+
+type dictionary struct {
+    index []uint32
+    data  string
+}
+
+func (d *dictionary) Lookup(key string) (data string, ok bool) {
+    p, ok := messageKeyToIndex[key]
+    if !ok {
+        return "", false
+    }
+    start, end := d.index[p], d.index[p+1]
+    if start == end {
+        return "", false
+    }
+    return d.data[start:end], true
+}
+
+func init() {
+    dict := map[string]catalog.Dictionary{
+        "de_DE": &amp;dictionary{index: de_DEIndex, data: de_DEData},
+        "en_GB": &amp;dictionary{index: en_GBIndex, data: en_GBData},
+        "fr_CH": &amp;dictionary{index: fr_CHIndex, data: fr_CHData},
+    }
+    fallback := language.MustParse("en-GB")
+    cat, err := catalog.NewFromMap(dict, catalog.Fallback(fallback))
+    if err != nil {
+        panic(err)
+    }
+    message.DefaultCatalog = cat
+}
+
+var messageKeyToIndex = map[string]int{
+    "Welcome!\n": 0,
+}
+
+var de_DEIndex = []uint32{ // 2 elements
+    0x00000000, 0x00000011,
+} // Size: 32 bytes
+
+const de_DEData string = "\x04\x00\x01\n\f\x02Willkommen!"
+
+var en_GBIndex = []uint32{ // 2 elements
+    0x00000000, 0x0000000e,
+} // Size: 32 bytes
+
+const en_GBData string = "\x04\x00\x01\n\t\x02Welcome!"
+
+var fr_CHIndex = []uint32{ // 2 elements
+    0x00000000, 0x00000010,
+} // Size: 32 bytes
+
+const fr_CHData string = "\x04\x00\x01\n\v\x02Bienvenu !"
+
+// Total table size 143 bytes (0KiB); checksum: 385F6E56
+</pre></code></figure>
+
+<p>I don't want to dwell on the details here, because it's OK for use to treat this file as something of a 'black box', and &mdash; as warned by the comment at the top of the file &mdash; we shouldn't make any changes to it directly.</p>
+
+<p>But the most important thing to point out is that this file contains an <code>init()</code> function which, when called, initializes a new message catalog containing all our translations and mappings. It then sets this as the <em>default message catalog</em> by assigning it to the <a href="https://pkg.go.dev/golang.org/x/text@v0.3.7/message#pkg-variables"><code>message.DefaultCatalog</code></a> global variable.</p>
+
+<p>When we call one of the <code>message.Printer</code> functions, the printer will lookup the relevant translation from the default message catalog for printing. This is really nice, because it means that all our translations are stored in memory at runtime, and any lookups are very fast and efficient.</p>
+
+<p>So, if we take a step back for a moment, we can see that the <code>gotext update</code> command that we're using with <code>go generate</code> actually does two things. One &mdash; it walks the code in our <code>cmd/www</code> application and extracts the necessary strings for translation into the <code>out.gotext.json</code> files; and two &mdash; it also parses any <code>messages.gotext.json</code> files (if present) and updates the message catalog accordingly.</p>
+
+<p>The final step in getting this working is to import the <code>internal/translations</code> package in our <code>cmd/www/handlers.go</code> file. This will ensure that the <code>init()</code> function in <code>internal/translations/translations.go</code> is called, and the default message catalog is updated to be the one containing our translations. Because we won't actually be referencing anything in the <code>internal/translations</code> package directly, we'll need to alias the import path to the blank identifer <code>_</code> to prevent the Go compiler from complaining.</p>
+
+<p>Go ahead and do that now:</p>
+
+<figure class="file">
+    <figcaption>File: cmd/www/handlers.go</figcaption>
+    <code class="go"><pre>
+package main
+
+import (
+    "net/http"
+
+    // Import the internal/translations package, so that its init() 
+    // function is called.
+    _ "bookstore.example.com/internal/translations"
+
+    "golang.org/x/text/language"
+    "golang.org/x/text/message"
+)
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    locale := r.URL.Query().Get(":locale")
+
+    var lang language.Tag
+
+    switch locale {
+    case "en-gb":
+        lang = language.MustParse("en-GB")
+    case "de-de":
+        lang = language.MustParse("de-DE")
+    case "fr-ch":
+        lang = language.MustParse("fr-CH")
+    default:
+        http.NotFound(w, r)
+        return
+    }
+
+    p := message.NewPrinter(lang)
+    p.Fprintf(w, "Welcome!\n")
+}
+</pre></code></figure>
+
+<p>Alright, let's try this out! When your restart the application and try making some requests, you should now see the <code>"Welcome!"</code> message translated into the appropriate language.</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/en-GB
+<samp>Welcome!</samp>
+
+$ curl localhost:4018/de-de
+<samp>Willkommen!</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>Bienvenu !</samp>
+</pre></code></figure>
+
+<h2 id="using-variables-in-translations">Using variables in translations</h2>
+
+<p>Now that we've got the basic translations working in our application, let's move on to something a bit more advanced and look at how to manage translations with interpolated variables in them.</p>
+
+<p>To demonstrate, we'll update the HTTP response from our <code>handleHome()</code> function to include a <code>"{N} books available"</code> line, where <code>{N}</code> is an integer containing the number of books in our imaginary bookstore.</p>
+
+<figure class="file">
+    <figcaption>File: cmd/www/handlers.go</figcaption>
+    <code class="go"><pre>
+package main
+
+...
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    locale := r.URL.Query().Get(":locale")
+
+    var lang language.Tag
+
+    switch locale {
+    case "en-gb":
+        lang = language.MustParse("en-GB")
+    case "de-de":
+        lang = language.MustParse("de-DE")
+    case "fr-ch":
+        lang = language.MustParse("fr-CH")
+    default:
+        http.NotFound(w, r)
+        return
+    }
+
+    // Define a variable to hold the number of books. In a real application
+    // this would probably be retrieved by making a database query or 
+    // something similar.
+    var totalBookCount = 1_252_794
+
+    p := message.NewPrinter(lang)
+    p.Fprintf(w, "Welcome!\n")
+
+    // Use the Fprintf() function to include the new message in the HTTP 
+    // response, with the book count as in interpolated integer value.
+    p.Fprintf(w, "%d books available\n", totalBookCount)
+}
+</pre></code></figure>
+
+<p>Save the changes, then use <code>go generate</code> to output some new <code>out.gotext.json</code> files. You should see warning messages for the new missing translations like so:</p>
+
+<figure class="shell"><code><pre>$ go generate ./internal/translations/translations.go
+<samp>de-DE: Missing entry for "{TotalBookCount} books available".
+fr-CH: Missing entry for "{TotalBookCount} books available".</samp>
+</pre></code></figure>
+
+<p>Let's take a look at the <code>de-DE/out.gotext.json</code> file:</p>
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/de-DE/out.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "de-DE",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Willkommen!"
+        },
+        {
+            "id": "{TotalBookCount} books available",
+            "message": "{TotalBookCount} books available",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "TotalBookCount",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "totalBookCount"
+                }
+            ]
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>The first thing to point out here is that the translation for our <code>"Welcome!"</code> message <em>has been persisted across the workflow</em> and is already present in the <code>out.gotext.json</code> file. This is obviously really important, because it means that when we send the file to the translator they won't need to provide the translation again.</p>
+
+<p>The second thing is that there is now an entry for our new message. We can see that this has the form <code>"{TotalBookCount} books available"</code>, with the <em>(capitalized) variable name</em> from our Go code being used as the placeholder parameter. You should keep this in mind when writing your code, and try to use sensible and descriptive variable names that will make sense to your translators. The <code>placeholders</code> array also provides additional information about each placeholder value, the most useful part probably being the <code>type</code> value (which in this case tells the translator that the <code>TotalBookCount</code> value is an integer). </p>
+
+<p>So the next step is to send these new <code>out.gotext.json</code> files off to a translator for translation. Again, we'll simulate that here by copying them to <code>messages.gotext.json</code> files and adding the translations like so:</p>
+
+<figure class="shell"><code><pre>
+$ cp internal/translations/locales/de-DE/out.gotext.json internal/translations/locales/de-DE/messages.gotext.json
+$ cp internal/translations/locales/fr-CH/out.gotext.json internal/translations/locales/fr-CH/messages.gotext.json
+</pre></code></figure>
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/de-DE/messages.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "de-DE",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Willkommen!"
+        },
+        {
+            "id": "{TotalBookCount} books available",
+            "message": "{TotalBookCount} books available",
+            "translation": "{TotalBookCount} Bücher erhältlich",
+            "placeholders": [
+                {
+                    "id": "TotalBookCount",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "totalBookCount"
+                }
+            ]
+        }
+    ]
+}
+</pre></code></figure>
+
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/fr-CH/messages.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "fr-CH",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Bienvenu !"
+        },
+        {
+            "id": "{TotalBookCount} books available",
+            "message": "{TotalBookCount} books available",
+            "translation": "{TotalBookCount} livres disponibles",
+            "placeholders": [
+                {
+                    "id": "TotalBookCount",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "totalBookCount"
+                }
+            ]
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>Make sure that both <code>messages.gotext.json</code> files are saved, and then run <code>go generate</code> to update our message catalog. This should run without any warnings.</p>
+
+<figure class="shell"><code><pre>
+$ go generate ./internal/translations/translations.go
+</pre></code></figure>
+
+<p>When you restart the <code>cmd/www</code> application and make some HTTP requests again, you should now see the new translated messages like so:</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/en-GB
+<samp>Welcome!
+1,252,794 books available</samp>
+
+$ curl localhost:4018/de-de
+<samp>Willkommen!
+1.252.794 Bücher erhältlich</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>Bienvenu !
+1 252 794 livres disponibles</samp>
+</pre></code></figure>
+
+<p>Now this is really cool. As we'll as the translations being applied by our <code>message.Printer</code>, it's also smart enough to output the interpolated integer value with the correct number formatting for each language. We can see here that our <code>en-GB</code> locale uses the <code>","</code> character as a thousands separator, whereas <code>de-DE</code> uses <code>"."</code> and <code>fr-CH</code> uses the whitespace <code>" "</code>. A similar thing is done for decimal separators too.</p>
+
+<h2 id="dealing-with-pluralizations">Dealing with pluralization's</h2>
+
+<p>This is working nicely, but what happens if there is only 1 book available in our bookstore? Let's update the <code>handleHome()</code> function so that the <code>totalBookCount</code> value is 1:</p>
+
+<figure class="file">
+    <figcaption>File: cmd/www/handlers.go</figcaption>
+    <code class="go"><pre>
+package main
+
+...
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    locale := r.URL.Query().Get(":locale")
+
+    var lang language.Tag
+
+    switch locale {
+    case "en-gb":
+        lang = language.MustParse("en-GB")
+    case "de-de":
+        lang = language.MustParse("de-DE")
+    case "fr-ch":
+        lang = language.MustParse("fr-CH")
+    default:
+        http.NotFound(w, r)
+        return
+    }
+
+    // Set the total book count to 1.
+    var totalBookCount = 1
+
+    p := message.NewPrinter(lang)
+    p.Fprintf(w, "Welcome!\n")
+    p.Fprintf(w, "%d books available\n", totalBookCount)
+}
+</pre></code></figure>
+
+<p>(I know this is a bit of a tenuous example, but it helps illustrate Go's pluralization functionality without much extra code, so bear with me!)</p>
+
+<p>You can probably imagine what happens when we restart the application and make a request to <code>localhost:4018/en-gb</code> now.</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/en-gb
+<samp>Welcome!
+1 books available</samp>
+</pre></code></figure>
+
+<p>That's right, we see the message <code>"1 books available"</code>, which isn't correct English because of the plural noun <code>books</code>. It would be better if this message read <code>1 book available</code> or &mdash; even better &mdash; <code>One book available</code> instead.</p>
+
+<p>Happily, it's possible for us to specify <em>alternative translations</em> based on the value of an interpolated variable in our <code>messages.gotext.json</code> files.</p>
+
+<p>Let's start by demonstrating this for our <code>en-GB</code> locale. If you're following along, copy the <code>en-GB/out.gotext.json</code> file to <code>en-GB/messages.gotext.json</code>:</p>
+
+<figure class="shell"><code><pre>$ cp internal/translations/locales/en-GB/out.gotext.json internal/translations/locales/en-GB/messages.gotext.json
+</pre></code></figure>
+
+<p>And then update it like so:</p>
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/en-GB/messages.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "en-GB",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Welcome!",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "{TotalBookCount} books available",
+            "message": "{TotalBookCount} books available",
+            "translation": {
+                "select": {
+                    "feature": "plural",
+                    "arg": "TotalBookCount",
+                    "cases": {
+                        "=1": {
+                            "msg": "One book available"
+                        },
+                        "other": {
+                            "msg": "{TotalBookCount} books available"
+                        }
+                    }
+                }
+            },
+            "placeholders": [
+                {
+                    "id": "TotalBookCount",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "totalBookCount"
+                }
+            ]
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>Now, rather than the <code>translation</code> value being a simple string we have set it to a JSON object that instructs the message catalog to use different translations depending on the value of the <code>TotalBookCount</code> placeholder. The key part here is the <code>cases</code> value, which contains the translations to use for different values of the placeholder. The supported case rules are:</p>
+
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&quot;=x&quot;</code></td>
+<td>Where <code>x</code> is an integer that equals the value of the placeholder</td>
+</tr>
+<tr>
+<td><code>&quot;&lt;x&quot;</code></td>
+<td>Where <code>x</code> is an integer that is larger than the value of the placeholder</td>
+</tr>
+<tr>
+<td><code>&quot;other&quot;</code></td>
+<td>All other cases (a bit like <code>default</code> in a Go <code>switch</code> statement)</td>
+</tr>
+</tbody>
+</table>
+
+<aside class="note">
+<strong>Note:</strong> If you look at the documentation for the  <a href="https://pkg.go.dev/golang.org/x/text/feature/plural#Selectf"><code>golang.org/x/text/feature/plural</code></a> package (which is what <code>gotext</code> uses behind the scenes when generating the message catalog), you'll see that it also mentions the case rules "zero", "one", "two", "few", and "many". However, these rules aren't supported for all possible target languages, and you may get an error like <code style="white-space: normal;">gotext: generation failed: error: plural: form "many" not supported for language "de-DE"</code> if you try to use them. It seems to be safer to stick with the three case rules in the table above. Additionally, it's important to be aware that the range of allowed values for <code>x</code> in the <code>"=x"</code> and <code>"&lt;x"</code> case rules is 0 to 32767. Trying to use something outside of that range will result in an error. There's an open issue about these behaviors <a href="https://github.com/golang/go/issues/27052">here</a>.
+</aside>
+
+
+<p>Let's complete work this by updating the <code>messages.gotext.json</code> files for our <code>de-DE</code> and <code>fr-CH</code> languages to include the appropriate pluralized variations, like so:</p>
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/de-DE/messages.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "de-DE",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Willkommen!"
+        },
+        {
+            "id": "{TotalBookCount} books available",
+            "message": "{TotalBookCount} books available",
+            "translation": {
+                "select": {
+                    "feature": "plural",
+                    "arg": "TotalBookCount",
+                    "cases": {
+                        "=1": {
+                            "msg": "Ein Buch erhältlich"
+                        },
+                        "other": {
+                            "msg": "{TotalBookCount} Bücher erhältlich"
+                        }
+                    }
+                }
+            },
+            "placeholders": [
+                {
+                    "id": "TotalBookCount",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "totalBookCount"
+                }
+            ]
+        }
+    ]
+}
+</pre></code></figure>
+
+<figure class="file">
+    <figcaption>File: internal/translations/locales/fr-CH/messages.gotext.json</figcaption>
+    <code class="json"><pre>
+{
+    "language": "fr-CH",
+    "messages": [
+        {
+            "id": "Welcome!",
+            "message": "Welcome!",
+            "translation": "Bienvenu !"
+        },
+        {
+            "id": "{TotalBookCount} books available",
+            "message": "{TotalBookCount} books available",
+            "translation": {
+                "select": {
+                    "feature": "plural",
+                    "arg": "TotalBookCount",
+                    "cases": {
+                        "=1": {
+                            "msg": "Un livre disponible"
+                        },
+                        "other": {
+                            "msg": "{TotalBookCount} livres disponibles"
+                        }
+                    }
+                }
+            },
+            "placeholders": [
+                {
+                    "id": "TotalBookCount",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "totalBookCount"
+                }
+            ]
+        }
+    ]
+}
+</pre></code></figure>
+
+<p>Once those files are saved, use <code>go generate</code> again to update the message catalog:</p>
+
+<figure class="shell"><code><pre>$ go generate ./internal/translations/translations.go
+</pre></code></figure>
+
+<p>And if you restart the web application and make some HTTP requests, you should now see the appropriate message for 1 book:</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/en-GB
+<samp>Welcome!
+One book available</samp>
+
+$ curl localhost:4018/de-de
+<samp>Willkommen!
+Ein Buch erhältlich</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>Bienvenu !
+Un livre disponible</samp>
+</pre></code></figure>
+
+<p>If you like, you can revert the <code>totalBookCount</code> variable back to a larger number...</p>
+
+<figure class="file">
+    <figcaption>File: cmd/www/handlers.go</figcaption>
+    <code class="go"><pre>
+package main
+
+...
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    ...
+
+    // Revert the total book count.
+    var totalBookCount = 1_252_794
+
+    p := message.NewPrinter(lang)
+    p.Fprintf(w, "Welcome!\n")
+    p.Fprintf(w, "%d books available\n", totalBookCount)
+}
+</pre></code></figure>
+
+<p>And when you restart the application and make another request, you should see the <code>"other"</code> version of our message: </p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/de-de
+<samp>Willkommen!
+1.252.794 Bücher erhältlich</samp>
+</pre></code></figure>
+
+<h2 id="decoupling-the-locale-identifier-and-languagetag">Decoupling the locale identifier and language tag</h2>
+
+<p>The next part of this tutorial is totally optional, and whether it is a sensible thing to do in your project will depend on what locales your application is supporting and how much (if at all) the 'look and feel' of URLs is important to you in terms of UI.</p>
+
+<p>But in some cases, you may wish to make your URLs look 'cleaner' by using shorter locale identifiers as <em>aliases</em>, like <code>example.com/gb</code> instead of <code>example.com/en-gb</code>. To keep things consistent, you should think carefully before doing this and make sure that you are following some rules that help you avoid conflicts and ambiguities. As an example, you might develop some rules which look like this:</p>
+
+<ul>
+<li>Where is is only one common BCP 47 tag for a region, like <code>cs-CZ</code>, you use just the region part <code>cz</code> as the locale identifier in your URLs.</li>
+
+<li>Where there are multiple common BCP 47 tags for a region, and there is no clear 'primary' language used in that region, you continue to always use the full identifier (like <code>fr-ch</code> or <code>it-ch</code>) in your URLs.</li>
+
+<li>Where there are multiple common BCP 47 tags for a region, but a clear 'primary' language is used in that region (like <code>en-GB</code>), you use just the region part <code>gb</code> as the locale identifier in your URLS. For any 'secondary' languages used in that region &mdash; like <code>cy-GB</code> (Welsh) &mdash; you continue to use the full identifier in your URLs.</li>
+</ul>
+
+<p>Applying those rules to our bookstore application, we could update the <code>switch</code> statement in out <code>handleHome()</code> function like so:</p>
+
+<figure class="file">
+    <figcaption>File: cmd/www/handlers.go</figcaption>
+    <code class="go"><pre>
+package main
+
+...
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    locale := r.URL.Query().Get(":locale")
+
+    var lang language.Tag
+
+    switch locale {
+    case "gb":
+        lang = language.MustParse("en-GB")
+    case "de":
+        lang = language.MustParse("de-DE")
+    case "fr-ch":
+        lang = language.MustParse("fr-CH")
+    default:
+        http.NotFound(w, r)
+        return
+    }
+
+    var totalBookCount = 1_252_794
+
+    p := message.NewPrinter(lang)
+    p.Fprintf(w, "Welcome!\n")
+    p.Fprintf(w, "%d books available\n", totalBookCount)
+}
+</pre></code></figure>
+
+<p>And if you restart the application you should be able to make requests to the new <code>localhost:4018/gb</code> and <code>localhost:4018/de</code> URLs like so:</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/gb
+<samp>Welcome!
+1,252,794 books available</samp>
+
+$ curl localhost:4018/de
+<samp>Willkommen!
+1.252.794 Bücher erhältlich</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>Bienvenu !
+1 252 794 livres disponibles</samp>
+</pre></code></figure>
+
+<p>As I said, this is totally optional and if you're building something where the look and feel of URLs doesn't matter so much, then I would recommend sticking with the BCP 47 <code>{language}-{region}</code> format for all your URLs.</p>
+
+<h2 id="creatingalocalizerabstraction">Creating a localizer abstraction</h2>
+
+<p>In the final part of this article we're going to create a new <code>internal/localizer</code> package which abstracts all our code for dealing with languages, printers and translations.</p>
+
+<p>If you're following along, go ahead and create a new <code>internal/localizer</code> directory containing a <code>localizer.go</code> file.</p>
+
+<figure class="shell"><code><pre>$ mkdir -p internal/localizer
+$ touch internal/localizer/localizer.go
+</pre></code></figure>
+
+<p>At this point, your project structure should look like this:</p>
+
+<figure class="plain"><code><pre>
+.
+├── cmd
+│   └── www
+│       ├── handlers.go
+│       └── main.go
+├── go.mod
+├── go.sum
+└── internal
+    ├── localizer
+    │   └── localizer.go
+    └── translations
+        ├── catalog.go
+        ├── locales
+        │   ├── de-DE
+        │   │   ├── messages.gotext.json
+        │   │   └── out.gotext.json
+        │   ├── en-GB
+        │   │   ├── messages.gotext.json
+        │   │   └── out.gotext.json
+        │   └── fr-CH
+        │       ├── messages.gotext.json
+        │       └── out.gotext.json
+        └── translations.go
+</pre></code></figure>
+
+<p>And then add the following code to the new <code>localizer.go</code> file:</p>
+
+<figure class="file">
+<figcaption>File: internal/localizer/localizer.go</figcaption>
+<code class="go"><pre>
+package localizer
+
+import (
+    // Import the internal/translations so that it's init() function 
+    // is run. It's really important that we do this here so that the
+    // default message catalog is updated to use our translations 
+    // *before* we initialize the message.Printer instances below.
+	_ "bookstore.example.com/internal/translations"
+
+    "golang.org/x/text/language"
+    "golang.org/x/text/message"
+)
+
+// Define a Localizer type which stores the relevant locale ID (as used 
+// in our URLs) and a (deliberately unexported) message.Printer instance
+// for the locale.
+type Localizer struct {
+    ID      string
+    printer *message.Printer
+}
+
+// Initialize a slice which holds the initialized Localizer types for 
+// each of our supported locales.
+var locales = []Localizer{
+    {
+        // Germany
+        ID:      "de",
+        printer: message.NewPrinter(language.MustParse("de-DE")),
+    },
+    {
+        // Switzerland (French speaking)
+        ID:      "fr-ch",
+        printer: message.NewPrinter(language.MustParse("fr-CH")),
+    },
+    {
+        // United Kingdom
+        ID:      "gb",
+        printer: message.NewPrinter(language.MustParse("en-GB")),
+    },
+}
+
+// The Get() function accepts a locale ID and returns the corresponding 
+// Localizer for that locale. If the locale ID is not supported then 
+// this returns `false` as the second return value.
+func Get(id string) (Localizer, bool) {
+    for _, locale := range locales {
+        if id == locale.ID {
+
+            return locale, true
+        }
+    }
+
+    return Localizer{}, false
+}
+
+// We also add a Translate() method to the Localizer type. This acts 
+// as a wrapper around the unexported message.Printer's Sprintf() 
+// function and returns the appropriate translation for the given 
+// message and arguments.
+func (l Localizer) Translate(key message.Reference, args ...interface{}) string {
+    return l.printer.Sprintf(key, args...)
+}
+</pre></code></figure>
+
+<aside class="note">
+<strong>Note:</strong> Notice here that we're initializing a single <code>message.Printer</code> for each locale at startup, and these will be used concurrently by our web application handlers. Although the <code>golang.org/x/text/message</code> documentation doesn't say that <code>message.Printer</code> is safe for concurrent use, I checked with Marcel van Lohuizen (the lead developer of the <code>golang.org/x/text</code> packages) and he confirmed that <code>message.Printer</code> is intended to be used concurrently and is concurrency safe (so long as access to any write destination is synchronized).
+</aside>
+
+<p>Next let's update the <code>cmd/www/handlers.go</code> file to use our new <code>Localizer</code> type, and &mdash; while we're at it &mdash; let's also make our <code>handleHome()</code> function render an additional <code>"Launching soon!"</code> message.</p>
+
+<figure class="file">
+    <figcaption>File: cmd/www/handlers.go</figcaption>
+    <code class="go"><pre>
+package main
+
+import (
+    "fmt" // New import
+    "net/http"
+
+    "bookstore.example.com/internal/localizer" // New import
+)
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    // Initialize a new Localizer based on the locale ID in the URL.
+    l, ok := localizer.Get(r.URL.Query().Get(":locale"))
+    if !ok {
+        http.NotFound(w, r)
+        return
+    }
+
+    var totalBookCount = 1_252_794
+
+    // Update these to use the new Translate() method.
+    fmt.Fprintln(w, l.Translate("Welcome!"))
+    fmt.Fprintln(w, l.Translate("%d books available", totalBookCount))
+
+    // Add an additional "Launching soon!" message.
+    fmt.Fprintln(w, l.Translate("Launching soon!"))
+}
+</pre></code></figure>
+
+<p>It's worth pointing out that our use of the <code>Translate()</code> method here isn't <em>just</em> some syntactic sugar. You might remember earlier that I wrote the following warning:</p>
+
+<blockquote>
+It's critical to note when <code>gotext</code> walks your code it actually <em>only</em> looks for calls to <code>message.Printer.Printf()</code>, <code>Fprintf()</code> and <code>Sprintf()</code> &mdash; basically the three methods that end with an <code>f</code>. It ignores all other methods such as <code>Sprint()</code> or <code>Println()</code>.
+</blockquote>
+
+<p>By having all our translations go through the <code>Translate()</code> method &mdash; which uses <code>Sprintf()</code> behind-the-scenes &mdash; we  avoid the scenario where you accidentally use a method like <code>Sprint()</code> or <code>Println()</code> and <code>gotext</code> doesn't extract the message to the <code>out.gotext.json</code> files. </p>
+
+<p>Let's try this out and run <code>go generate</code> again:</p>
+
+<figure class="shell"><code><pre>$ go generate ./internal/translations/translations.go
+<samp>de-DE: Missing entry for "Launching soon!".
+fr-CH: Missing entry for "Launching soon!".</samp>
+</pre></code></figure>
+
+<p>So this is really smart. We can see that <code>gotext</code> has been clever enough to walk our entire codebase and identify what strings need to be translated, even when we abstract the <code>message.Printer.Sprintf()</code> call <em>to a helper function in a different package</em>. This is awesome, and one of the things that I really appreciate about the <code>gotext</code> tool.</p>
+
+<p>If you're following along, please go ahead and copy the <code>out.gotext.json</code> files to <code>message.gotext.json</code> files, and add the necessary translations for the new <code>"Launching soon!"</code> message. Then remember to run <code>go generate</code> again and restart the web application. </p>
+
+<p>When you make some HTTP requests again now, your responses should look similar to this:</p>
+
+<figure class="shell"><code><pre>$ curl localhost:4018/gb
+<samp>Welcome!
+1,252,794 books available
+Launching soon!</samp>
+
+$ curl localhost:4018/de
+<samp>Willkommen!
+1.252.794 Bücher erhältlich
+Bald verfügbar!</samp>
+
+$ curl localhost:4018/fr-ch
+<samp>Bienvenu !
+1 252 794 livres disponibles
+Bientôt disponible !</samp>
+</pre></code></figure>
+
+<h2 id="additional-information">Additional information</h2>
+
+<h3 id="conflicting-routes">Conflicting routes</h3>
+
+<p>At this start of this post I'd deliberately didn't recommending using <a href="https://github.com/julienschmidt/httprouter">httprouter</a>, despite it being an excellent and popular router. This is because using a dynamic locale as the first part of a URL path is likely to result in <em>conflicts</em> with other application routes which <em>don't</em> require a locale prefix, like <code>/static/css/main.css</code> or <code>/admin/login</code>. The <code>httprouter</code> package doesn't allow conflicting routes, which makes using it awkward in this scenario. If you do want to use <code>httprouter</code>, or want to avoid conflicting routes in your application, you could pass the locale as a query string parameter instead like <code>/category/travel?locale=gb</code>. </p>
+    <div class="footer">
+        <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
+        <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
+        <p>All code snippets in this post are free to use under the <a href="http://opensource.org/licenses/MIT">MIT Licence</a>.</p>
+    </div>
+    
+</article>
+<script src="/static/javascripts/jquery.min.js"></script>
+<script src="/static/javascripts/highlight.pack.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('figure code').each(function(i, e) {
+            hljs.highlightBlock(e)
+        });
+    });
+</script>
+    </main>
+    <footer>
+      <div class="wrapper">
+        <div><span class="copyright">&copy;</span> Alex Edwards 2013-2021</div>
+      </div>
+    </footer>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-23830196-1']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+      </script>
+  </body>
+</html>
