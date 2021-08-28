@@ -70,27 +70,14 @@
         </span>
         
     </div>
-    <p>Recently I've been building a fully internationalized (i18n) and localized (l10n) web application for the first time with Go's <a href="https://pkg.go.dev/golang.org/x/text"><code>golang.org/x/text</code></a> packages. I've found that the packages and tools that live under <code>golang.org/x/text</code> are really effective and well designed, although the documentation currently available is limited in places and it's been a bit of a challenge to figure out how to put it all together in the context of a real application.</p>
-
-<p>So in this tutorial, I want to start explaining how you can use the <code>golang.org/x/text</code> packages for i18n and l10n in your code, and in particular, how to work with them in the context of a web application.</p>
+    <p>Recently I've been building a fully internationalized (i18n) and localized (l10n) web application for the first time with Go's <a href="https://pkg.go.dev/golang.org/x/text"><code>golang.org/x/text</code></a> packages. I've found that the packages and tools that live under <code>golang.org/x/text</code> are really effective and well designed, although it's been a bit of a challenge to figure out how to put it all together in a real application.</p>
 
 <aside class="note">
 <strong>Note:</strong> Just in case you're not already aware, the packages that live under <code>golang.org/x</code> are part of the official Go Project but outside the main Go standard library tree. They are held to looser standards that the standard library packages, which means they aren't subject to the Go compatibility promise (i.e. their APIs might change), and documentation may not always be complete.
 </aside>
 
-<p>There's a <em>lot</em> of ground to cover on this topic, so to keep things manageable I'm going to split this up into four separate tutorials:</p>
 
-<ol>
-<li>Managing Translations [this article]</li>
-
-<li>Working with Numbers, Dates, Currencies, Timezones and Links [coming soon]</li>
-
-<li>Translating Content in html/template Files [coming soon]</li>
-
-<li>Switching, Saving and Detecting Locales [coming soon]</li>
-</ol>
-
-<p>In this first tutorial we'll focus primarily on working with on translations. Specifically:</p>
+<p>In this tutorial I want to explain how you can use <code>golang.org/x/text</code> packages to manage translations in your application. Specifically:</p>
 
 <ul>
 <li>How to use the <code>golang.org/x/text/language</code> and <code>golang.org/x/text/message</code> packages to print translated messages from your Go code.</li>
@@ -102,11 +89,11 @@
 <li>How to manage <em>variables</em> in messages and provided <em>pluralized versions</em> of translations.</li>
 </ul>
 
-<h2 id="whatwellbebuilding">What we'll be building</h2>
+<h2 id="what-well-be-building">What we'll be building</h2>
 
-<p>To help put all this information into context, over the four tutorials we're going to create a simple pre-launch website for an imaginary online bookstore. We'll start off slowly and build up the code step-by-step.</p>
+<p>To help put this into context, we're going to create a simple pre-launch website for an imaginary online bookstore. We'll start off slowly and build up the code step-by-step.</p>
 
-<p>To start with, our application will have just a single home page, and we'll localize the page content based on a locale identifier at the start of the URL path. We'll set up our application to support three different locales: the United Kingdom, Germany, and the French-speaking part of Switzerland.</p>
+<p>Our application will have just a single home page, and we'll localize the page content based on a locale identifier at the start of the URL path. We'll set up our application to support three different locales: the United Kingdom, Germany, and the French-speaking part of Switzerland.</p>
 
 <table>
 <thead>
@@ -1132,71 +1119,6 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 1.252.794 Bücher erhältlich</samp>
 </pre></code></figure>
 
-<h2 id="decoupling-the-locale-identifier-and-languagetag">Decoupling the locale identifier and language tag</h2>
-
-<p>The next part of this tutorial is totally optional, and whether it is a sensible thing to do in your project will depend on what locales your application is supporting and how much (if at all) the 'look and feel' of URLs is important to you in terms of UI.</p>
-
-<p>But in some cases, you may wish to make your URLs look 'cleaner' by using shorter locale identifiers as <em>aliases</em>, like <code>example.com/gb</code> instead of <code>example.com/en-gb</code>. To keep things consistent, you should think carefully before doing this and make sure that you are following some rules that help you avoid conflicts and ambiguities. As an example, you might develop some rules which look like this:</p>
-
-<ul>
-<li>Where is is only one common BCP 47 tag for a region, like <code>cs-CZ</code>, you use just the region part <code>cz</code> as the locale identifier in your URLs.</li>
-
-<li>Where there are multiple common BCP 47 tags for a region, and there is no clear 'primary' language used in that region, you continue to always use the full identifier (like <code>fr-ch</code> or <code>it-ch</code>) in your URLs.</li>
-
-<li>Where there are multiple common BCP 47 tags for a region, but a clear 'primary' language is used in that region (like <code>en-GB</code>), you use just the region part <code>gb</code> as the locale identifier in your URLS. For any 'secondary' languages used in that region &mdash; like <code>cy-GB</code> (Welsh) &mdash; you continue to use the full identifier in your URLs.</li>
-</ul>
-
-<p>Applying those rules to our bookstore application, we could update the <code>switch</code> statement in out <code>handleHome()</code> function like so:</p>
-
-<figure class="file">
-    <figcaption>File: cmd/www/handlers.go</figcaption>
-    <code class="go"><pre>
-package main
-
-...
-
-func handleHome(w http.ResponseWriter, r *http.Request) {
-    locale := r.URL.Query().Get(":locale")
-
-    var lang language.Tag
-
-    switch locale {
-    case "gb":
-        lang = language.MustParse("en-GB")
-    case "de":
-        lang = language.MustParse("de-DE")
-    case "fr-ch":
-        lang = language.MustParse("fr-CH")
-    default:
-        http.NotFound(w, r)
-        return
-    }
-
-    var totalBookCount = 1_252_794
-
-    p := message.NewPrinter(lang)
-    p.Fprintf(w, "Welcome!\n")
-    p.Fprintf(w, "%d books available\n", totalBookCount)
-}
-</pre></code></figure>
-
-<p>And if you restart the application you should be able to make requests to the new <code>localhost:4018/gb</code> and <code>localhost:4018/de</code> URLs like so:</p>
-
-<figure class="shell"><code><pre>$ curl localhost:4018/gb
-<samp>Welcome!
-1,252,794 books available</samp>
-
-$ curl localhost:4018/de
-<samp>Willkommen!
-1.252.794 Bücher erhältlich</samp>
-
-$ curl localhost:4018/fr-ch
-<samp>Bienvenu !
-1 252 794 livres disponibles</samp>
-</pre></code></figure>
-
-<p>As I said, this is totally optional and if you're building something where the look and feel of URLs doesn't matter so much, then I would recommend sticking with the BCP 47 <code>{language}-{region}</code> format for all your URLs.</p>
-
 <h2 id="creatingalocalizerabstraction">Creating a localizer abstraction</h2>
 
 <p>In the final part of this article we're going to create a new <code>internal/localizer</code> package which abstracts all our code for dealing with languages, printers and translations.</p>
@@ -1266,7 +1188,7 @@ type Localizer struct {
 var locales = []Localizer{
     {
         // Germany
-        ID:      "de",
+        ID:      "de-de",
         printer: message.NewPrinter(language.MustParse("de-DE")),
     },
     {
@@ -1276,7 +1198,7 @@ var locales = []Localizer{
     },
     {
         // United Kingdom
-        ID:      "gb",
+        ID:      "en-gb",
         printer: message.NewPrinter(language.MustParse("en-GB")),
     },
 }
@@ -1362,12 +1284,12 @@ fr-CH: Missing entry for "Launching soon!".</samp>
 
 <p>When you make some HTTP requests again now, your responses should look similar to this:</p>
 
-<figure class="shell"><code><pre>$ curl localhost:4018/gb
+<figure class="shell"><code><pre>$ curl localhost:4018/en-gb
 <samp>Welcome!
 1,252,794 books available
 Launching soon!</samp>
 
-$ curl localhost:4018/de
+$ curl localhost:4018/de-de
 <samp>Willkommen!
 1.252.794 Bücher erhältlich
 Bald verfügbar!</samp>
