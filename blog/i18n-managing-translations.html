@@ -45,7 +45,17 @@
       </nav>
     </header>
     <main class="wrapper clearfix">
-
+      
+<div class="lets-go clearfix">
+    <div>
+            
+            <h3>Not sure how to structure your Go web application?</h3>
+            <p> My new book guides you through the start-to-finish build of a real world web application in Go<span class="no-mobile"> — covering topics like how to structure your code, manage dependencies, create dynamic database-driven pages, and how to authenticate and authorize users securely</span>.</p>
+            <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
+            
+        </div>
+        <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
+    </div>
 <article>
     <h1>I18n in Go&colon; Managing Translations</h1>
     <div class="metadata">
@@ -62,9 +72,6 @@
     </div>
     <p>Recently I've been building a fully internationalized (i18n) and localized (l10n) web application for the first time with Go's <a href="https://pkg.go.dev/golang.org/x/text"><code>golang.org/x/text</code></a> packages. I've found that the packages and tools that live under <code>golang.org/x/text</code> are really effective and well designed, although it's been a bit of a challenge to figure out how to put it all together in a real application.</p>
 
-
-
-
 <p>In this tutorial I want to explain how you can use <code>golang.org/x/text</code> packages to manage translations in your application. Specifically:</p>
 
 <ul>
@@ -76,10 +83,10 @@
 
 <li>How to manage <em>variables</em> in messages and provided <em>pluralized versions</em> of translations.</li>
 </ul>
-	
+
 <aside class="note">
 <strong>Note:</strong> Just in case you're not already aware, the packages that live under <code>golang.org/x</code> are part of the official Go Project but outside the main Go standard library tree. They are held to looser standards that the standard library packages, which means they aren't subject to the Go compatibility promise (i.e. their APIs might change), and documentation may not always be complete.
-</aside>	
+</aside>
 
 <h2 id="what-well-be-building">What we'll be building</h2>
 
