@@ -507,7 +507,7 @@ $ cp internal/translations/locales/fr-CH/out.gotext.json internal/translations/l
         {
             "id": "Welcome!",
             "message": "Welcome!",
-            "translation": "Bienvenu !"
+            "translation": "Bienvenue !"
         }
     ]
 }
@@ -605,7 +605,7 @@ var fr_CHIndex = []uint32{ // 2 elements
     0x00000000, 0x00000010,
 } // Size: 32 bytes
 
-const fr_CHData string = "\x04\x00\x01\n\v\x02Bienvenu !"
+const fr_CHData string = "\x04\x00\x01\n\v\x02Bienvenue !"
 
 // Total table size 143 bytes (0KiB); checksum: 385F6E56
 </pre></code></figure>
@@ -669,7 +669,7 @@ $ curl localhost:4018/de-de
 <samp>Willkommen!</samp>
 
 $ curl localhost:4018/fr-ch
-<samp>Bienvenu !</samp>
+<samp>Bienvenue !</samp>
 </pre></code></figure>
 
 <h2 id="using-variables-in-translations">Using variables in translations</h2>
@@ -806,7 +806,7 @@ $ cp internal/translations/locales/fr-CH/out.gotext.json internal/translations/l
         {
             "id": "Welcome!",
             "message": "Welcome!",
-            "translation": "Bienvenu !"
+            "translation": "Bienvenue !"
         },
         {
             "id": "{TotalBookCount} books available",
@@ -844,7 +844,7 @@ $ curl localhost:4018/de-de
 1.252.794 Bücher erhältlich</samp>
 
 $ curl localhost:4018/fr-ch
-<samp>Bienvenu !
+<samp>Bienvenue !
 1 252 794 livres disponibles</samp>
 </pre></code></figure>
 
@@ -1036,7 +1036,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
         {
             "id": "Welcome!",
             "message": "Welcome!",
-            "translation": "Bienvenu !"
+            "translation": "Bienvenue !"
         },
         {
             "id": "{TotalBookCount} books available",
@@ -1086,7 +1086,7 @@ $ curl localhost:4018/de-de
 Ein Buch erhältlich</samp>
 
 $ curl localhost:4018/fr-ch
-<samp>Bienvenu !
+<samp>Bienvenue !
 Un livre disponible</samp>
 </pre></code></figure>
 
@@ -1294,7 +1294,7 @@ $ curl localhost:4018/de-de
 Bald verfügbar!</samp>
 
 $ curl localhost:4018/fr-ch
-<samp>Bienvenu !
+<samp>Bienvenue !
 1 252 794 livres disponibles
 Bientôt disponible !</samp>
 </pre></code></figure>
