@@ -54,7 +54,7 @@
             <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
             
         </div>
-        <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
+        <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/img/cover-sm.png"></a>
     </div>
 <article>
     <h1>Making and Using HTTP Middleware</h1>
@@ -185,7 +185,7 @@ func main() {
 }  
 </pre></code></figure>
 
-<p>Run this application and make a request to <a href="http://localhost:3000/">http://localhost:3000</a>. You should see some log output similar to this:</p>
+<p>Run this application and make a request to <a href="http://localhost:3000/"><code>http://localhost:3000</code></a>. You should see some log output similar to this:</p>
 
 <figure class="shell"><code><pre>
 $ go run main.go
@@ -201,7 +201,7 @@ $ go run main.go
 
 <p>We can stop control propagating through the chain at any point by issuing a <code>return</code> from a middleware handler.</p>
 
-<p>In the example above I've included a conditional return in the <code>middlewareTwo</code> function. Try it by visiting <a href="http://localhost:3000/foo">http://localhost:3000/foo</a> and checking the log again &ndash; you'll see that this time the request gets no further than <code>middlewareTwo</code> before passing back up the chain.</p>
+<p>In the example above I've included a conditional return in the <code>middlewareTwo</code> function. Try it by visiting <a href="http://localhost:3000/foo"><code>http://localhost:3000/foo</code></a> and checking the log again &ndash; you'll see that this time the request gets no further than <code>middlewareTwo</code> before passing back up the chain.</p>
 
 <figure class="shell"><code><pre>
 <samp>2020/05/08 12:33:22 Executing middlewareOne
@@ -330,9 +330,9 @@ func final(w http.ResponseWriter, r *http.Request) {
 }  
 </pre></code></figure>
 
-<p>If you run this code then visit <a href="http://localhost:3000/">http://localhost:3000</a> in your browser you should get a username and password prompt like so:</p>
+<p>If you run this code then visit <a href="http://localhost:3000/"><code>http://localhost:3000</code></a> in your browser you should get a username and password prompt like so:</p>
 
-<p><img loading="lazy" src="/static/images/middleware-1.png"></p>
+<p><img loading="lazy" src="/static/img/middleware-1.png"></p>
 
 <p>Entering the wrong username and password should result in the prompt being redisplayed, clicking 'Cancel' should result in a plain-text <code>"Unauthorized"</code> response, and  using the correct username (<code>alice</code>) and password (<code>pa$$word</code>) should result in an <code>"OK"</code> response.</p>
 

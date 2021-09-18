@@ -54,7 +54,7 @@
             <p><a href="https://lets-go.alexedwards.net/">Take a look!</a></p>
             
         </div>
-        <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/images/cover-sm.png"></a>
+        <a class="no-mobile" href="https://lets-go.alexedwards.net/"><img loading="lazy" src="/static/img/cover-sm.png"></a>
     </div>
 <article>
     <h1>An Overview of Go's Tooling</h1>
@@ -353,7 +353,7 @@ $ go test -coverprofile=/tmp/profile.out ./...
 $ go tool cover -html=/tmp/profile.out
 </pre></code></figure>
 
-<p><img loading="lazy" src="/static/images/tooling-1.png"></p>
+<p><img loading="lazy" src="/static/img/tooling-1.png"></p>
 
 <p>This will gives you a navigable listing of all the test files, with code covered by the tests displayed in green, and uncovered code in red.</p>
 
@@ -366,7 +366,7 @@ $ go tool cover -html=/tmp/profile.out
 
 <p>When viewed in the browser, statements which are executed more frequently are shown in a more saturated shade of green, similar to this:</p>
 
-<p><img loading="lazy" src="/static/images/tooling-2.png"></p>
+<p><img loading="lazy" src="/static/img/tooling-2.png"></p>
 
 <p>Note: If you’re using the <code>t.Parallel()</code> command in any of your tests, then you should use the flag <code>-covermode=atomic</code> instead of <code>-covermode=count</code> instead to ensure an accurate count.</p>
 
@@ -730,13 +730,13 @@ $ go test -run=^$ -bench=^BenchmarkFoo$ -o=/tmp/foo.test -cpuprofile=/tmp/cpupro
 $ go tool pprof -http=:5000 /tmp/cpuprofile.out
 </pre></code></figure>
 
-<p><img loading="lazy" src="/static/images/tooling-3.png"></p>
+<p><img loading="lazy" src="/static/img/tooling-3.png"></p>
 
 <p>This will default to displaying a <em>graph</em> showing the execution tree for the sampled aspects of your application, which makes it possible to quickly get a feel for any resource usage 'hotspots'. In the graph above, we can see that the hotspots in terms of CPU usage are two system calls originating from <code>ioutil.ReadFile()</code>.</p>
 
 <p>You can also navigate to other <em>views</em> of the profile including top usage by function and source code.</p>
 
-<p><img loading="lazy" src="/static/images/tooling-4.png"></p>
+<p><img loading="lazy" src="/static/img/tooling-4.png"></p>
 
 <p>If the amount of information is overwhelming, you might want to use the <code>--nodefraction</code> flag to ignore nodes that account for less than a certain percentage of samples. For example to ignore nodes that use appear in less than 10% of samples you can run <code>pprof</code> like so:</p>
 
@@ -744,9 +744,9 @@ $ go tool pprof -http=:5000 /tmp/cpuprofile.out
 $ go tool pprof --nodefraction=0.1 -http=:5000 /tmp/cpuprofile.out
 </pre></code></figure>
 
-<p><img loading="lazy" src="/static/images/tooling-5.png"></p>
+<p><img loading="lazy" src="/static/img/tooling-5.png"></p>
 
-<p>This makes the graph a lot less 'noisy' and if you <a href="/static/images/tooling-5b.svg">zoom in on this screenshot</a>, it's now much clearer to see and understand where the CPU usage hotspots are.</p>
+<p>This makes the graph a lot less 'noisy' and if you <a href="/static/img/tooling-5b.svg">zoom in on this screenshot</a>, it's now much clearer to see and understand where the CPU usage hotspots are.</p>
 
 <p>Profiling and optimizing resource usage is big, nuanced, topic and I've barely scratched the surface here. If you're interested in knowing more then I encourage you to read the following blog posts:</p>
 
@@ -768,7 +768,7 @@ $ go tool trace /tmp/trace.out
 
 <p>Important: This is currently only viewable in Chrome/Chromium.</p>
 
-<p><img loading="lazy" src="/static/images/tooling-6.png"></p>
+<p><img loading="lazy" src="/static/img/tooling-6.png"></p>
 
 <p>For more information about Go's execution tracer and how to interpret the output please see <a href="https://www.youtube.com/watch?v=mmqDlbWk_XA">Rhys Hiltner's dotGo 2016 talk</a> and this<a href="https://making.pusher.com/go-tool-trace/"> excellent blog post</a>.</p>
 
@@ -874,7 +874,7 @@ $ go bug
 
 <p><em>Update 2019-04-19: <a href="https://twitter.com/FedirFR">@FedirFR</a> has kindly made a cheatsheet based on this post. You can <a href="https://github.com/fedir/go-tooling-cheat-sheet/blob/master/go-tooling-cheat-sheet.pdf">download it here</a>.</em></p>
 
-<p><a href="https://github.com/fedir/go-tooling-cheat-sheet/blob/master/go-tooling-cheat-sheet.pdf"><img loading="lazy" src="/static/images/tooling-7.png"></a></p>
+<p><a href="https://github.com/fedir/go-tooling-cheat-sheet/blob/master/go-tooling-cheat-sheet.pdf"><img loading="lazy" src="/static/img/tooling-7.png"></a></p>
     <div class="footer">
         <p>If you enjoyed this blog post, don't forget to check out my new book about how to <a href="https://lets-go.alexedwards.net/">build professional web applications with Go</a>!</p>
         <p>Follow me on Twitter <a href="https://twitter.com/ajmedwards">@ajmedwards</a>.</p>
